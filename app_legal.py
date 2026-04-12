@@ -68,27 +68,29 @@ if "sesion_actual" not in st.session_state:
     st.session_state.sesion_actual = "Nueva Consulta"
 
 # ==========================================
-# PANTALLA DE LOGIN MEJORADA
+# PANTALLA DE LOGIN BALANCEADA
 # ==========================================
 if not st.session_state.usuario_autenticado:
-    # Le damos más ancho a la columna central (el 1.5) para que el logo respire
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    # Volvemos a las columnas equilibradas
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        st.write("<br><br>", unsafe_allow_html=True)
+        st.write("<br>", unsafe_allow_html=True)
         
-        # LOGO GRANDE Y ADAPTATIVO
-        if os.path.exists("logo.png"):
-            st.image("logo.png", use_container_width=True)
-        else:
-            st.markdown("<h1 style='text-align: center;'>Chubut.IA</h1>", unsafe_allow_html=True)
-            
-        st.markdown("<div style='text-align: center; font-size: 1.2rem;'>🔒 <b>Sistema de Jurisprudencia</b></div>", unsafe_allow_html=True)
+        # Truco de sub-columnas para centrar y achicar el logo
+        col_img1, col_img2, col_img3 = st.columns([1, 3, 1])
+        with col_img2:
+            if os.path.exists("logo.png"):
+                st.image("logo.png", use_container_width=True)
+            else:
+                st.markdown("<h1 style='text-align: center;'>Chubut.IA</h1>", unsafe_allow_html=True)
+                
+        st.markdown("<div style='text-align: center; font-size: 1.1rem; margin-top: 10px;'>🔒 <b>Sistema de Jurisprudencia</b></div>", unsafe_allow_html=True)
         st.divider()
         
         usuario_input = st.text_input("Usuario")
         password_input = st.text_input("Contraseña", type="password") 
         
-        st.write("") # Espaciador
+        st.write("") 
         if st.button("Ingresar", type="primary", use_container_width=True):
             if usuario_input in CLIENTES_AUTORIZADOS and CLIENTES_AUTORIZADOS[usuario_input] == password_input:
                 st.session_state.usuario_autenticado = True
