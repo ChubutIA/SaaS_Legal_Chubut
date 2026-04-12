@@ -1,6 +1,5 @@
 import os
 import streamlit as st
-# IMPORTACIÓN ACTUALIZADA (PASO B)
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
@@ -19,8 +18,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. TU LLAVE DE ACCESO
-
+# 2. CONEXIÓN DIRECTA A LA CAJA FUERTE (LA SOLUCIÓN AL ERROR ROJO)
+# Obligamos al sistema a sacar la llave de los Secretos de Streamlit
+try:
+    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+except Exception:
+    st.error("🚨 La llave de OpenAI no se encontró en la configuración de Streamlit Secrets.")
+    st.stop()
 
 # BASE DE DATOS DE CLIENTES
 CLIENTES_AUTORIZADOS = {
@@ -76,17 +80,13 @@ else:
 
     @st.cache_resource
     def conectar_boveda():
+        # Buscamos la carpeta directamente en la nube (sin el disco G:)
         directorio_db = "MI_BASE_VECTORIAL"
         embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         
         if not os.path.exists(directorio_db) or not os.listdir(directorio_db):
-            with st.spinner("🧠 Construyendo la súper-memoria..."):
-                ruta_boveda = "G:/MI_BASE_LEGAL"
-                loader = DirectoryLoader(ruta_boveda, glob="**/*.txt", loader_cls=TextLoader, loader_kwargs={'encoding': 'utf-8'})
-                documentos = loader.load()
-                text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1500)
-                textos_cortados = text_splitter.split_documents(documentos)
-                vectordb = Chroma.from_documents(documents=textos_cortados, embedding=embeddings, persist_directory=directorio_db)
+            st.error("🚨 No se encontró la base de datos vectorial en los archivos.")
+            st.stop()
         else:
             vectordb = Chroma(persist_directory=directorio_db, embedding_function=embeddings)
             
