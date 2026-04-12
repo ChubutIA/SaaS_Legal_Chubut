@@ -14,48 +14,36 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS PROFESIONAL: BURBUJAS, BARRA LATERAL Y BOTÓN DE MENÚ ---
+# --- CSS ADAPTABLE (SOPORTA MODO CLARO Y OSCURO) ---
 st.markdown("""
     <style>
-        /* Ajustes de fondo y limpieza */
         footer {visibility: hidden;}
         .block-container {padding-top: 1rem; padding-bottom: 5rem;}
 
-        /* Hacer que el botón de la barra lateral sea visible y blanco */
-        button[kind="headerNoPadding"] {
-            color: white !important;
-        }
-
-        /* Burbuja del Asistente (Gris Azulado Profundo) */
+        /* Burbuja del Asistente (Se adapta sola al modo oscuro/claro) */
         div[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-assistant"]) {
-            background-color: #1E293B !important;
-            border: 1px solid #334155 !important;
+            border: 1px solid rgba(128, 128, 128, 0.2) !important;
             border-radius: 20px 20px 20px 2px !important;
             padding: 1.5rem !important;
             margin-bottom: 1.5rem !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             max-width: 85%;
         }
         
-        /* Burbuja del Usuario (Azul Vibrant / Corporate) */
+        /* Burbuja del Usuario (Azul Marino Fijo) */
         div[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-user"]) {
-            background-color: #2563EB !important;
+            background-color: #1E3A8A !important;
             border-radius: 20px 20px 2px 20px !important;
             padding: 1.2rem !important;
             margin-bottom: 1.5rem !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             max-width: 80%;
-            margin-left: auto; /* Empuja el chat del usuario a la derecha */
+            margin-left: auto;
         }
         
-        /* Letras blancas para el usuario */
+        /* Letras del usuario siempre blancas */
         div[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-user"]) * {
             color: #FFFFFF !important;
-        }
-
-        /* Estilo para el input de texto (la caja de abajo) */
-        .stChatInputContainer {
-            padding-bottom: 20px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -72,7 +60,7 @@ CLIENTES_AUTORIZADOS = {
     "estudio_perez": "abogado123"
 }
 
-# 3. CONTROL DE SESIÓN Y MULTI-CHAT
+# 3. CONTROL DE SESIÓN Y MULTI-CHAT DINÁMICO
 if "usuario_autenticado" not in st.session_state:
     st.session_state.usuario_autenticado = False
 
@@ -113,15 +101,17 @@ else:
         st.divider()
         
         if st.button("➕ Nueva Consulta", use_container_width=True, type="primary"):
+            # Generamos un ID único por si acaso
             nuevo_id = len(st.session_state.sesiones_chat) + 1
-            nuevo_nombre = f"Consulta {nuevo_id}"
+            nuevo_nombre = f"Nueva Consulta {nuevo_id}"
             st.session_state.sesiones_chat[nuevo_nombre] = []
             st.session_state.sesion_actual = nuevo_nombre
             st.rerun()
             
         st.subheader("Historial")
         opciones_chat = list(st.session_state.sesiones_chat.keys())
-        chat_seleccionado = st.radio(" ", opciones_chat, index=opciones_chat.index(st.session_state.sesion_actual), label_visibility="collapsed")
+        # Mostramos los chats en orden inverso (los más nuevos arriba)
+        chat_seleccionado = st.radio(" ", reversed(opciones_chat), index=list(reversed(opciones_chat)).index(st.session_state.sesion_actual), label_visibility="collapsed")
         
         if chat_seleccionado != st.session_state.sesion_actual:
             st.session_state.sesion_actual = chat_seleccionado
@@ -155,20 +145,40 @@ else:
     # --- BIENVENIDA O CHAT ---
     if len(historial_activo) == 0:
         st.write("<br><br><br>", unsafe_allow_html=True)
+        # Nota: Ya no forzamos el color blanco acá, así se adapta al modo claro (negro) u oscuro (blanco)
         st.markdown("<h1 style='text-align: center; font-size: 3rem;'>¿En qué puedo ayudarte hoy?</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 1.2rem;'>Consultá la jurisprudencia de Chubut con inteligencia artificial.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #808080; font-size: 1.2rem;'>Consultá la jurisprudencia de Chubut con inteligencia artificial.</p>", unsafe_allow_html=True)
     else:
         for mensaje in historial_activo:
             with st.chat_message(mensaje["role"]):
                 st.markdown(mensaje["content"])
 
-    # --- INTERACCIÓN ---
+    # --- INTERACCIÓN Y AUTORENOMBRADO ---
     if pregunta := st.chat_input("Escribe tu consulta aquí..."):
+        
+        # 1. Sistema de Auto-Título: Si es el primer mensaje, renombramos la consulta
+        if len(historial_activo) == 0:
+            # Tomamos las primeras 25 letras de la pregunta para el título
+            nuevo_titulo = pregunta[:25].capitalize()
+            if len(pregunta) > 25:
+                nuevo_titulo += "..."
+            
+            # Evitar nombres duplicados
+            if nuevo_titulo in st.session_state.sesiones_chat:
+                nuevo_titulo = nuevo_titulo + " (1)"
+                
+            # Mudamos el historial a la nueva llave y borramos la vieja ("Nueva Consulta")
+            st.session_state.sesiones_chat[nuevo_titulo] = st.session_state.sesiones_chat.pop(st.session_state.sesion_actual)
+            st.session_state.sesion_actual = nuevo_titulo
+
+        # 2. Guardamos la pregunta
         st.session_state.sesiones_chat[st.session_state.sesion_actual].append({"role": "user", "content": pregunta})
         st.rerun() 
 
-    if len(historial_activo) > 0 and historial_activo[-1]["role"] == "user":
-        pregunta_actual = historial_activo[-1]["content"]
+    # --- PROCESAMIENTO ---
+    historial_actualizado = st.session_state.sesiones_chat[st.session_state.sesion_actual]
+    if len(historial_actualizado) > 0 and historial_actualizado[-1]["role"] == "user":
+        pregunta_actual = historial_actualizado[-1]["content"]
         
         with st.chat_message("assistant"):
             with st.spinner("Buscando en Chubut.IA..."):
@@ -178,7 +188,7 @@ else:
                 instruccion_sistema = f"Sos Chubut.IA. Contexto: {contexto_legal}. Formato: 📌 Carátula, 📅 Fecha, 📝 Cita, ⚖️ Resolución, 🔗 Link."
                 
                 mensajes_llm = [SystemMessage(content=instruccion_sistema)]
-                for msg in historial_activo:
+                for msg in historial_actualizado:
                     role = "user" if msg["role"] == "user" else "assistant"
                     mensajes_llm.append(HumanMessage(content=msg["content"]) if role == "user" else AIMessage(content=msg["content"]))
                 
