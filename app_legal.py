@@ -18,8 +18,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. CONEXIÓN DIRECTA A LA CAJA FUERTE (LA SOLUCIÓN AL ERROR ROJO)
-# Obligamos al sistema a sacar la llave de los Secretos de Streamlit
+# 2. CONEXIÓN DIRECTA A LA CAJA FUERTE
 try:
     os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 except Exception:
@@ -80,7 +79,7 @@ else:
 
     @st.cache_resource
     def conectar_boveda():
-        # Buscamos la carpeta directamente en la nube (sin el disco G:)
+        # Buscamos la carpeta directamente en la nube
         directorio_db = "MI_BASE_VECTORIAL"
         embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         
@@ -144,7 +143,20 @@ else:
                         for pedacito in stream:
                             yield pedacito.content
                     
+                    # Generamos y mostramos la respuesta en pantalla
                     respuesta_generada = st.write_stream(extraer_texto(llm.stream(mensajes_llm)))
                     st.session_state.historial_chat.append({"role": "assistant", "content": respuesta_generada})
+                    
+                    # --- BOTÓN DE DESCARGA ---
+                    st.divider()
+                    st.download_button(
+                        label="📄 Descargar Dictamen para Word (.txt)",
+                        data=respuesta_generada,
+                        file_name="Jurisprudencia_Chubut.txt",
+                        mime="text/plain",
+                        type="primary",
+                        use_container_width=True
+                    )
+                    
                 except Exception as e:
                     st.error(f"Ocurrió un error: {e}")
