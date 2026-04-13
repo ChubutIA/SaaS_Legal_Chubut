@@ -90,8 +90,9 @@ def pantalla_acceso():
             
             # --- FLUJO DE RECUPERACIÓN DE CONTRASEÑA ---
             else:
-                st.info(f"Revisá tu correo ({st.session_state.reset_email}). Te enviamos un código de 6 dígitos.")
-                codigo_otp = st.text_input("Código de recuperación (6 dígitos)", placeholder="Ej: 123456")
+                # --- TEXTOS CORREGIDOS AQUÍ ---
+                st.info(f"Revisá tu correo ({st.session_state.reset_email}). Te enviamos un código de seguridad.")
+                codigo_otp = st.text_input("Código de recuperación", placeholder="Pegá el código de tu correo acá")
                 nueva_pass = st.text_input("Nueva Contraseña", type="password")
                 
                 if st.button("Confirmar Cambio de Contraseña", type="primary", use_container_width=True):
