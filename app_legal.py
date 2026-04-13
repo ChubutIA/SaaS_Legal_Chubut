@@ -57,7 +57,8 @@ def pantalla_recuperacion():
                     st.session_state.recovery_mode = False
                     st.session_state.user_data = None
                     st.info("Ya podés iniciar sesión con tu nueva clave.")
-                    st.button("Ir al Inicio")
+                    if st.button("Ir al Inicio"):
+                        st.rerun()
                 except Exception as e:
                     st.error(f"Error al actualizar: {e}")
             else:
@@ -161,11 +162,44 @@ def pantalla_chat():
             supabase.table("usuarios").update({"historial": st.session_state.sesiones_chat}).eq("email", user.email).execute()
             st.rerun()
 
-        for nombre_chat in reversed(list(st.session_state.sesiones_chat.keys())):
+        st.write("") # Pequeño espacio visual
+        
+        # --- NUEVA LÓGICA: LISTA DE CHATS CON BOTÓN DE BORRAR ---
+        lista_chats = list(st.session_state.sesiones_chat.keys())
+        
+        for nombre_chat in reversed(lista_chats):
+            col_btn, col_del = st.columns([0.85, 0.15]) # 85% para el nombre, 15% para la basura
+            
             prefijo = "🟢" if nombre_chat == st.session_state.sesion_actual else "📄"
-            if st.button(f"{prefijo} {nombre_chat}", key=f"btn_{nombre_chat}", use_container_width=True):
-                st.session_state.sesion_actual = nombre_chat
-                st.rerun()
+            
+            with col_btn:
+                if st.button(f"{prefijo} {nombre_chat}", key=f"btn_{nombre_chat}", use_container_width=True):
+                    st.session_state.sesion_actual = nombre_chat
+                    st.rerun()
+                    
+            with col_del:
+                # El botón de borrar tiene un identificador único para que Streamlit no se confunda
+                if st.button("🗑️", key=f"del_{nombre_chat}", help="Borrar este chat"):
+                    # 1. Borramos el chat del diccionario
+                    del st.session_state.sesiones_chat[nombre_chat]
+                    
+                    # 2. Si borró el chat donde estaba parado, lo movemos a otro
+                    if st.session_state.sesion_actual == nombre_chat:
+                        if len(st.session_state.sesiones_chat) > 0:
+                            st.session_state.sesion_actual = list(st.session_state.sesiones_chat.keys())[-1]
+                        else:
+                            # Si borró absolutamente todo, creamos un chat vacío por defecto
+                            st.session_state.sesiones_chat = {"Nueva Consulta": []}
+                            st.session_state.sesion_actual = "Nueva Consulta"
+                    
+                    # 3. Guardamos los cambios inmediatamente en Supabase
+                    supabase.table("usuarios").update({
+                        "historial": st.session_state.sesiones_chat
+                    }).eq("email", user.email).execute()
+                    
+                    # 4. Refrescamos la pantalla para que desaparezca
+                    st.rerun()
+        # ---------------------------------------------------------
         
         st.divider()
         if st.button("Cerrar Sesión", use_container_width=True):
@@ -198,7 +232,6 @@ def pantalla_chat():
                     docs = vdb.similarity_search(prompt, k=4)
                     ctx = "\n\n".join([d.page_content for d in docs])
                     
-                    # --- INSTRUCCIÓN BASE ACTUALIZADA CON EMOJIS Y VIÑETAS ---
                     instruccion_base = f"""Sos Chubut.IA, asistente jurídico de Chubut.
 Contexto: {ctx}
 
