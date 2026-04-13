@@ -75,7 +75,7 @@ def pantalla_acceso():
                     except Exception as e: st.error(f"Error: {e}")
 
 # ==========================================
-# PANTALLA DE CHAT (CON PERSISTENCIA Y TÍTULOS INTELIGENTES)
+# PANTALLA DE CHAT (VERSIÓN FINAL CON PAGOS)
 # ==========================================
 def pantalla_chat():
     user = st.session_state.user_data
@@ -85,8 +85,7 @@ def pantalla_chat():
     db_res = supabase.table("usuarios").select("*").eq("email", user.email).execute()
     
     if len(db_res.data) == 0:
-        # Usuario nuevo
-        historial_db = {"Consulta 1": []}
+        historial_db = {"Nueva Consulta": []}
         supabase.table("usuarios").insert({
             "usuario": nombre, 
             "email": user.email, 
@@ -96,16 +95,14 @@ def pantalla_chat():
         }).execute()
         creditos = 3
     else:
-        # Usuario existente
         creditos = db_res.data[0]["consultas"]
         historial_db = db_res.data[0].get("historial")
-        if not historial_db:
-            historial_db = {"Consulta 1": []}
+        if not historial_db: historial_db = {"Nueva Consulta": []}
 
-    # Sincronizar Base de Datos con Streamlit (Solo 1 vez al entrar)
+    # Sincronizar Base de Datos con Streamlit
     if "chat_iniciado" not in st.session_state:
         st.session_state.sesiones_chat = historial_db
-        st.session_state.sesion_actual = list(historial_db.keys())[-1] if historial_db else "Consulta 1"
+        st.session_state.sesion_actual = list(historial_db.keys())[-1] if historial_db else "Nueva Consulta"
         st.session_state.chat_iniciado = True
 
     # --- BARRA LATERAL ---
@@ -113,26 +110,41 @@ def pantalla_chat():
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
         st.divider()
         st.markdown(f"👤 **{nombre}**")
-        st.success(f"Consultas: **{creditos}**")
+        
+        # --- SISTEMA DE CRÉDITOS Y PAGOS ---
+        if creditos > 0:
+            st.success(f"Consultas restantes: **{creditos}**")
+        else:
+            st.error("🚫 Consultas agotadas")
+            st.markdown("### 💎 Pasate a Pro")
+            st.write("Acceso ilimitado al Motor de Jurisprudencia.")
+            st.caption("💳 Pagá seguro con Visa, Mastercard o MP.")
+            
+            # ---> AQUÍ PONES TU LINK DE MERCADO PAGO <---
+            link_mercado_pago = "https://mpago.la/1f481Uj"
+            st.link_button("Suscribirme (Acceso Pro)", link_mercado_pago, type="primary", use_container_width=True)
+        # ------------------------------------
         
         st.divider()
         st.subheader("Tus Consultas")
         
-        # Botón para Nueva Consulta
+        # Botón Inteligente para Nueva Consulta
         if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
-            num_consulta = len(st.session_state.sesiones_chat) + 1
+            num_consulta = 1
             nueva_id = f"Consulta {num_consulta}"
+            while nueva_id in st.session_state.sesiones_chat:
+                num_consulta += 1
+                nueva_id = f"Consulta {num_consulta}"
             
             st.session_state.sesiones_chat[nueva_id] = []
             st.session_state.sesion_actual = nueva_id
             
-            # Guardar en base de datos
             supabase.table("usuarios").update({"historial": st.session_state.sesiones_chat}).eq("email", user.email).execute()
             st.rerun()
 
         # Generar lista de botones del Historial
         st.write("")
-        for nombre_chat in list(st.session_state.sesiones_chat.keys()):
+        for nombre_chat in reversed(list(st.session_state.sesiones_chat.keys())):
             prefijo = "🟢" if nombre_chat == st.session_state.sesion_actual else "📄"
             if st.button(f"{prefijo} {nombre_chat}", key=f"btn_{nombre_chat}", use_container_width=True):
                 st.session_state.sesion_actual = nombre_chat
@@ -156,7 +168,6 @@ def pantalla_chat():
 
     vdb, llm = load_ia()
     
-    # Cargar mensajes de la sesión actual
     historial_actual = st.session_state.sesiones_chat.get(st.session_state.sesion_actual, [])
     
     for m in historial_actual:
@@ -175,8 +186,8 @@ def pantalla_chat():
                     
                     instruccion = f"""Sos Chubut.IA. Contexto legal: {ctx}
                     REGLAS:
-                    1. Si es una consulta nueva, usa el formato: 📌 Carátula, 📅 Fecha, 📝 Cita, ⚖️ Resolución.
-                    2. Si el usuario te repregunta sobre lo anterior, responde de forma natural usando el historial."""
+                    1. Si es consulta nueva, usa formato: 📌 Carátula, 📅 Fecha, 📝 Cita, ⚖️ Resolución.
+                    2. Si repregunta, responde conversando y explicando."""
                     
                     msgs_ia = [SystemMessage(content=instruccion)]
                     for m in historial_actual:
@@ -187,30 +198,30 @@ def pantalla_chat():
                     st.markdown(res.content)
                     historial_actual.append({"role": "assistant", "content": res.content})
                     
-                    # --- LÓGICA DE TÍTULOS INTELIGENTES ---
+                    # --- LÓGICA DE TÍTULOS ---
                     sesion_vieja = st.session_state.sesion_actual
-                    # Si es el primer mensaje y tiene el nombre por defecto
                     if sesion_vieja.startswith("Consulta ") and len(historial_actual) == 2:
                         try:
-                            # Le pedimos a la IA un título ultra corto
-                            prompt_titulo = f"Resume esta intención de búsqueda en un título legal de máximo 4 palabras (solo el título, sin comillas): {prompt}"
-                            nuevo_titulo = llm.invoke([HumanMessage(content=prompt_titulo)]).content.replace('"', '').strip()
-                            
-                            # Evitar que se pisen nombres si justo da el mismo título
-                            if nuevo_titulo in st.session_state.sesiones_chat:
-                                nuevo_titulo += f" {len(st.session_state.sesiones_chat)}"
-                            
-                            # Renombrar en el diccionario
-                            st.session_state.sesiones_chat[nuevo_titulo] = st.session_state.sesiones_chat.pop(sesion_vieja)
-                            st.session_state.sesion_actual = nuevo_titulo
+                            sys_tit = SystemMessage(content="Resume el texto en un título de 3 a 5 palabras máximo. SÓLO el título. Cero comillas.")
+                            nuevo_titulo = llm.invoke([sys_tit, HumanMessage(content=prompt)]).content.replace('"', '').strip()
                         except:
-                            pass # Si hay algún error, simplemente mantiene el nombre "Consulta X"
-                    # ----------------------------------------
+                            nuevo_titulo = (prompt[:25] + '...') if len(prompt) > 25 else prompt
+                        
+                        if len(nuevo_titulo) < 3:
+                            nuevo_titulo = (prompt[:25] + '...') if len(prompt) > 25 else prompt
+
+                        base_titulo = nuevo_titulo
+                        contador = 1
+                        while nuevo_titulo in st.session_state.sesiones_chat:
+                            nuevo_titulo = f"{base_titulo} {contador}"
+                            contador += 1
+                        
+                        st.session_state.sesiones_chat[nuevo_titulo] = st.session_state.sesiones_chat.pop(sesion_vieja)
+                        st.session_state.sesion_actual = nuevo_titulo
+                    else:
+                        st.session_state.sesiones_chat[st.session_state.sesion_actual] = historial_actual
                     
-                    # Guardar la sesión activa bajo su nombre (ya sea el nuevo título o el anterior)
-                    st.session_state.sesiones_chat[st.session_state.sesion_actual] = historial_actual
-                    
-                    # ACTUALIZAR SUPABASE CON EL NUEVO MENSAJE/TÍTULO Y DESCONTAR CRÉDITO
+                    # Actualizar DB
                     supabase.table("usuarios").update({
                         "consultas": creditos - 1,
                         "historial": st.session_state.sesiones_chat
@@ -221,5 +232,7 @@ def pantalla_chat():
             st.error("Se terminaron tus consultas gratis. ¡Suscribite para seguir!")
 
 # --- ARRANQUE ---
-if st.session_state.user_data is None: pantalla_acceso()
-else: pantalla_chat()
+if st.session_state.user_data is None: 
+    pantalla_acceso()
+else: 
+    pantalla_chat()
