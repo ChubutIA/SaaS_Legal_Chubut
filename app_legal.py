@@ -35,6 +35,37 @@ except Exception:
 
 # 3. ESTADO DE SESIÓN BÁSICO
 if "user_data" not in st.session_state: st.session_state.user_data = None
+if "recovery_mode" not in st.session_state: st.session_state.recovery_mode = False
+
+# ==========================================
+# LÓGICA DE RECUPERACIÓN (NUEVA)
+# ==========================================
+def pantalla_recuperacion():
+    col1, col2, col3 = st.columns([1, 1.8, 1])
+    with col2:
+        st.markdown("<h3 style='text-align: center;'>Restablecer Contraseña</h3>", unsafe_allow_html=True)
+        st.info("Ingresá tu nueva contraseña para volver a acceder a tu cuenta.")
+        
+        new_pass = st.text_input("Nueva Contraseña", type="password")
+        confirm_pass = st.text_input("Confirmar Nueva Contraseña", type="password")
+        
+        if st.button("Confirmar Cambio de Contraseña", type="primary", use_container_width=True):
+            if new_pass == confirm_pass and len(new_pass) >= 6:
+                try:
+                    supabase.auth.update_user({"password": new_pass})
+                    st.success("¡Contraseña actualizada con éxito!")
+                    st.session_state.recovery_mode = False
+                    st.session_state.user_data = None
+                    st.info("Ya podés iniciar sesión con tu nueva clave.")
+                    st.button("Ir al Inicio")
+                except Exception as e:
+                    st.error(f"Error al actualizar: {e}")
+            else:
+                st.error("Las contraseñas deben coincidir y tener al menos 6 caracteres.")
+        
+        if st.button("Cancelar"):
+            st.session_state.recovery_mode = False
+            st.rerun()
 
 # ==========================================
 # PANTALLA DE ACCESO
@@ -50,18 +81,18 @@ def pantalla_acceso():
             email = st.text_input("Email", key="login_email")
             password = st.text_input("Contraseña", type="password", key="login_pass")
             
-            # --- NUEVO: BOTÓN DE OLVIDÉ MI CONTRASEÑA ---
             if st.button("¿Olvidaste tu contraseña?", type="secondary"):
                 if email:
                     try:
+                        # Al enviar el correo, Supabase redireccionará al usuario de vuelta a la URL del sitio
                         supabase.auth.reset_password_email(email)
                         st.success("Te enviamos un correo para recuperar tu contraseña (revisá Spam).")
                     except Exception as e:
-                        st.error("Error al enviar el correo. Verificá que tu email sea correcto.")
+                        st.error("Error al enviar el correo.")
                 else:
-                    st.warning("Por favor, escribí tu email en el cuadro de arriba antes de tocar este botón.")
+                    st.warning("Escribí tu email arriba para que podamos enviarte el link de recuperación.")
             
-            st.write("") # Espaciador
+            st.write("") 
             if st.button("Iniciar Sesión", type="primary", use_container_width=True):
                 try:
                     res = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -84,13 +115,12 @@ def pantalla_acceso():
                     except Exception as e: st.error(f"Error: {e}")
 
 # ==========================================
-# PANTALLA DE CHAT (LÓGICA PRO INTEGRADA)
+# PANTALLA DE CHAT
 # ==========================================
 def pantalla_chat():
     user = st.session_state.user_data
     nombre = user.user_metadata.get("display_name", user.email.split("@")[0])
     
-    # Consultar DB para ver Plan y Créditos actuales
     db_res = supabase.table("usuarios").select("*").eq("email", user.email).execute()
     
     if len(db_res.data) == 0:
@@ -110,7 +140,6 @@ def pantalla_chat():
         st.session_state.sesion_actual = list(historial_db.keys())[-1]
         st.session_state.chat_iniciado = True
 
-    # --- BARRA LATERAL ---
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
         st.divider()
@@ -118,18 +147,14 @@ def pantalla_chat():
         
         if es_pro:
             st.warning("💎 **PLAN PRO ACTIVADO**")
-            st.caption("Tenés acceso ilimitado a todo el sistema.")
         else:
             st.success(f"Consultas restantes: **{creditos}**")
             if creditos <= 0:
                 st.error("🚫 Consultas agotadas")
-                st.markdown("### 💎 Pasate a Pro")
-                st.write("Seguí consultando de forma ilimitada.")
                 link_mp = "https://mpago.la/1f481Uj" 
                 st.link_button("Suscribirme ahora", link_mp, type="primary", use_container_width=True)
 
         st.divider()
-        st.subheader("Tus Consultas")
         if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
             nueva_id = f"Consulta {len(st.session_state.sesiones_chat) + 1}"
             st.session_state.sesiones_chat[nueva_id] = []
@@ -150,7 +175,6 @@ def pantalla_chat():
             if "chat_iniciado" in st.session_state: del st.session_state["chat_iniciado"]
             st.rerun()
 
-    # --- CUERPO DEL CHAT ---
     st.title(f"{st.session_state.sesion_actual}")
     
     @st.cache_resource
@@ -175,27 +199,23 @@ def pantalla_chat():
                     docs = vdb.similarity_search(prompt, k=4)
                     ctx = "\n\n".join([d.page_content for d in docs])
                     
-                    # =======================================================
-                    # NUEVO: REGLAS ESTRÍCTAS EN EL PROMPT DEL SISTEMA
-                    # =======================================================
-                    instruccion_base = f"""Sos Chubut.IA, el asistente jurídico experto de la provincia del Chubut.
-Contexto recuperado de la base de datos: {ctx}
+                    # INSTRUCCIÓN ACTUALIZADA CON "Ver fallo oficial"
+                    instruccion_base = f"""Sos Chubut.IA, asistente jurídico de Chubut.
+Contexto: {ctx}
 
-REGLAS DE FORMATO PARA TUS RESPUESTAS:
-1. VISUALIZACIÓN DE FALLOS: Siempre que el usuario solicite ver, buscar o consultar un fallo específico, DEBES usar OBLIGATORIAMENTE esta estructura visual exacta:
+REGLAS DE FORMATO:
+1. VISUALIZACIÓN DE FALLOS: Si el usuario pide un fallo, usá EXACTAMENTE este formato:
 
-**Título del Fallo:** [Nombre de la carátula o título]
-**Fecha:** [Fecha de resolución]
-**Cita Textual:** "[Extracto clave o doctrina del fallo]"
-**Resumen de los Hechos:** [Descripción concisa del caso]
-**Resolución:** [Decisión tomada por el tribunal]
-**Enlace al Documento:** https://play.google.com/store/apps/details?id=com.estsoft.alpdf&hl=es_UY
+**Título del Fallo:** [Título]
+**Fecha:** [Fecha]
+**Cita Textual:** "[Extracto clave]"
+**Resumen de los Hechos:** [Resumen]
+**Resolución:** [Decisión]
+**Ver fallo oficial:** https://pdf.ai/
 
-2. ANÁLISIS GENERALES Y OPINIONES: Si el usuario pide un análisis jurídico, una explicación o un debate, responde con texto natural y fluido (párrafos). Si durante ese análisis necesitas citar un fallo, puedes usar la estructura de la Regla 1 para presentarlo, y luego continuar con tu análisis.
+2. ANÁLISIS: Respondé fluido si es una consulta general. Si citás un fallo, aplicá la estructura anterior.
 """
                     msgs_ia = [SystemMessage(content=instruccion_base)]
-                    # =======================================================
-
                     for m in historial_actual:
                         role = HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"])
                         msgs_ia.append(role)
@@ -204,10 +224,8 @@ REGLAS DE FORMATO PARA TUS RESPUESTAS:
                     st.markdown(res.content)
                     historial_actual.append({"role": "assistant", "content": res.content})
                     
-                    # --- LÓGICA DE GASTO DE CRÉDITOS ---
                     nuevo_conteo = creditos if es_pro else creditos - 1
                     
-                    # Renombrar chat si es el primero
                     sesion_vieja = st.session_state.sesion_actual
                     if sesion_vieja.startswith("Consulta ") and len(historial_actual) == 2:
                         try:
@@ -219,15 +237,22 @@ REGLAS DE FORMATO PARA TUS RESPUESTAS:
                     else:
                         st.session_state.sesiones_chat[st.session_state.sesion_actual] = historial_actual
 
-                    # Guardar todo en Supabase
                     supabase.table("usuarios").update({
                         "consultas": nuevo_conteo,
                         "historial": st.session_state.sesiones_chat
                     }).eq("email", user.email).execute()
                     st.rerun()
-        else:
-            st.error("No te quedan consultas. Suscribite al plan Pro para continuar.")
 
-# --- ARRANQUE ---
-if st.session_state.user_data is None: pantalla_acceso()
-else: pantalla_chat()
+# --- ARRANQUE Y DETECCIÓN DE RECUPERACIÓN ---
+# Si la URL contiene un token de recuperación, Supabase loguea al usuario automáticamente.
+# Podemos detectar si el usuario ha entrado vía link de recuperación chequeando los parámetros.
+query_params = st.query_params
+if "type" in query_params and query_params["type"] == "recovery":
+    st.session_state.recovery_mode = True
+
+if st.session_state.recovery_mode:
+    pantalla_recuperacion()
+elif st.session_state.user_data is None:
+    pantalla_acceso()
+else:
+    pantalla_chat()
