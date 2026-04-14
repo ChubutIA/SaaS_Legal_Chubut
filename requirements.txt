@@ -5,3 +5,4 @@ langchain-chroma
 langchain-text-splitters
 protobuf==3.20.3
 supabase
+pysqlite3-binary
