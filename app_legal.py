@@ -67,7 +67,7 @@ def verificar_pago_entrante(user_email):
         st.query_params.clear()
 
 # ==========================================
-# PANTALLA DE ACCESO (LOGIN BLINDADO)
+# PANTALLA DE ACCESO
 # ==========================================
 def pantalla_acceso():
     col1, col2, col3 = st.columns([1, 1.8, 1])
@@ -86,7 +86,6 @@ def pantalla_acceso():
                 if email and password:
                     with st.spinner("Autenticando..."):
                         try:
-                            # El .strip() borra espacios invisibles al final del correo
                             res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
                             st.session_state.user_data = res.user
                             st.rerun()
@@ -246,7 +245,7 @@ def pantalla_chat():
         if not os.path.exists("MI_BASE_VECTORIAL"):
             import gdown
             # 👇👇👇 ACÁ VA TU ID DE GOOGLE DRIVE NUEVO 👇👇👇
-            file_id = "1djyCLhe-mA0qAWwgzTz4X_bWe6Uv3RTh" 
+            file_id = "1UdL0oJCKwW57t-LSLRmYUTzSrAs4ruMS" 
             gdown.download(f"https://drive.google.com/uc?id={file_id}", "base.zip", quiet=False)
             with zipfile.ZipFile("base.zip", 'r') as zr: zr.extractall()
         emb = OpenAIEmbeddings(model="text-embedding-3-small")
@@ -278,7 +277,6 @@ def pantalla_chat():
             with st.spinner("Buscando fallos y jurisprudencia..."):
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 
-                # METADATA EN ACCIÓN: Ahora leemos "fecha_completa"
                 contexto_partes = []
                 for i, d in enumerate(docs):
                     link_real = d.metadata.get('link_pdf', 'Enlace no disponible')
@@ -291,19 +289,19 @@ def pantalla_chat():
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
 TU ÚNICA MISIÓN ES MOSTRAR LA JURISPRUDENCIA. NO TE NIEGUES A RESPONDER.
 
-DOCUMENTOS OBTENIDOS DE LA BASE DE DATOS (CON METADATOS):
+DOCUMENTOS OBTENIDOS DE LA BASE DE DATOS:
 {contexto_final}
 
 REGLAS ESTRICTAS PARA RESPONDER:
 1. Analiza los documentos y muestra TODOS los fallos recuperados.
-2. ESTRUCTURA OBLIGATORIA para CADA fallo (Usa exactamente estas viñetas):
+2. ESTRUCTURA OBLIGATORIA para CADA fallo:
 
 📌 **[Nombre o Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Copia EXACTAMENTE la 'FECHA EXACTA' que te pasé en los metadatos de arriba].
-* 📖 **Cita Textual:** "[El extracto más relevante]"
+* 📅 **Fecha del Fallo:** [Copia la 'FECHA EXACTA' de los metadatos].
+* 📖 **Cita Textual:** "[Extracto más relevante]"
 * 📝 **Resumen de los Hechos:** [Breve resumen]
 * ⚖️ **Resolución:** [Decisión final]
-* 🔗 **Ver fallo oficial:** [Copia EXACTAMENTE la 'URL DEL PDF' que te pasé en los metadatos de arriba]"""
+* 🔗 **Ver fallo oficial:** [Pega EXACTAMENTE la 'URL DEL PDF'. NO uses formato markdown, NO pongas el link entre corchetes o paréntesis. Solo pega el texto de la URL para que se vea como un link normal]"""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
