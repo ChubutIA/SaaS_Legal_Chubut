@@ -67,7 +67,7 @@ def verificar_pago_entrante(user_email):
         st.query_params.clear()
 
 # ==========================================
-# PANTALLA DE ACCESO (LOGIN DIRECTO)
+# PANTALLA DE ACCESO (LOGIN BLINDADO)
 # ==========================================
 def pantalla_acceso():
     col1, col2, col3 = st.columns([1, 1.8, 1])
@@ -77,27 +77,33 @@ def pantalla_acceso():
         tab_in, tab_reg = st.tabs(["🔑 Entrar", "📝 Registrarse"])
         
         with tab_in:
-            email = st.text_input("Email", key="log_email")
-            password = st.text_input("Contraseña", type="password", key="log_pass")
-            
-            if st.button("Iniciar Sesión", type="primary", use_container_width=True):
+            with st.form("form_login", clear_on_submit=False):
+                email = st.text_input("Email")
+                password = st.text_input("Contraseña", type="password")
+                btn_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+
+            if btn_login:
                 if email and password:
-                    try:
-                        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                        st.session_state.user_data = res.user
-                        st.rerun()
-                    except: 
-                        st.error("Email o contraseña incorrectos.")
+                    with st.spinner("Autenticando..."):
+                        try:
+                            # El .strip() borra espacios invisibles al final del correo
+                            res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                            st.session_state.user_data = res.user
+                            st.rerun()
+                        except Exception as e:
+                            st.error("❌ Credenciales incorrectas. Verificá tu correo y contraseña.")
                 else:
-                    st.warning("Completá todos los campos.")
+                    st.warning("⚠️ Completá ambos campos.")
 
         with tab_reg:
-            new_user = st.text_input("Nombre y Apellido", key="reg_user")
-            new_email = st.text_input("Correo Electrónico", key="reg_email")
-            new_pass = st.text_input("Crea una contraseña", type="password", key="reg_pass")
-            confirm_pass = st.text_input("Confirmar contraseña", type="password", key="reg_confirm")
-            
-            if st.button("Crear Cuenta", use_container_width=True):
+            with st.form("form_registro", clear_on_submit=False):
+                new_user = st.text_input("Nombre y Apellido")
+                new_email = st.text_input("Correo Electrónico")
+                new_pass = st.text_input("Crea una contraseña", type="password")
+                confirm_pass = st.text_input("Confirmar contraseña", type="password")
+                btn_reg = st.form_submit_button("Crear Cuenta", use_container_width=True)
+                
+            if btn_reg:
                 if not new_user or not new_email or not new_pass or not confirm_pass:
                     st.warning("⚠️ Por favor, completá todos los campos.")
                 elif new_pass != confirm_pass:
@@ -105,26 +111,27 @@ def pantalla_acceso():
                 elif len(new_pass) < 6:
                     st.error("❌ La contraseña debe tener al menos 6 caracteres.")
                 else:
-                    check_user = supabase.table("usuarios").select("usuario").eq("usuario", new_user).execute()
-                    check_email = supabase.table("usuarios").select("email").eq("email", new_email).execute()
-                    
-                    if len(check_user.data) > 0:
-                        st.error("⚠️ Ese Nombre ya está en uso. Por favor, elegí otro.")
-                    elif len(check_email.data) > 0:
-                        st.error("⚠️ Este correo electrónico ya está registrado.")
-                    else:
-                        try:
-                            venc_trial = (datetime.now() + timedelta(days=7)).date()
-                            supabase.auth.sign_up({"email": new_email, "password": new_pass, "options": {"data": {"display_name": new_user}}})
-                            
-                            supabase.table("usuarios").insert({
-                                "usuario": new_user, "email": new_email, "plan": "gratis",
-                                "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
-                            }).execute()
-                            
-                            st.success("✅ ¡Cuenta creada con éxito! Ya podés iniciar sesión en la pestaña 'Entrar'.")
-                        except Exception as e: 
-                            st.error(f"Error técnico: {e}")
+                    with st.spinner("Creando cuenta..."):
+                        check_user = supabase.table("usuarios").select("usuario").eq("usuario", new_user).execute()
+                        check_email = supabase.table("usuarios").select("email").eq("email", new_email.strip()).execute()
+                        
+                        if len(check_user.data) > 0:
+                            st.error("⚠️ Ese Nombre ya está en uso. Por favor, elegí otro.")
+                        elif len(check_email.data) > 0:
+                            st.error("⚠️ Este correo electrónico ya está registrado.")
+                        else:
+                            try:
+                                venc_trial = (datetime.now() + timedelta(days=7)).date()
+                                supabase.auth.sign_up({"email": new_email.strip(), "password": new_pass, "options": {"data": {"display_name": new_user}}})
+                                
+                                supabase.table("usuarios").insert({
+                                    "usuario": new_user, "email": new_email.strip(), "plan": "gratis",
+                                    "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
+                                }).execute()
+                                
+                                st.success("✅ ¡Cuenta creada con éxito! Ya podés iniciar sesión en la pestaña 'Entrar'.")
+                            except Exception as e: 
+                                st.error(f"Error técnico: {e}")
 
 # ==========================================
 # PANTALLA DE CHAT
@@ -238,10 +245,8 @@ def pantalla_chat():
     def load_ia():
         if not os.path.exists("MI_BASE_VECTORIAL"):
             import gdown
-            
             # 👇👇👇 ACÁ VA TU ID DE GOOGLE DRIVE NUEVO 👇👇👇
-            file_id = "1pw_mJl3qyESz9WFq9XC2Q7MRBZiOTp59" 
-            
+            file_id = "1djyCLhe-mA0qAWwgzTz4X_bWe6Uv3RTh" 
             gdown.download(f"https://drive.google.com/uc?id={file_id}", "base.zip", quiet=False)
             with zipfile.ZipFile("base.zip", 'r') as zr: zr.extractall()
         emb = OpenAIEmbeddings(model="text-embedding-3-small")
@@ -273,13 +278,13 @@ def pantalla_chat():
             with st.spinner("Buscando fallos y jurisprudencia..."):
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 
-                # PLAN B EN ACCIÓN: LEEMOS LA METADATA INYECTADA
+                # METADATA EN ACCIÓN: Ahora leemos "fecha_completa"
                 contexto_partes = []
                 for i, d in enumerate(docs):
                     link_real = d.metadata.get('link_pdf', 'Enlace no disponible')
-                    anio_real = d.metadata.get('anio', 'Año no detectado')
+                    fecha_real = d.metadata.get('fecha_completa', 'Fecha no detectada')
                     
-                    contexto_partes.append(f"--- FALLO {i+1} ---\n📅 AÑO: {anio_real}\n🔗 URL DEL PDF: {link_real}\n📄 CONTENIDO:\n{d.page_content}")
+                    contexto_partes.append(f"--- FALLO {i+1} ---\n📅 FECHA EXACTA: {fecha_real}\n🔗 URL DEL PDF: {link_real}\n📄 CONTENIDO:\n{d.page_content}")
                 
                 contexto_final = "\n\n".join(contexto_partes)
                 
@@ -294,7 +299,7 @@ REGLAS ESTRICTAS PARA RESPONDER:
 2. ESTRUCTURA OBLIGATORIA para CADA fallo (Usa exactamente estas viñetas):
 
 📌 **[Nombre o Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Si el contenido tiene el día y el mes exacto, ponlos junto al "AÑO" proporcionado en los metadatos. Si no encuentras el día/mes exacto, escribe el AÑO].
+* 📅 **Fecha del Fallo:** [Copia EXACTAMENTE la 'FECHA EXACTA' que te pasé en los metadatos de arriba].
 * 📖 **Cita Textual:** "[El extracto más relevante]"
 * 📝 **Resumen de los Hechos:** [Breve resumen]
 * ⚖️ **Resolución:** [Decisión final]
