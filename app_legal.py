@@ -67,7 +67,7 @@ def verificar_pago_entrante(user_email):
         st.query_params.clear()
 
 # ==========================================
-# PANTALLA DE ACCESO (CORREGIDA CON ST.FORM)
+# PANTALLA DE ACCESO (PROTEGIDA CON ST.FORM)
 # ==========================================
 def pantalla_acceso():
     col1, col2, col3 = st.columns([1, 1.8, 1])
@@ -270,24 +270,34 @@ def pantalla_chat():
         with st.chat_message("assistant"):
             with st.spinner("Buscando fallos y jurisprudencia..."):
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=4)
-                contexto = "\n\n".join([d.page_content for d in docs])
                 
-                # INSTRUCCIONES ESTRICTAS PARA EXTRAER LINKS REALES
+                # --- EXTRACCIÓN EXPLÍCITA DEL LINK PARA ENTREGÁRSELO A LA IA ---
+                contexto_partes = []
+                for i, d in enumerate(docs):
+                    # Sacamos el link real de los metadatos en Python
+                    link_real = d.metadata.get('source', 'Enlace no disponible') if d.metadata else 'Enlace no disponible'
+                    contexto_partes.append(f"--- FALLO {i+1} ---\n🔗 URL DEL PDF: {link_real}\n📄 CONTENIDO: {d.page_content}")
+                
+                contexto_final = "\n\n".join(contexto_partes)
+                
+                # --- INSTRUCCIONES ESTRICTAS (ANTI-BERRINCHES) ---
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
-Basate ÚNICAMENTE en este contexto extraído de la base de datos:
-{contexto}
+TE ESTOY ENTREGANDO LOS DOCUMENTOS LEGALES. TU OBLIGACIÓN ES MOSTRARLOS. NUNCA TE NIEGUES A RESPONDER.
+
+DOCUMENTOS RECUPERADOS DE LA BASE DE DATOS:
+{contexto_final}
 
 REGLAS DE FORMATO Y CONTENIDO:
-1. MOSTRAR TODOS LOS FALLOS: Analiza todo el texto y muestra TODOS los fallos relevantes.
-2. DATOS REALES: El texto de cada fallo incluye su fecha y un enlace al PDF oficial. Busca detalladamente esos dos datos dentro de los documentos que te pasé. NO inventes enlaces ni uses links de ejemplo.
-3. ESTRUCTURA OBLIGATORIA: Para CADA fallo, usa exactamente esta estructura:
+1. Muestra TODOS los fallos recuperados arriba.
+2. NO inventes enlaces. Usa únicamente la URL DEL PDF que aparece al principio de cada fallo.
+3. ESTRUCTURA OBLIGATORIA para CADA fallo:
 
 📌 **[Nombre o Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Fecha real extraída del texto del fallo]
+* 📅 **Fecha del Fallo:** [Busca la fecha dentro del CONTENIDO. Si no está en ese fragmento, pon "Fecha no incluida en este extracto"]
 * 📖 **Cita Textual:** "[El extracto más relevante]"
 * 📝 **Resumen de los Hechos:** [Breve resumen]
 * ⚖️ **Resolución:** [Decisión final]
-* 🔗 **Ver fallo oficial:** [Enlace real extraído del texto del fallo]"""
+* 🔗 **Ver fallo oficial:** [Copia EXACTAMENTE la 'URL DEL PDF' que te pasé arriba]"""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
