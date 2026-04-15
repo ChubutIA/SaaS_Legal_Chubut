@@ -5,7 +5,6 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
 import zipfile
-import re  # <--- NUEVO: Herramienta de Python para buscar años y links
 import streamlit as st
 from datetime import datetime, timedelta
 from supabase import create_client, Client
@@ -68,7 +67,7 @@ def verificar_pago_entrante(user_email):
         st.query_params.clear()
 
 # ==========================================
-# PANTALLA DE ACCESO (LOGIN REPARADO)
+# PANTALLA DE ACCESO (LOGIN DIRECTO)
 # ==========================================
 def pantalla_acceso():
     col1, col2, col3 = st.columns([1, 1.8, 1])
@@ -237,7 +236,7 @@ def pantalla_chat():
             st.session_state.user_data = None
             st.rerun()
 
-    @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut...")
+    @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos segundos)...")
     def load_ia():
         if not os.path.exists("MI_BASE_VECTORIAL"):
             import gdown
@@ -271,37 +270,29 @@ def pantalla_chat():
     if chat_actual and chat_actual[-1]["role"] == "user":
         with st.chat_message("assistant"):
             with st.spinner("Buscando fallos y jurisprudencia..."):
-                docs = vdb.similarity_search(chat_actual[-1]["content"], k=4)
+                # AUMENTAMOS k=8 para que la IA lea más partes del documento y llegue al final (donde está el link)
+                docs = vdb.similarity_search(chat_actual[-1]["content"], k=8)
                 
-                # LA MAGIA ESTÁ ACÁ: Extracción forzada del año y el link
-                contexto_partes = []
-                for i, d in enumerate(docs):
-                    archivo_original = d.metadata.get('source', '')
-                    # Busca el año en el nombre del archivo (ej: fallo_2016.txt)
-                    anio_match = re.search(r'(20\d{2}|19\d{2})', archivo_original)
-                    anio_estimado = anio_match.group(1) if anio_match else "Año no detectado"
-                    
-                    contexto_partes.append(f"--- FALLO {i+1} ---\nAÑO DEL ARCHIVO: {anio_estimado}\nCONTENIDO:\n{d.page_content}")
+                # Juntamos los textos de forma limpia y directa
+                ctx = "\n\n".join([d.page_content for d in docs])
                 
-                contexto_final = "\n\n".join(contexto_partes)
-                
-                # INSTRUCCIONES ESTRICTAS Y RASTREADOR DE LINKS
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
-TU ÚNICA MISIÓN ES MOSTRAR LA JURISPRUDENCIA. NO TE NIEGUES A RESPONDER.
+Analiza el siguiente contexto legal extraído de la base de datos:
+{ctx}
 
-DOCUMENTOS OBTENIDOS DE LA BASE DE DATOS:
-{contexto_final}
+REGLAS DE FORMATO Y CONTENIDO:
+1. Debes basarte EXCLUSIVAMENTE en el contexto proporcionado arriba.
+2. Identifica y muestra TODOS los fallos presentes en el texto.
+3. Para cada fallo, busca minuciosamente en su texto la FECHA EXACTA (día, mes y año) y el ENLACE/LINK OFICIAL al PDF.
+4. Usa EXACTAMENTE esta estructura visual con viñetas:
 
-REGLAS ESTRICTAS PARA RESPONDER:
-1. Analiza los documentos y muestra TODOS los fallos recuperados.
-2. ESTRUCTURA OBLIGATORIA para CADA fallo (Usa exactamente estas viñetas):
-
-📌 **[Nombre o Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Usa el "AÑO DEL ARCHIVO" que te di. Si dentro del texto encuentras el día y mes exacto de la sentencia, agrégalo también].
-* 📖 **Cita Textual:** "[El extracto más relevante]"
-* 📝 **Resumen de los Hechos:** [Breve resumen]
-* ⚖️ **Resolución:** [Decisión final]
-* 🔗 **Ver fallo oficial:** [Busca EXHAUSTIVAMENTE dentro del texto del fallo cualquier enlace que comience con "http" o "www". Si lo encuentras, cópialo aquí exactamente. Si el texto no incluye ningún link web, escribe "Enlace en documento completo"]"""
+📌 **[Título o Carátula del Fallo]**
+* 📅 **Fecha del Fallo:** [Escribe la fecha exacta que figura en el texto. Ej: 14 de Abril de 2016. Si no aparece, escribe "Fecha no especificada en el extracto"]
+* 📖 **Cita Textual:** "[Extracto clave del fallo]"
+* 📝 **Resumen de los Hechos:** [Breve resumen de la situación]
+* ⚖️ **Resolución:** [Decisión del tribunal]
+* 🔗 **Ver fallo oficial:** [Pega aquí el enlace web real (http/https) que aparece en el texto del fallo. Si el texto no incluye un link, escribe "Enlace no incluido en el extracto"]
+"""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
