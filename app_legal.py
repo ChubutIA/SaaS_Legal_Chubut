@@ -141,6 +141,15 @@ def pantalla_chat():
     datos = db_res.data[0]
     hoy = datetime.now().date()
     
+    # FORMATEO DE FECHAS (Día/Mes/Año) PARA MOSTRAR AL USUARIO
+    fecha_trial_formateada = ""
+    if datos.get("vencimiento_trial"):
+        fecha_trial_formateada = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    fecha_pro_formateada = ""
+    if datos.get("vencimiento_pro"):
+        fecha_pro_formateada = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").strftime("%d/%m/%Y")
+
     # VERIFICACIÓN DE ACCESOS
     es_pro = False
     if datos.get("plan") == "pro" and datos.get("vencimiento_pro"):
@@ -160,7 +169,7 @@ def pantalla_chat():
                 <p>Tu semana de prueba gratuita terminó. Activá el Plan Pro para seguir consultando jurisprudencia de Chubut.</p>
             </div>
         """, unsafe_allow_html=True)
-        st.link_button("🚀 Activar Plan Pro (6,99 USD)", "https://mpago.la/1f481Uj", use_container_width=True)
+        st.link_button("🚀 Activar Plan Pro ($9.500 ARS)", "https://mpago.la/1f481Uj", use_container_width=True)
         if st.button("Cerrar Sesión"):
             supabase.auth.sign_out()
             st.session_state.user_data = None
@@ -173,19 +182,24 @@ def pantalla_chat():
         st.divider()
         st.markdown(f"👤 **{datos['usuario']}**")
         
-        # INDICADOR DE PLAN
+        # INDICADOR DE PLAN CON FECHA FORMATEADA
         if es_pro: 
-            st.warning(f"💎 Plan PRO hasta {datos['vencimiento_pro']}")
+            st.warning(f"💎 Plan PRO hasta el {fecha_pro_formateada}")
         else: 
-            st.info(f"🎁 Prueba Gratis hasta el {datos['vencimiento_trial']}")
+            st.info(f"🎁 Prueba Gratis hasta el {fecha_trial_formateada}")
         
         st.divider()
         
-        # UPSELL DE VENTA CONSTANTE
+        # UPSELL DE VENTA CONSTANTE (CAJA ESTILIZADA)
         if not es_pro:
-            st.markdown("🚀 **Plan Mensual Pro**")
-            st.markdown("<small style='color: gray;'>Consultas ilimitadas por 6,99 USD<br>(Facturación en ARS al dólar oficial)</small>", unsafe_allow_html=True)
-            st.link_button("Pasarme a Pro", "https://mpago.la/1f481Uj", type="primary", use_container_width=True)
+            st.markdown("""
+                <div style="border: 2px solid #1E3A8A; border-radius: 10px; padding: 15px; background-color: #f8fafc; text-align: center; margin-bottom: 10px;">
+                    <h4 style="color: #1E3A8A; margin-top: 0; margin-bottom: 5px;">🚀 Plan Mensual Pro</h4>
+                    <p style="font-size: 1.2rem; font-weight: bold; color: #0f172a; margin: 0;">$9.500 ARS <span style="font-size: 0.9rem; font-weight: normal;">/ mes</span></p>
+                    <p style="font-size: 0.85rem; color: #475569; margin-top: 5px; margin-bottom: 0;">Consultas ilimitadas de jurisprudencia.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            st.link_button("💳 Pasarme a Pro", "https://mpago.la/1f481Uj", type="primary", use_container_width=True)
             st.divider()
 
         if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
@@ -225,7 +239,7 @@ def pantalla_chat():
     vdb, llm = load_ia()
     chat_actual = historial.get(st.session_state.sesion_actual, [])
 
-    # INTERFAZ PRINCIPAL (SALUDO MEJORADO)
+    # INTERFAZ PRINCIPAL
     if not chat_actual:
         st.markdown(f"""
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60vh; text-align: center;">
@@ -240,7 +254,6 @@ def pantalla_chat():
     if prompt := st.chat_input("¿Qué duda legal tenés sobre Chubut?"):
         chat_actual.append({"role": "user", "content": prompt})
         
-        # GUARDADO EN BASE DE DATOS ANTES DE RECARGAR (SOLUCION DEL ERROR)
         historial[st.session_state.sesion_actual] = chat_actual
         supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
         st.rerun()
@@ -251,20 +264,24 @@ def pantalla_chat():
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=4)
                 contexto = "\n\n".join([d.page_content for d in docs])
                 
-                # REGLAS ESTRICTAS DE RESPUESTA
+                # INSTRUCCIONES MEJORADAS (Múltiples fallos, no alucinar links)
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
-Contexto legal encontrado: {contexto}
+Basate ÚNICAMENTE en el siguiente contexto legal extraído de la base de datos para responder:
+{contexto}
 
-REGLAS DE FORMATO:
-1. VISUALIZACIÓN DE FALLOS: Si el usuario pide jurisprudencia o un fallo, usá EXACTAMENTE este formato visual con emojis y viñetas:
-📌 **[Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Fecha]
-* 📖 **Cita Textual:** "[Extracto clave]"
-* 📝 **Resumen de los Hechos:** [Resumen]
-* ⚖️ **Resolución:** [Decisión]
-* 🔗 **Ver fallo oficial:** https://pdf.ai/
+REGLAS DE FORMATO Y CONTENIDO:
+1. MOSTRAR TODOS LOS FALLOS: El contexto contiene información de varios fallos. Debes analizar todo el texto y mostrar TODOS los fallos que sean relevantes para la consulta. No te limites a uno solo.
+2. DATOS REALES: No inventes fechas, enlaces ni resoluciones. Si un dato no está en el contexto, escribe "No especificado en el documento".
+3. ESTRUCTURA OBLIGATORIA: Para CADA fallo que cites, usa exactamente esta estructura:
 
-2. ANÁLISIS: Respondé fluido en párrafos si es una consulta general. Si citás un fallo, aplicá estrictamente la Regla 1."""
+📌 **[Nombre de la Carátula o Título del Fallo]**
+* 📅 **Fecha del Fallo:** [Fecha real extraída del contexto]
+* 📖 **Cita Textual:** "[El extracto más relevante del fallo]"
+* 📝 **Resumen de los Hechos:** [Breve resumen de la situación]
+* ⚖️ **Resolución:** [Decisión final del tribunal]
+* 🔗 **Fuente:** [Si el contexto incluye un enlace real o número de expediente, ponlo aquí. Si no lo tiene, pon "Enlace no disponible en la base de datos"]
+
+4. ANÁLISIS: Puedes hacer una breve introducción antes de listar los fallos, pero la jurisprudencia siempre debe ir con la estructura de la Regla 3."""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
@@ -276,7 +293,6 @@ REGLAS DE FORMATO:
                 st.markdown(respuesta.content)
                 chat_actual.append({"role": "assistant", "content": respuesta.content})
                 
-                # GUARDAR RESPUESTA Y RENOMBRAR CHAT
                 historial[st.session_state.sesion_actual] = chat_actual
                 
                 sesion_vieja = st.session_state.sesion_actual
