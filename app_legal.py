@@ -94,25 +94,56 @@ def pantalla_acceso():
             new_user = st.text_input("Nombre y Apellido")
             new_email = st.text_input("Correo Electrónico")
             new_pass = st.text_input("Crea una contraseña", type="password")
-            if st.button("Crear Cuenta y Probar Gratis (7 días)", use_container_width=True):
-                try:
-                    # Cálculo automático de la semana de prueba
-                    venc_trial = (datetime.now() + timedelta(days=7)).date()
-                    supabase.auth.sign_up({"email": new_email, "password": new_pass, "options": {"data": {"display_name": new_user}}})
-                    
-                    supabase.table("usuarios").insert({
-                        "usuario": new_user, "email": new_email, "plan": "gratis",
-                        "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
-                    }).execute()
-                    st.success("¡Cuenta creada! Por favor, confirmá tu email.")
-                except Exception as e: st.error(f"Error: {e}")
+            confirm_pass = st.text_input("Confirmar contraseña", type="password")
+            
+            if st.button("Crear Cuenta", use_container_width=True):
+                # Validaciones básicas de seguridad
+                if not new_user or not new_email or not new_pass or not confirm_pass:
+                    st.warning("⚠️ Por favor, completá todos los campos.")
+                elif new_pass != confirm_pass:
+                    st.error("❌ Las contraseñas no coinciden. Intentá de nuevo.")
+                elif len(new_pass) < 6:
+                    st.error("❌ La contraseña debe tener al menos 6 caracteres.")
+                else:
+                    # Verificar que el usuario y el correo sean únicos
+                    with st.spinner("Verificando datos..."):
+                        check_user = supabase.table("usuarios").select("usuario").eq("usuario", new_user).execute()
+                        check_email = supabase.table("usuarios").select("email").eq("email", new_email).execute()
+                        
+                        if len(check_user.data) > 0:
+                            st.error("⚠️ Ese Nombre ya está en uso. Por favor, elegí otro.")
+                        elif len(check_email.data) > 0:
+                            st.error("⚠️ Este correo electrónico ya está registrado. Iniciá sesión o usá otro.")
+                        else:
+                            # Si todo está perfecto, creamos la cuenta
+                            try:
+                                # Cálculo automático de la semana de prueba
+                                venc_trial = (datetime.now() + timedelta(days=7)).date()
+                                
+                                supabase.auth.sign_up({
+                                    "email": new_email, 
+                                    "password": new_pass, 
+                                    "options": {"data": {"display_name": new_user}}
+                                })
+                                
+                                supabase.table("usuarios").insert({
+                                    "usuario": new_user, 
+                                    "email": new_email, 
+                                    "plan": "gratis",
+                                    "vencimiento_trial": str(venc_trial), 
+                                    "historial": {"Nueva Consulta": []}
+                                }).execute()
+                                
+                                st.success("✅ ¡Cuenta creada con éxito! Ya podés iniciar sesión en la pestaña 'Entrar'.")
+                            except Exception as e: 
+                                st.error(f"Error técnico al crear la cuenta: {e}")
 
 # ==========================================
 # PANTALLA DE CHAT (ACCESO CONTROLADO)
 # ==========================================
 def pantalla_chat():
     user = st.session_state.user_data
-    verificar_pago_entrante(user.email) # <--- Automatización de pago al volver
+    verificar_pago_entrante(user.email) # Automatización de pago al volver
     
     db_res = supabase.table("usuarios").select("*").eq("email", user.email).execute()
     if not db_res.data:
