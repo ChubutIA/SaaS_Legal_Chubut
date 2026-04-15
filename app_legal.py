@@ -5,6 +5,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
 import zipfile
+import re  # <--- NUEVO: Herramienta de Python para buscar años y links
 import streamlit as st
 from datetime import datetime, timedelta
 from supabase import create_client, Client
@@ -67,7 +68,7 @@ def verificar_pago_entrante(user_email):
         st.query_params.clear()
 
 # ==========================================
-# PANTALLA DE ACCESO (PROTEGIDA CON ST.FORM)
+# PANTALLA DE ACCESO (LOGIN REPARADO)
 # ==========================================
 def pantalla_acceso():
     col1, col2, col3 = st.columns([1, 1.8, 1])
@@ -77,18 +78,19 @@ def pantalla_acceso():
         tab_in, tab_reg = st.tabs(["🔑 Entrar", "📝 Registrarse"])
         
         with tab_in:
-            with st.form("form_login"):
-                email = st.text_input("Email")
-                password = st.text_input("Contraseña", type="password")
-                btn_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
-                
-                if btn_login:
+            email = st.text_input("Email", key="login_email")
+            password = st.text_input("Contraseña", type="password", key="login_pass")
+            
+            if st.button("Iniciar Sesión", type="primary", use_container_width=True):
+                if email and password:
                     try:
                         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                         st.session_state.user_data = res.user
                         st.rerun()
                     except: 
-                        st.error("Email o contraseña incorrectos, o falta confirmar el correo.")
+                        st.error("Email o contraseña incorrectos.")
+                else:
+                    st.warning("Completá todos los campos.")
 
         with tab_reg:
             with st.form("form_registro"):
@@ -271,33 +273,35 @@ def pantalla_chat():
             with st.spinner("Buscando fallos y jurisprudencia..."):
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=4)
                 
-                # --- EXTRACCIÓN EXPLÍCITA DEL LINK PARA ENTREGÁRSELO A LA IA ---
+                # LA MAGIA ESTÁ ACÁ: Extracción forzada del año y el link
                 contexto_partes = []
                 for i, d in enumerate(docs):
-                    # Sacamos el link real de los metadatos en Python
-                    link_real = d.metadata.get('source', 'Enlace no disponible') if d.metadata else 'Enlace no disponible'
-                    contexto_partes.append(f"--- FALLO {i+1} ---\n🔗 URL DEL PDF: {link_real}\n📄 CONTENIDO: {d.page_content}")
+                    archivo_original = d.metadata.get('source', '')
+                    # Busca el año en el nombre del archivo (ej: fallo_2016.txt)
+                    anio_match = re.search(r'(20\d{2}|19\d{2})', archivo_original)
+                    anio_estimado = anio_match.group(1) if anio_match else "Año no detectado"
+                    
+                    contexto_partes.append(f"--- FALLO {i+1} ---\nAÑO DEL ARCHIVO: {anio_estimado}\nCONTENIDO:\n{d.page_content}")
                 
                 contexto_final = "\n\n".join(contexto_partes)
                 
-                # --- INSTRUCCIONES ESTRICTAS (ANTI-BERRINCHES) ---
+                # INSTRUCCIONES ESTRICTAS Y RASTREADOR DE LINKS
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
-TE ESTOY ENTREGANDO LOS DOCUMENTOS LEGALES. TU OBLIGACIÓN ES MOSTRARLOS. NUNCA TE NIEGUES A RESPONDER.
+TU ÚNICA MISIÓN ES MOSTRAR LA JURISPRUDENCIA. NO TE NIEGUES A RESPONDER.
 
-DOCUMENTOS RECUPERADOS DE LA BASE DE DATOS:
+DOCUMENTOS OBTENIDOS DE LA BASE DE DATOS:
 {contexto_final}
 
-REGLAS DE FORMATO Y CONTENIDO:
-1. Muestra TODOS los fallos recuperados arriba.
-2. NO inventes enlaces. Usa únicamente la URL DEL PDF que aparece al principio de cada fallo.
-3. ESTRUCTURA OBLIGATORIA para CADA fallo:
+REGLAS ESTRICTAS PARA RESPONDER:
+1. Analiza los documentos y muestra TODOS los fallos recuperados.
+2. ESTRUCTURA OBLIGATORIA para CADA fallo (Usa exactamente estas viñetas):
 
 📌 **[Nombre o Título del Fallo]**
-* 📅 **Fecha del Fallo:** [Busca la fecha dentro del CONTENIDO. Si no está en ese fragmento, pon "Fecha no incluida en este extracto"]
+* 📅 **Fecha del Fallo:** [Usa el "AÑO DEL ARCHIVO" que te di. Si dentro del texto encuentras el día y mes exacto de la sentencia, agrégalo también].
 * 📖 **Cita Textual:** "[El extracto más relevante]"
 * 📝 **Resumen de los Hechos:** [Breve resumen]
 * ⚖️ **Resolución:** [Decisión final]
-* 🔗 **Ver fallo oficial:** [Copia EXACTAMENTE la 'URL DEL PDF' que te pasé arriba]"""
+* 🔗 **Ver fallo oficial:** [Busca EXHAUSTIVAMENTE dentro del texto del fallo cualquier enlace que comience con "http" o "www". Si lo encuentras, cópialo aquí exactamente. Si el texto no incluye ningún link web, escribe "Enlace en documento completo"]"""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
