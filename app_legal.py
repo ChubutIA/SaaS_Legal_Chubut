@@ -77,8 +77,8 @@ def pantalla_acceso():
         tab_in, tab_reg = st.tabs(["🔑 Entrar", "📝 Registrarse"])
         
         with tab_in:
-            email = st.text_input("Email", key="login_email")
-            password = st.text_input("Contraseña", type="password", key="login_pass")
+            email = st.text_input("Email", key="log_email")
+            password = st.text_input("Contraseña", type="password", key="log_pass")
             
             if st.button("Iniciar Sesión", type="primary", use_container_width=True):
                 if email and password:
@@ -92,41 +92,39 @@ def pantalla_acceso():
                     st.warning("Completá todos los campos.")
 
         with tab_reg:
-            with st.form("form_registro"):
-                new_user = st.text_input("Nombre y Apellido")
-                new_email = st.text_input("Correo Electrónico")
-                new_pass = st.text_input("Crea una contraseña", type="password")
-                confirm_pass = st.text_input("Confirmar contraseña", type="password")
-                btn_reg = st.form_submit_button("Crear Cuenta", use_container_width=True)
-                
-                if btn_reg:
-                    if not new_user or not new_email or not new_pass or not confirm_pass:
-                        st.warning("⚠️ Por favor, completá todos los campos.")
-                    elif new_pass != confirm_pass:
-                        st.error("❌ Las contraseñas no coinciden. Intentá de nuevo.")
-                    elif len(new_pass) < 6:
-                        st.error("❌ La contraseña debe tener al menos 6 caracteres.")
+            new_user = st.text_input("Nombre y Apellido", key="reg_user")
+            new_email = st.text_input("Correo Electrónico", key="reg_email")
+            new_pass = st.text_input("Crea una contraseña", type="password", key="reg_pass")
+            confirm_pass = st.text_input("Confirmar contraseña", type="password", key="reg_confirm")
+            
+            if st.button("Crear Cuenta", use_container_width=True):
+                if not new_user or not new_email or not new_pass or not confirm_pass:
+                    st.warning("⚠️ Por favor, completá todos los campos.")
+                elif new_pass != confirm_pass:
+                    st.error("❌ Las contraseñas no coinciden. Intentá de nuevo.")
+                elif len(new_pass) < 6:
+                    st.error("❌ La contraseña debe tener al menos 6 caracteres.")
+                else:
+                    check_user = supabase.table("usuarios").select("usuario").eq("usuario", new_user).execute()
+                    check_email = supabase.table("usuarios").select("email").eq("email", new_email).execute()
+                    
+                    if len(check_user.data) > 0:
+                        st.error("⚠️ Ese Nombre ya está en uso. Por favor, elegí otro.")
+                    elif len(check_email.data) > 0:
+                        st.error("⚠️ Este correo electrónico ya está registrado.")
                     else:
-                        check_user = supabase.table("usuarios").select("usuario").eq("usuario", new_user).execute()
-                        check_email = supabase.table("usuarios").select("email").eq("email", new_email).execute()
-                        
-                        if len(check_user.data) > 0:
-                            st.error("⚠️ Ese Nombre ya está en uso. Por favor, elegí otro.")
-                        elif len(check_email.data) > 0:
-                            st.error("⚠️ Este correo electrónico ya está registrado.")
-                        else:
-                            try:
-                                venc_trial = (datetime.now() + timedelta(days=7)).date()
-                                supabase.auth.sign_up({"email": new_email, "password": new_pass, "options": {"data": {"display_name": new_user}}})
-                                
-                                supabase.table("usuarios").insert({
-                                    "usuario": new_user, "email": new_email, "plan": "gratis",
-                                    "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
-                                }).execute()
-                                
-                                st.success("✅ ¡Cuenta creada con éxito! Por favor, revisá tu correo y confirmá tu email.")
-                            except Exception as e: 
-                                st.error(f"Error técnico: {e}")
+                        try:
+                            venc_trial = (datetime.now() + timedelta(days=7)).date()
+                            supabase.auth.sign_up({"email": new_email, "password": new_pass, "options": {"data": {"display_name": new_user}}})
+                            
+                            supabase.table("usuarios").insert({
+                                "usuario": new_user, "email": new_email, "plan": "gratis",
+                                "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
+                            }).execute()
+                            
+                            st.success("✅ ¡Cuenta creada con éxito! Ya podés iniciar sesión en la pestaña 'Entrar'.")
+                        except Exception as e: 
+                            st.error(f"Error técnico: {e}")
 
 # ==========================================
 # PANTALLA DE CHAT
@@ -240,7 +238,10 @@ def pantalla_chat():
     def load_ia():
         if not os.path.exists("MI_BASE_VECTORIAL"):
             import gdown
-            file_id = "188KmlAHVcg4bbomeXG7Z6mP6dUm0Fqju"
+            
+            # 👇👇👇 ACÁ VA TU ID DE GOOGLE DRIVE NUEVO 👇👇👇
+            file_id = "1pw_mJl3qyESz9WFq9XC2Q7MRBZiOTp59" 
+            
             gdown.download(f"https://drive.google.com/uc?id={file_id}", "base.zip", quiet=False)
             with zipfile.ZipFile("base.zip", 'r') as zr: zr.extractall()
         emb = OpenAIEmbeddings(model="text-embedding-3-small")
@@ -270,29 +271,34 @@ def pantalla_chat():
     if chat_actual and chat_actual[-1]["role"] == "user":
         with st.chat_message("assistant"):
             with st.spinner("Buscando fallos y jurisprudencia..."):
-                # AUMENTAMOS k=8 para que la IA lea más partes del documento y llegue al final (donde está el link)
-                docs = vdb.similarity_search(chat_actual[-1]["content"], k=8)
+                docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 
-                # Juntamos los textos de forma limpia y directa
-                ctx = "\n\n".join([d.page_content for d in docs])
+                # PLAN B EN ACCIÓN: LEEMOS LA METADATA INYECTADA
+                contexto_partes = []
+                for i, d in enumerate(docs):
+                    link_real = d.metadata.get('link_pdf', 'Enlace no disponible')
+                    anio_real = d.metadata.get('anio', 'Año no detectado')
+                    
+                    contexto_partes.append(f"--- FALLO {i+1} ---\n📅 AÑO: {anio_real}\n🔗 URL DEL PDF: {link_real}\n📄 CONTENIDO:\n{d.page_content}")
+                
+                contexto_final = "\n\n".join(contexto_partes)
                 
                 instruccion = f"""Sos Chubut.IA, asistente jurídico de la Provincia de Chubut.
-Analiza el siguiente contexto legal extraído de la base de datos:
-{ctx}
+TU ÚNICA MISIÓN ES MOSTRAR LA JURISPRUDENCIA. NO TE NIEGUES A RESPONDER.
 
-REGLAS DE FORMATO Y CONTENIDO:
-1. Debes basarte EXCLUSIVAMENTE en el contexto proporcionado arriba.
-2. Identifica y muestra TODOS los fallos presentes en el texto.
-3. Para cada fallo, busca minuciosamente en su texto la FECHA EXACTA (día, mes y año) y el ENLACE/LINK OFICIAL al PDF.
-4. Usa EXACTAMENTE esta estructura visual con viñetas:
+DOCUMENTOS OBTENIDOS DE LA BASE DE DATOS (CON METADATOS):
+{contexto_final}
 
-📌 **[Título o Carátula del Fallo]**
-* 📅 **Fecha del Fallo:** [Escribe la fecha exacta que figura en el texto. Ej: 14 de Abril de 2016. Si no aparece, escribe "Fecha no especificada en el extracto"]
-* 📖 **Cita Textual:** "[Extracto clave del fallo]"
-* 📝 **Resumen de los Hechos:** [Breve resumen de la situación]
-* ⚖️ **Resolución:** [Decisión del tribunal]
-* 🔗 **Ver fallo oficial:** [Pega aquí el enlace web real (http/https) que aparece en el texto del fallo. Si el texto no incluye un link, escribe "Enlace no incluido en el extracto"]
-"""
+REGLAS ESTRICTAS PARA RESPONDER:
+1. Analiza los documentos y muestra TODOS los fallos recuperados.
+2. ESTRUCTURA OBLIGATORIA para CADA fallo (Usa exactamente estas viñetas):
+
+📌 **[Nombre o Título del Fallo]**
+* 📅 **Fecha del Fallo:** [Si el contenido tiene el día y el mes exacto, ponlos junto al "AÑO" proporcionado en los metadatos. Si no encuentras el día/mes exacto, escribe el AÑO].
+* 📖 **Cita Textual:** "[El extracto más relevante]"
+* 📝 **Resumen de los Hechos:** [Breve resumen]
+* ⚖️ **Resolución:** [Decisión final]
+* 🔗 **Ver fallo oficial:** [Copia EXACTAMENTE la 'URL DEL PDF' que te pasé en los metadatos de arriba]"""
                 
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
