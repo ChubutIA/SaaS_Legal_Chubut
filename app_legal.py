@@ -48,7 +48,6 @@ OPENAI_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 
-# --- ASPIRADORA DE BASURA (Limpia espacios y comillas invisibles) ---
 if OPENAI_KEY: OPENAI_KEY = str(OPENAI_KEY).strip().replace('"', '').replace("'", "")
 if SUPABASE_URL: SUPABASE_URL = str(SUPABASE_URL).strip().replace('"', '').replace("'", "").rstrip('/')
 if SUPABASE_KEY: SUPABASE_KEY = str(SUPABASE_KEY).strip().replace('"', '').replace("'", "")
@@ -220,8 +219,21 @@ def pantalla_chat():
             if "chat_iniciado" in st.session_state: del st.session_state["chat_iniciado"]
             st.rerun()
 
-    @st.cache_resource
+    # ACÁ ESTÁ LA MAGIA QUE DESCARGA LA BASE DE DATOS
+    @st.cache_resource(show_spinner="Descargando y conectando el cerebro jurídico (esto puede tardar unos minutos)...")
     def load_ia():
+        if not os.path.exists("MI_BASE_VECTORIAL"):
+            import gdown
+            import zipfile
+            
+            # 👇👇👇 TU LINK DE GOOGLE DRIVE YA ESTÁ PUESTO ACÁ 👇👇👇
+            link_drive = "https://drive.google.com/file/d/188KmlAHVcg4bbomeXG7Z6mP6dUm0Fqju/view?usp=sharing"
+            
+            if "drive.google.com" in link_drive:
+                gdown.download(link_drive, "base.zip", quiet=False, fuzzy=True)
+                with zipfile.ZipFile("base.zip", 'r') as zip_ref:
+                    zip_ref.extractall()
+                    
         emb = OpenAIEmbeddings(model="text-embedding-3-small")
         vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
         return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
