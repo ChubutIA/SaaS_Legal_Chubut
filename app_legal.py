@@ -5,7 +5,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
 import zipfile
-import requests # <-- NUEVO MOTOR DE DESCARGAS
+import urllib.request # <-- EL DESCARGADOR NATIVO OFICIAL
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -147,29 +147,17 @@ def pantalla_acceso():
                                 st.error(f"Error técnico: {e}")
 
 # ==========================================
-# CEREBRO GLOBAL (DESCARGADOR NATIVO ANTI-BLOQUEOS)
+# CEREBRO GLOBAL (DESCARGA DIRECTA DE GITHUB RELEASES)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
-        file_id = "1UdL0oJCkWw57t-LSLRmYUTzSrAs4ruMS" 
-        url = f"https://drive.google.com/uc?export=download&id={file_id}"
         
-        # Script Nativo que engaña a Google Drive
-        session = requests.Session()
-        response = session.get(url, stream=True)
-        token = None
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                token = value
-                break
-        if token:
-            url = f"https://drive.google.com/uc?export=download&confirm={token}&id={file_id}"
-            response = session.get(url, stream=True)
-            
-        with open("base.zip", "wb") as f:
-            for chunk in response.iter_content(32768):
-                if chunk: f.write(chunk)
+        # 👇👇👇 PEGÁ EL ENLACE QUE COPIASTE DE GITHUB RELEASES ACÁ 👇👇👇
+        url_directa = "https://github.com/ChubutIA/SaaS_Legal_Chubut/releases/download/v1.0/MI_BASE_VECTORIAL.zip"
+        
+        # Descarga directa y limpia de GitHub
+        urllib.request.urlretrieve(url_directa, "base.zip")
                 
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
