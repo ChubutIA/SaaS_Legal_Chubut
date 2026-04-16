@@ -7,6 +7,7 @@ import os
 import zipfile
 import urllib.request
 import time  
+import json # <-- NUEVA LIBRERÍA PARA LA VALIJA ÚNICA
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -55,19 +56,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. SISTEMA BLINDADO DE COOKIES CON PEAJE PARA EL F5
-cookie_manager = stx.CookieManager()
+# 2. SISTEMA BLINDADO DE COOKIES (VALIJA ÚNICA)
+cookie_manager = stx.CookieManager(key="gestor_cookies")
 
-# Obligamos a la app a esperar a que el navegador mande TODAS las cookies
 mis_cookies = cookie_manager.get_all()
 if mis_cookies is None:
-    st.info("🔄 Sincronizando sesión segura...")
+    st.markdown("<h4 style='text-align: center; color: gray; margin-top: 50px;'>⏳ Sincronizando sesión segura...</h4>", unsafe_allow_html=True)
     st.stop()
-
-# Leemos las cookies directamente del paquete seguro
-access_token = mis_cookies.get("supa_access")
-refresh_token = mis_cookies.get("supa_refresh")
-galleta_invitado = mis_cookies.get("chubut_invitado")
 
 # 3. VARIABLES DE ENTORNO Y SERVICIOS
 OPENAI_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
@@ -81,21 +76,36 @@ else:
     os.environ["OPENAI_API_KEY"] = OPENAI_KEY
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- RECUPERACIÓN AUTOMÁTICA DE SESIÓN ---
+# --- RECUPERACIÓN AUTOMÁTICA DE SESIÓN (F5 FIX) ---
 if "user_data" not in st.session_state: 
     st.session_state.user_data = None
 
+# Abrimos la "Valija Única" de cookies si existe
+session_data_str = mis_cookies.get("chubut_session")
+access_token = None
+refresh_token = None
+
+if session_data_str:
+    try:
+        session_data = json.loads(session_data_str)
+        access_token = session_data.get("access")
+        refresh_token = session_data.get("refresh")
+    except:
+        pass
+
+# Si apretamos F5, metemos los tokens de la valija en Supabase
 if access_token and refresh_token and st.session_state.user_data is None:
     try:
         res = supabase.auth.set_session(access_token, refresh_token)
         st.session_state.user_data = res.user
     except Exception:
-        pass 
+        pass # Si expiró, seguimos de largo
 
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 if "consultas_gastadas" not in st.session_state: st.session_state.consultas_gastadas = 0
 
+galleta_invitado = mis_cookies.get("chubut_invitado")
 if galleta_invitado:
     st.session_state.consultas_gastadas = max(st.session_state.consultas_gastadas, int(galleta_invitado))
 
@@ -167,24 +177,30 @@ def pantalla_acceso():
 
                 if btn_login:
                     if email and password:
-                        with st.spinner("Autenticando y guardando sesión segura..."):
+                        with st.spinner("Autenticando..."):
                             try:
                                 res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                                
+                                # GUARDAMOS LA VALIJA ÚNICA DE SESIÓN (Evita el bug de Streamlit)
+                                session_data_to_save = {
+                                    "access": res.session.access_token,
+                                    "refresh": res.session.refresh_token
+                                }
                                 vencimiento_sesion = datetime.now() + timedelta(days=30)
-                                cookie_manager.set("supa_access", res.session.access_token, expires_at=vencimiento_sesion, key="set_acc_log")
-                                cookie_manager.set("supa_refresh", res.session.refresh_token, expires_at=vencimiento_sesion, key="set_ref_log")
+                                cookie_manager.set("chubut_session", json.dumps(session_data_to_save), expires_at=vencimiento_sesion, key="set_login_cookie")
                                 
                                 st.session_state.temp_user = res.user
                                 st.session_state.login_exitoso = True
-                                st.rerun()
+                                # ¡Importante! NO usamos st.rerun() acá. Dejamos que el script termine para que el navegador guarde la cookie.
                             except Exception as e:
                                 st.error(f"❌ Error al iniciar sesión. Verificá tus credenciales o si confirmaste tu email.")
                     else:
                         st.warning("⚠️ Completá ambos campos.")
 
             if st.session_state.get("login_exitoso"):
-                st.success("✅ ¡Cookies de seguridad guardadas con éxito!")
-                if st.button("👉 Entrar a mi cuenta", type="primary", use_container_width=True):
+                st.success("✅ ¡Credenciales verificadas y sesión segura lista!")
+                st.info("👆 Hacé clic abajo para entrar (Esto asegura que no se pierda tu sesión si refrescás la página).")
+                if st.button("👉 ENTRAR A MI CUENTA", type="primary", use_container_width=True):
                     st.session_state.user_data = st.session_state.temp_user
                     st.session_state.show_login = False
                     st.session_state.login_exitoso = False
@@ -232,7 +248,10 @@ def pantalla_acceso():
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
+        
+        # 👇👇👇 PEGÁ EL ENLACE QUE COPIASTE DE GITHUB RELEASES ACÁ 👇👇👇
         url_directa = "https://github.com/ChubutIA/SaaS_Legal_Chubut/releases/download/v1.0/MI_BASE_VECTORIAL.zip"
+        
         urllib.request.urlretrieve(url_directa, "base.zip")
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
@@ -268,7 +287,6 @@ def pantalla_invitado():
             </div>
         """, unsafe_allow_html=True)
         
-        # BOTONES DE BÚSQUEDA RÁPIDA
         st.markdown("<p style='text-align: center; color: #9CA3AF; font-size: 0.9rem; margin-top: 20px;'>💡 Pruebe con alguna de estas sugerencias:</p>", unsafe_allow_html=True)
         st.markdown("<div class='botones-sugerencia'>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
@@ -291,7 +309,6 @@ def pantalla_invitado():
         for m in st.session_state.guest_history:
             with st.chat_message(m["role"]): st.markdown(m["content"])
             
-        # BOTÓN DE EXPORTAR
         st.markdown("---")
         chat_str = f"--- CHUBUT.IA | REPORTE LEGAL ---\nFecha: {datetime.now().strftime('%d/%m/%Y')}\n\n"
         for msg in st.session_state.guest_history:
@@ -334,7 +351,7 @@ def pantalla_invitado():
                 
                 st.session_state.consultas_gastadas += 1
                 vencimiento = datetime.now() + timedelta(days=365)
-                cookie_manager.set("chubut_invitado", str(st.session_state.consultas_gastadas), expires_at=vencimiento, key="set_inv")
+                cookie_manager.set("chubut_invitado", str(st.session_state.consultas_gastadas), expires_at=vencimiento, key="set_guest_cookie")
                 
                 st.markdown("---")
                 if st.button("🚀 ¡Excelente! Quiero crear mi cuenta gratis para seguir consultando", type="primary", use_container_width=True):
@@ -379,13 +396,12 @@ def pantalla_chat():
             </div>
         """, unsafe_allow_html=True)
         
+        # 👇 ACÁ ESTÁ TU PRIMER LINK DE MERCADO PAGO 👇
         st.link_button("🚀 Activar Plan Pro ($6.500 ARS)", "https://mpago.la/2nDaBRx", use_container_width=True)
         
         if st.button("Cerrar Sesión"):
             supabase.auth.sign_out()
-            cookie_manager.delete("supa_access", key="del_acc_exp")
-            cookie_manager.delete("supa_refresh", key="del_ref_exp")
-            time.sleep(1) 
+            cookie_manager.delete("chubut_session", key="del_session_exp")
             st.session_state.user_data = None
             st.rerun()
         st.stop()
@@ -411,6 +427,7 @@ def pantalla_chat():
                 </div>
             """, unsafe_allow_html=True)
             
+            # 👇 ACÁ ESTÁ TU SEGUNDO LINK DE MERCADO PAGO 👇
             st.link_button("💳 Pasarme a Pro", "https://mpago.la/2nDaBRx", type="primary", use_container_width=True)
             st.divider()
 
@@ -441,9 +458,7 @@ def pantalla_chat():
         
         if st.button("Cerrar Sesión", use_container_width=True):
             supabase.auth.sign_out()
-            cookie_manager.delete("supa_access", key="del_acc_out")
-            cookie_manager.delete("supa_refresh", key="del_ref_out")
-            time.sleep(1)
+            cookie_manager.delete("chubut_session", key="del_session_out")
             st.session_state.user_data = None
             st.rerun()
             
@@ -459,7 +474,6 @@ def pantalla_chat():
             </div>
         """, unsafe_allow_html=True)
         
-        # BOTONES DE BÚSQUEDA RÁPIDA LOGUEADOS
         st.markdown("<p style='text-align: center; color: #9CA3AF; font-size: 0.9rem; margin-top: 20px;'>💡 Pruebe con alguna de estas sugerencias:</p>", unsafe_allow_html=True)
         st.markdown("<div class='botones-sugerencia'>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
@@ -490,7 +504,6 @@ def pantalla_chat():
         for m in chat_actual:
             with st.chat_message(m["role"]): st.markdown(m["content"])
             
-        # BOTÓN DE EXPORTAR LOGUEADOS
         st.markdown("---")
         chat_str = f"--- CHUBUT.IA | REPORTE LEGAL ---\nConsulta: {st.session_state.sesion_actual}\nFecha: {datetime.now().strftime('%d/%m/%Y')}\n\n"
         for msg in chat_actual:
