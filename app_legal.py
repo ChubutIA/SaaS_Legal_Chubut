@@ -59,18 +59,18 @@ if "user_data" not in st.session_state: st.session_state.user_data = None
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 
-# FIX DEL CONTADOR: Sincronizar Cookie con Estado en Tiempo Real
+# LECTURA DE COOKIES EN TIEMPO REAL
 if "consultas_gastadas" not in st.session_state:
     galleta = cookie_manager.get(cookie="consultas_invitado")
     st.session_state.consultas_gastadas = int(galleta) if galleta else 0
 
 # ==========================================
-# INSTRUCCIÓN ESTRICTA PARA LA IA (CHALECO DE FUERZA)
+# INSTRUCCIÓN ESTRICTA PARA LA IA
 # ==========================================
 def generar_instruccion_ia(contexto):
     return f"""Sos Chubut.IA, un asistente jurídico estrictamente enfocado en la Provincia de Chubut.
 TU ÚNICA MISIÓN ES MOSTRAR JURISPRUDENCIA.
-REGLA DE ORO: Si el usuario te saluda, te hace charla, o te pide cosas fuera del ámbito legal (ej: películas, recetas, noticias generales), DEBES NEGARTE CORTÉSMENTE y recordarle que solo estás capacitado para buscar fallos legales de Chubut.
+REGLA DE ORO: Si el usuario te saluda, te hace charla, o te pide cosas fuera del ámbito legal (ej: películas, recetas, noticias), DEBES NEGARTE CORTÉSMENTE y recordarle que solo estás capacitado para buscar fallos legales de Chubut.
 
 CONTEXTO DE LA BASE DE DATOS:
 {contexto}
@@ -127,8 +127,9 @@ def pantalla_acceso():
                             st.session_state.user_data = res.user
                             st.session_state.show_login = False
                             st.rerun()
-                        except:
-                            st.error("❌ Credenciales incorrectas.")
+                        except Exception as e:
+                            # Te muestra el error real (útil por si falta confirmar mail)
+                            st.error(f"❌ Error al iniciar sesión. Verificá que tus datos sean correctos y que hayas confirmado tu correo electrónico.")
                 else:
                     st.warning("⚠️ Completá ambos campos.")
 
@@ -164,12 +165,13 @@ def pantalla_acceso():
                                     "usuario": new_user, "email": new_email.strip(), "plan": "gratis",
                                     "vencimiento_trial": str(venc_trial), "historial": {"Nueva Consulta": []}
                                 }).execute()
-                                st.success("✅ ¡Cuenta creada! Ya podés iniciar sesión en 'Entrar'.")
+                                # Aviso mucho más claro
+                                st.success("✅ ¡Cuenta creada con éxito! POR FAVOR: Revisá tu correo electrónico (y tu carpeta de Spam) para confirmar tu cuenta antes de iniciar sesión.")
                             except Exception as e: 
                                 st.error(f"Error técnico: {e}")
 
 # ==========================================
-# CEREBRO GLOBAL (DESCARGA DIRECTA DE GITHUB RELEASES)
+# CEREBRO GLOBAL DE LA IA
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos minutos)...")
 def load_ia():
@@ -231,7 +233,6 @@ def pantalla_invitado():
                 docs = vdb.similarity_search(st.session_state.guest_history[-1]["content"], k=6)
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
-                # INYECTAMOS LA REGLA ESTRICTA ACÁ
                 mensajes = [SystemMessage(content=generar_instruccion_ia(contexto_final))]
                 
                 for m in st.session_state.guest_history[:-1]:
@@ -242,7 +243,7 @@ def pantalla_invitado():
                 st.markdown(respuesta.content)
                 st.session_state.guest_history.append({"role": "assistant", "content": respuesta.content})
                 
-                # ACTUALIZAR CONTADOR Y COOKIE EN TIEMPO REAL
+                # Actualizar contador
                 st.session_state.consultas_gastadas += 1
                 cookie_manager.set("consultas_invitado", str(st.session_state.consultas_gastadas), expires_at=datetime.now() + timedelta(days=365))
                 st.rerun()
@@ -257,6 +258,15 @@ def pantalla_chat():
     datos = db_res.data[0]
     hoy = datetime.now().date()
     
+    # Formateo de fechas para mostrarlas en la barra
+    fecha_trial_formateada = ""
+    if datos.get("vencimiento_trial"):
+        fecha_trial_formateada = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    fecha_pro_formateada = ""
+    if datos.get("vencimiento_pro"):
+        fecha_pro_formateada = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").strftime("%d/%m/%Y")
+
     es_pro = False
     if datos.get("plan") == "pro" and datos.get("vencimiento_pro"):
         venc_pro = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").date()
@@ -268,21 +278,45 @@ def pantalla_chat():
         if hoy <= venc_trial: esta_en_trial = True
 
     if not es_pro and not esta_en_trial:
-        st.error("Tu tiempo de acceso ha expirado.")
-        st.link_button("🚀 Activar Plan Pro ($9.500 ARS)", "https://mpago.la/1f481Uj", use_container_width=True)
+        st.markdown(f"""
+            <div style="text-align: center; padding: 40px; border: 2px solid #ef4444; border-radius: 15px; background-color: rgba(239, 68, 68, 0.1);">
+                <h2 style="color: #ef4444;">Tu tiempo de acceso ha expirado</h2>
+                <p>Tu semana de prueba gratuita terminó. Activá el Plan Pro para seguir consultando jurisprudencia de Chubut.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        st.link_button("🚀 Activar Plan Pro ($6.500 ARS)", "https://mpago.la/1f481Uj", use_container_width=True)
         if st.button("Cerrar Sesión"):
             supabase.auth.sign_out()
             st.session_state.user_data = None
             st.rerun()
         st.stop()
 
+    # --- BARRA LATERAL COMPLETA ---
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
         st.divider()
         st.markdown(f"👤 **{datos['usuario']}**")
-        if es_pro: st.warning("💎 Plan PRO Activo")
-        else: st.info("🎁 Prueba Gratis Activa")
+        
+        # Fechas de vencimiento restauradas
+        if es_pro: 
+            st.warning(f"💎 Plan PRO hasta el {fecha_pro_formateada}")
+        else: 
+            st.info(f"🎁 Prueba Gratis hasta el {fecha_trial_formateada}")
+        
         st.divider()
+        
+        # Botón de Pago Restaurado
+        if not es_pro:
+            st.markdown("""
+                <div style="border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 15px; background-color: rgba(255, 255, 255, 0.05); text-align: center; margin-bottom: 10px;">
+                    <h4 style="color: #60A5FA; margin-top: 0; margin-bottom: 5px;">🚀 Plan Mensual Pro</h4>
+                    <p style="font-size: 1.2rem; font-weight: bold; color: white; margin: 0;">$6.500 ARS <span style="font-size: 0.9rem; font-weight: normal; color: #9CA3AF;">/ mes</span></p>
+                    <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 5px; margin-bottom: 0;">Consultas ilimitadas de jurisprudencia.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            st.link_button("💳 Pasarme a Pro", "https://mpago.la/1f481Uj", type="primary", use_container_width=True)
+            st.divider()
+
         if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
             nueva_id = f"Consulta {len(datos['historial']) + 1}"
             datos['historial'][nueva_id] = []
@@ -290,8 +324,10 @@ def pantalla_chat():
             supabase.table("usuarios").update({"historial": datos['historial']}).eq("email", user.email).execute()
             st.rerun()
         
+        st.write("") 
         historial = datos.get("historial") or {"Nueva Consulta": []}
         if "sesion_actual" not in st.session_state: st.session_state.sesion_actual = list(historial.keys())[-1]
+        
         for chat_id in reversed(list(historial.keys())):
             col_btn, col_del = st.columns([0.8, 0.2])
             with col_btn:
@@ -311,8 +347,18 @@ def pantalla_chat():
             st.rerun()
 
     chat_actual = historial.get(st.session_state.sesion_actual, [])
-    for m in chat_actual:
-        with st.chat_message(m["role"]): st.markdown(m["content"])
+    
+    # SALUDO INICIAL RESTAURADO
+    if not chat_actual:
+        st.markdown(f"""
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60vh; text-align: center;">
+                <h3 style="color: #9CA3AF; font-weight: 400; margin-bottom: 5px;">Hola, {datos['usuario']}</h3>
+                <h1 style="font-size: 3rem; font-weight: 600; margin-top: 0;">¿En qué puedo ayudarte hoy?</h1>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        for m in chat_actual:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
 
     if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
         chat_actual.append({"role": "user", "content": prompt})
@@ -326,9 +372,7 @@ def pantalla_chat():
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
-                # INYECTAMOS LA REGLA ESTRICTA ACÁ
                 mensajes = [SystemMessage(content=generar_instruccion_ia(contexto_final))]
-                
                 for m in chat_actual[:-1]:
                     mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
                 mensajes.append(HumanMessage(content=chat_actual[-1]["content"]))
@@ -337,11 +381,15 @@ def pantalla_chat():
                 st.markdown(respuesta.content)
                 chat_actual.append({"role": "assistant", "content": respuesta.content})
                 
+                # TÍTULOS AUTOMÁTICOS RESTAURADOS
                 if st.session_state.sesion_actual.startswith("Consulta ") and len(chat_actual) == 2:
-                    tit_p = f"Resume esto en 3 palabras: {chat_actual[0]['content']}"
-                    nuevo_titulo = llm.invoke([HumanMessage(content=tit_p)]).content.replace('"', '').strip()
-                    historial[nuevo_titulo] = historial.pop(st.session_state.sesion_actual)
-                    st.session_state.sesion_actual = nuevo_titulo
+                    try:
+                        tit_p = f"Resume esta consulta en 3 o 4 palabras: '{chat_actual[0]['content']}'"
+                        nuevo_titulo = llm.invoke([HumanMessage(content=tit_p)]).content.replace('"', '').strip()
+                        if nuevo_titulo in historial: nuevo_titulo += " (1)" 
+                        historial[nuevo_titulo] = historial.pop(st.session_state.sesion_actual)
+                        st.session_state.sesion_actual = nuevo_titulo
+                    except: pass
 
                 supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
                 st.rerun()
