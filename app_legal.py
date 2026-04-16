@@ -5,6 +5,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
 import zipfile
+import requests # <-- NUEVO MOTOR DE DESCARGAS
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -58,7 +59,7 @@ if "user_data" not in st.session_state: st.session_state.user_data = None
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 
-# LEER COOKIE DE CONSULTAS (Persistencia para invitados)
+# LEER COOKIE DE CONSULTAS
 galleta_consultas = cookie_manager.get(cookie="consultas_invitado")
 consultas_gastadas = int(galleta_consultas) if galleta_consultas is not None else 0
 
@@ -146,18 +147,30 @@ def pantalla_acceso():
                                 st.error(f"Error técnico: {e}")
 
 # ==========================================
-# CEREBRO GLOBAL DE LA IA (DESCARGA LIMPIA)
+# CEREBRO GLOBAL (DESCARGADOR NATIVO ANTI-BLOQUEOS)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
-        import gdown
-        # ID de tu nuevo archivo MI_BASE_VECTORIAL.zip
         file_id = "1UdL0oJCkWw57t-LSLRmYUTzSrAs4ruMS" 
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
         
-        # Descarga tradicional limpia (sin fuzzy) para evitar el error de Railway
-        gdown.download(id=file_id, output="base.zip", quiet=False)
-        
+        # Script Nativo que engaña a Google Drive
+        session = requests.Session()
+        response = session.get(url, stream=True)
+        token = None
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+        if token:
+            url = f"https://drive.google.com/uc?export=download&confirm={token}&id={file_id}"
+            response = session.get(url, stream=True)
+            
+        with open("base.zip", "wb") as f:
+            for chunk in response.iter_content(32768):
+                if chunk: f.write(chunk)
+                
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
     
