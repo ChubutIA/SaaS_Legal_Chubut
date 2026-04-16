@@ -58,12 +58,9 @@ if "user_data" not in st.session_state: st.session_state.user_data = None
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 
-# LEER COOKIE DE CONSULTAS
+# LEER COOKIE DE CONSULTAS (Persistencia para invitados)
 galleta_consultas = cookie_manager.get(cookie="consultas_invitado")
-if galleta_consultas is None:
-    consultas_gastadas = 0
-else:
-    consultas_gastadas = int(galleta_consultas)
+consultas_gastadas = int(galleta_consultas) if galleta_consultas is not None else 0
 
 # ==========================================
 # AUTOMATIZACIÓN DE PAGO
@@ -107,7 +104,7 @@ def pantalla_acceso():
                             st.session_state.user_data = res.user
                             st.session_state.show_login = False
                             st.rerun()
-                        except Exception as e:
+                        except:
                             st.error("❌ Credenciales incorrectas.")
                 else:
                     st.warning("⚠️ Completá ambos campos.")
@@ -149,22 +146,23 @@ def pantalla_acceso():
                                 st.error(f"Error técnico: {e}")
 
 # ==========================================
-# CEREBRO GLOBAL DE LA IA (MODO TOPADORA)
+# CEREBRO GLOBAL DE LA IA (DESCARGA DE DRIVE)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
         import gdown
-        # Tu ID de Drive ya está inyectado acá:
+        # ID de tu nuevo archivo MI_BASE_VECTORIAL.zip
         file_id = "1UdL0oJCkWw57t-LSLRmYUTzSrAs4ruMS" 
-        url_fuerza = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
-        gdown.download(url=url_fuerza, output="base.zip", quiet=False, fuzzy=True)
+        # Descarga limpia ahora que el archivo es Público
+        gdown.download(id=file_id, output="base.zip", quiet=False)
         with zipfile.ZipFile("base.zip", 'r') as zr: zr.extractall()
+    
     emb = OpenAIEmbeddings(model="text-embedding-3-small")
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
-# LA LÍNEA MÁGICA QUE SOLUCIONA TU ERROR DE "VDB NO DEFINIDO"
+# ESTA ES LA LÍNEA QUE FALTABA PARA ACTIVAR EL CEREBRO
 vdb, llm = load_ia()
 
 # ==========================================
@@ -188,7 +186,7 @@ def pantalla_invitado():
         st.markdown("""
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 50vh; text-align: center;">
                 <h1 style="font-size: 3rem; font-weight: 600;">Probalo gratis, sin registrarte.</h1>
-                <p style="font-size: 1.2rem; color: gray;">Hacé una consulta legal para ver cómo funciona.</p>
+                <p style="font-size: 1.2rem; color: gray;">Hacé una consulta legal sobre Chubut para ver cómo funciona.</p>
             </div>
         """, unsafe_allow_html=True)
     else:
@@ -209,13 +207,8 @@ def pantalla_invitado():
         with st.chat_message("assistant"):
             with st.spinner("Buscando jurisprudencia..."):
                 docs = vdb.similarity_search(st.session_state.guest_history[-1]["content"], k=6)
-                contexto_partes = []
-                for i, d in enumerate(docs):
-                    link_real = d.metadata.get('link_pdf', 'Enlace no disponible')
-                    fecha_real = d.metadata.get('fecha_completa', 'Fecha no detectada')
-                    contexto_partes.append(f"--- FALLO {i+1} ---\n📅 FECHA: {fecha_real}\n🔗 URL: {link_real}\n📄 CONTENIDO:\n{d.page_content}")
+                contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
-                contexto_final = "\n\n".join(contexto_partes)
                 instruccion = f"Sos Chubut.IA jurídico. Basate en esto:\n{contexto_final}\n\nUsa estructura de viñetas, emojis y el link crudo al final."
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in st.session_state.guest_history[:-1]:
@@ -297,7 +290,7 @@ def pantalla_chat():
     for m in chat_actual:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if prompt := st.chat_input("¿Qué duda legal tenés?"):
+    if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
         chat_actual.append({"role": "user", "content": prompt})
         historial[st.session_state.sesion_actual] = chat_actual
         supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
@@ -305,14 +298,16 @@ def pantalla_chat():
 
     if chat_actual and chat_actual[-1]["role"] == "user":
         with st.chat_message("assistant"):
-            with st.spinner("Buscando fallos..."):
+            with st.spinner("Analizando jurisprudencia..."):
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
+                
                 instruccion = f"Sos Chubut.IA jurídico. Contexto:\n{contexto_final}\n\nUsa viñetas, emojis y links crudos."
                 mensajes = [SystemMessage(content=instruccion)]
                 for m in chat_actual[:-1]:
                     mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
                 mensajes.append(HumanMessage(content=chat_actual[-1]["content"]))
+                
                 respuesta = llm.invoke(mensajes)
                 st.markdown(respuesta.content)
                 chat_actual.append({"role": "assistant", "content": respuesta.content})
@@ -327,7 +322,7 @@ def pantalla_chat():
                 st.rerun()
 
 # ==========================================
-# GESTOR CENTRAL DE PANTALLAS
+# GESTOR CENTRAL DE PANTALLAS (RUTEADOR)
 # ==========================================
 if st.session_state.user_data is not None:
     pantalla_chat()
