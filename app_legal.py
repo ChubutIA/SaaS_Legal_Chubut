@@ -273,6 +273,7 @@ def pantalla_invitado():
                 
                 st.session_state.consultas_gastadas += 1
                 vencimiento = datetime.now() + timedelta(days=365)
+                # LLAVE ÚNICA ACÁ TAMBIÉN
                 cookie_manager.set("chubut_invitado", str(st.session_state.consultas_gastadas), expires_at=vencimiento, key="set_inv")
                 
                 st.markdown("---")
@@ -317,7 +318,8 @@ def pantalla_chat():
                 <p>Tu semana de prueba gratuita terminó. Activá el Plan Pro para seguir consultando jurisprudencia de Chubut.</p>
             </div>
         """, unsafe_allow_html=True)
-        st.link_button("🚀 Activar Plan Pro ($6.500 ARS)", "https://mpago.la/1f481Uj", use_container_width=True)
+        # 👇 ACÁ ESTÁ EL PRIMER LINK DE MERCADO PAGO A REEMPLAZAR 👇
+        st.link_button("🚀 Activar Plan Pro ($6.500 ARS)", "https://mpago.la/2nDaBRx", use_container_width=True)
         
         if st.button("Cerrar Sesión"):
             supabase.auth.sign_out()
@@ -348,7 +350,8 @@ def pantalla_chat():
                     <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 5px; margin-bottom: 0;">Consultas ilimitadas de jurisprudencia.</p>
                 </div>
             """, unsafe_allow_html=True)
-            st.link_button("💳 Pasarme a Pro", "https://mpago.la/1f481Uj", type="primary", use_container_width=True)
+            # 👇 ACÁ ESTÁ EL SEGUNDO LINK DE MERCADO PAGO A REEMPLAZAR 👇
+            st.link_button("💳 Pasarme a Pro", "https://mpago.la/2nDaBRx", type="primary", use_container_width=True)
             st.divider()
 
         if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
