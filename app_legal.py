@@ -323,9 +323,119 @@ def pantalla_chat():
             supabase.auth.sign_out()
             cookie_manager.delete("supa_access", key="del_acc_exp")
             cookie_manager.delete("supa_refresh", key="del_ref_exp")
+            time.sleep(1) 
             st.session_state.user_data = None
             st.rerun()
         st.stop()
 
     with st.sidebar:
-        if os.path.
+        if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
+        st.divider()
+        st.markdown(f"👤 **{datos['usuario']}**")
+        
+        if es_pro: 
+            st.warning(f"💎 Plan PRO hasta el {fecha_pro_formateada}")
+        else: 
+            st.info(f"🎁 Prueba Gratis hasta el {fecha_trial_formateada}")
+        
+        st.divider()
+        
+        if not es_pro:
+            st.markdown("""
+                <div style="border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 15px; background-color: rgba(255, 255, 255, 0.05); text-align: center; margin-bottom: 10px;">
+                    <h4 style="color: #60A5FA; margin-top: 0; margin-bottom: 5px;">🚀 Plan Mensual Pro</h4>
+                    <p style="font-size: 1.2rem; font-weight: bold; color: white; margin: 0;">$6.500 ARS <span style="font-size: 0.9rem; font-weight: normal; color: #9CA3AF;">/ mes</span></p>
+                    <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 5px; margin-bottom: 0;">Consultas ilimitadas de jurisprudencia.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            st.link_button("💳 Pasarme a Pro", "https://mpago.la/1f481Uj", type="primary", use_container_width=True)
+            st.divider()
+
+        if st.button("➕ Nueva Consulta", type="primary", use_container_width=True):
+            nueva_id = f"Consulta {len(datos['historial']) + 1}"
+            datos['historial'][nueva_id] = []
+            st.session_state.sesion_actual = nueva_id
+            supabase.table("usuarios").update({"historial": datos['historial']}).eq("email", user.email).execute()
+            st.rerun()
+        
+        st.write("") 
+        historial = datos.get("historial") or {"Nueva Consulta": []}
+        if "sesion_actual" not in st.session_state: st.session_state.sesion_actual = list(historial.keys())[-1]
+        
+        for chat_id in reversed(list(historial.keys())):
+            col_btn, col_del = st.columns([0.8, 0.2])
+            with col_btn:
+                if st.button(f"{'🟢' if chat_id == st.session_state.sesion_actual else '📄'} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+                    st.session_state.sesion_actual = chat_id
+                    st.rerun()
+            with col_del:
+                if st.button("❌", key=f"del_{chat_id}"):
+                    del historial[chat_id]
+                    st.session_state.sesion_actual = list(historial.keys())[-1] if historial else "Nueva Consulta"
+                    supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
+                    st.rerun()
+        st.divider()
+        
+        if st.button("Cerrar Sesión", use_container_width=True):
+            supabase.auth.sign_out()
+            cookie_manager.delete("supa_access", key="del_acc_out")
+            cookie_manager.delete("supa_refresh", key="del_ref_out")
+            time.sleep(1)
+            st.session_state.user_data = None
+            st.rerun()
+
+    chat_actual = historial.get(st.session_state.sesion_actual, [])
+    
+    if not chat_actual:
+        st.markdown(f"""
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60vh; text-align: center;">
+                <h3 style="color: #9CA3AF; font-weight: 400; margin-bottom: 5px;">Hola, {datos['usuario']}</h3>
+                <h1 style="font-size: 3rem; font-weight: 600; margin-top: 0;">¿En qué puedo ayudarte hoy?</h1>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        for m in chat_actual:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
+
+    if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
+        chat_actual.append({"role": "user", "content": prompt})
+        historial[st.session_state.sesion_actual] = chat_actual
+        supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
+        st.rerun()
+
+    if chat_actual and chat_actual[-1]["role"] == "user":
+        with st.chat_message("assistant"):
+            with st.spinner("Analizando jurisprudencia..."):
+                docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
+                contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
+                
+                mensajes = [SystemMessage(content=generar_instruccion_ia(contexto_final))]
+                for m in chat_actual[:-1]:
+                    mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
+                mensajes.append(HumanMessage(content=chat_actual[-1]["content"]))
+                
+                respuesta = llm.invoke(mensajes)
+                st.markdown(respuesta.content)
+                chat_actual.append({"role": "assistant", "content": respuesta.content})
+                
+                if st.session_state.sesion_actual.startswith("Consulta ") and len(chat_actual) == 2:
+                    try:
+                        tit_p = f"Resume esta consulta en 3 o 4 palabras: '{chat_actual[0]['content']}'"
+                        nuevo_titulo = llm.invoke([HumanMessage(content=tit_p)]).content.replace('"', '').strip()
+                        if nuevo_titulo in historial: nuevo_titulo += " (1)" 
+                        historial[nuevo_titulo] = historial.pop(st.session_state.sesion_actual)
+                        st.session_state.sesion_actual = nuevo_titulo
+                    except: pass
+
+                supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
+                st.rerun()
+
+# ==========================================
+# GESTOR CENTRAL DE PANTALLAS (RUTEADOR)
+# ==========================================
+if st.session_state.user_data is not None:
+    pantalla_chat()
+elif st.session_state.show_login:
+    pantalla_acceso()
+else:
+    pantalla_invitado()
