@@ -5,7 +5,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
 import zipfile
-import urllib.request # <-- EL DESCARGADOR NATIVO OFICIAL
+import urllib.request
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -59,9 +59,31 @@ if "user_data" not in st.session_state: st.session_state.user_data = None
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 
-# LEER COOKIE DE CONSULTAS
-galleta_consultas = cookie_manager.get(cookie="consultas_invitado")
-consultas_gastadas = int(galleta_consultas) if galleta_consultas is not None else 0
+# FIX DEL CONTADOR: Sincronizar Cookie con Estado en Tiempo Real
+if "consultas_gastadas" not in st.session_state:
+    galleta = cookie_manager.get(cookie="consultas_invitado")
+    st.session_state.consultas_gastadas = int(galleta) if galleta else 0
+
+# ==========================================
+# INSTRUCCIÓN ESTRICTA PARA LA IA (CHALECO DE FUERZA)
+# ==========================================
+def generar_instruccion_ia(contexto):
+    return f"""Sos Chubut.IA, un asistente jurídico estrictamente enfocado en la Provincia de Chubut.
+TU ÚNICA MISIÓN ES MOSTRAR JURISPRUDENCIA.
+REGLA DE ORO: Si el usuario te saluda, te hace charla, o te pide cosas fuera del ámbito legal (ej: películas, recetas, noticias generales), DEBES NEGARTE CORTÉSMENTE y recordarle que solo estás capacitado para buscar fallos legales de Chubut.
+
+CONTEXTO DE LA BASE DE DATOS:
+{contexto}
+
+REGLAS ESTRICTAS DE FORMATO (No uses otro):
+Si la consulta es legal, debes estructurar CADA fallo encontrado exactamente así:
+
+📌 **[Nombre o Título del Fallo]**
+* 📅 **Fecha del Fallo:** [Copia la 'FECHA' exacta]
+* 📖 **Cita Textual:** "[Extracto más relevante]"
+* 📝 **Resumen de los Hechos:** [Breve resumen]
+* ⚖️ **Resolución:** [Decisión final]
+* 🔗 **Ver fallo oficial:** [Pega la 'URL' tal cual, sin corchetes ni formato markdown. Solo el link crudo]"""
 
 # ==========================================
 # AUTOMATIZACIÓN DE PAGO
@@ -156,9 +178,7 @@ def load_ia():
         # 👇👇👇 PEGÁ EL ENLACE QUE COPIASTE DE GITHUB RELEASES ACÁ 👇👇👇
         url_directa = "https://github.com/ChubutIA/SaaS_Legal_Chubut/releases/download/v1.0/MI_BASE_VECTORIAL.zip"
         
-        # Descarga directa y limpia de GitHub
         urllib.request.urlretrieve(url_directa, "base.zip")
-                
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
     
@@ -166,15 +186,13 @@ def load_ia():
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
-# LÍNEA QUE ACTIVA EL CEREBRO
 vdb, llm = load_ia()
 
 # ==========================================
 # PANTALLA MODO INVITADO
 # ==========================================
 def pantalla_invitado():
-    global consultas_gastadas
-    consultas_restantes = 5 - consultas_gastadas
+    consultas_restantes = 5 - st.session_state.consultas_gastadas
 
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
@@ -197,7 +215,7 @@ def pantalla_invitado():
         for m in st.session_state.guest_history:
             with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if consultas_gastadas >= 5:
+    if st.session_state.consultas_gastadas >= 5:
         st.warning("⚠️ Alcanzaste el límite de 5 consultas gratuitas.")
         if st.button("🚀 Crear cuenta gratis para continuar", type="primary", use_container_width=True):
             st.session_state.show_login = True
@@ -213,8 +231,9 @@ def pantalla_invitado():
                 docs = vdb.similarity_search(st.session_state.guest_history[-1]["content"], k=6)
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
-                instruccion = f"Sos Chubut.IA jurídico. Basate en esto:\n{contexto_final}\n\nUsa estructura de viñetas, emojis y el link crudo al final."
-                mensajes = [SystemMessage(content=instruccion)]
+                # INYECTAMOS LA REGLA ESTRICTA ACÁ
+                mensajes = [SystemMessage(content=generar_instruccion_ia(contexto_final))]
+                
                 for m in st.session_state.guest_history[:-1]:
                     mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
                 mensajes.append(HumanMessage(content=st.session_state.guest_history[-1]["content"]))
@@ -223,8 +242,9 @@ def pantalla_invitado():
                 st.markdown(respuesta.content)
                 st.session_state.guest_history.append({"role": "assistant", "content": respuesta.content})
                 
-                nuevas_consultas = consultas_gastadas + 1
-                cookie_manager.set("consultas_invitado", str(nuevas_consultas), expires_at=datetime.now() + timedelta(days=365))
+                # ACTUALIZAR CONTADOR Y COOKIE EN TIEMPO REAL
+                st.session_state.consultas_gastadas += 1
+                cookie_manager.set("consultas_invitado", str(st.session_state.consultas_gastadas), expires_at=datetime.now() + timedelta(days=365))
                 st.rerun()
 
 # ==========================================
@@ -306,8 +326,9 @@ def pantalla_chat():
                 docs = vdb.similarity_search(chat_actual[-1]["content"], k=6)
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
-                instruccion = f"Sos Chubut.IA jurídico. Contexto:\n{contexto_final}\n\nUsa viñetas, emojis y links crudos."
-                mensajes = [SystemMessage(content=instruccion)]
+                # INYECTAMOS LA REGLA ESTRICTA ACÁ
+                mensajes = [SystemMessage(content=generar_instruccion_ia(contexto_final))]
+                
                 for m in chat_actual[:-1]:
                     mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
                 mensajes.append(HumanMessage(content=chat_actual[-1]["content"]))
