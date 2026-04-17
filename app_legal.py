@@ -4,6 +4,7 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import os
+import shutil # <-- NUEVO: Para borrar carpetas corruptas
 import zipfile
 import urllib.request
 import time  
@@ -15,8 +16,8 @@ from supabase import create_client, Client
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from audio_recorder_streamlit import audio_recorder # <-- NUEVO: MICRÓFONO
-from openai import OpenAI # <-- NUEVO: TRANSCRIPTOR DE VOZ
+from audio_recorder_streamlit import audio_recorder
+from openai import OpenAI 
 
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO PROFESIONAL
 st.set_page_config(page_title="Chubut.IA - Jurisprudencia", page_icon="logo.png", layout="wide")
@@ -95,7 +96,7 @@ if not OPENAI_KEY or not SUPABASE_URL or not SUPABASE_KEY:
 else:
     os.environ["OPENAI_API_KEY"] = OPENAI_KEY
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    cliente_audio = OpenAI(api_key=OPENAI_KEY) # Cliente para transcribir voz
+    cliente_audio = OpenAI(api_key=OPENAI_KEY)
 
 if "user_data" not in st.session_state: 
     st.session_state.user_data = None
@@ -200,7 +201,6 @@ def pantalla_acceso():
                         with st.spinner("Autenticando..."):
                             try:
                                 res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
-                                
                                 st.session_state.temp_user = res.user
                                 st.session_state.set_refresh_token = res.session.refresh_token
                                 st.session_state.login_exitoso = True
@@ -260,11 +260,16 @@ def pantalla_acceso():
         mostrar_soporte()
 
 # ==========================================
-# CEREBRO GLOBAL
+# CEREBRO GLOBAL (SISTEMA ANTI-AMNESIA)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (Puede demorar unos minutos)...")
 def load_ia():
-    if not os.path.exists("MI_BASE_VECTORIAL"):
+    # Comprobamos que exista el archivo real de la base de datos, no solo la carpeta
+    if not os.path.exists("MI_BASE_VECTORIAL/chroma.sqlite3"):
+        # Si la carpeta existe pero está vacía o rota, la borramos
+        if os.path.exists("MI_BASE_VECTORIAL"):
+            shutil.rmtree("MI_BASE_VECTORIAL")
+            
         url_directa = "https://github.com/ChubutIA/SaaS_Legal_Chubut/releases/download/v1.0/MI_BASE_VECTORIAL.zip"
         urllib.request.urlretrieve(url_directa, "base.zip")
         with zipfile.ZipFile("base.zip", 'r') as zr: 
@@ -286,17 +291,22 @@ def render_sidebar_premium():
     f_fuero = st.selectbox("⚖️ Fuero / Materia", ["Todos", "Penal", "Civil y Comercial", "Laboral", "Familia", "Contencioso Administrativo"])
     
     st.markdown("<h4 style='color: #60A5FA; margin-bottom: 0; margin-top: 15px;'>🎙️ Dictado por Voz</h4>", unsafe_allow_html=True)
-    st.caption("Toca el micrófono y relatá tu caso.")
-    audio_bytes = audio_recorder(text="", recording_color="#ef4444", neutral_color="#9CA3AF", icon_name="microphone", icon_size="2x")
+    st.caption("1️⃣ Tocá para grabar. 2️⃣ Hablá. 3️⃣ Tocá de nuevo para detener.")
     
+    audio_bytes = audio_recorder(text="", recording_color="#ef4444", neutral_color="#9CA3AF", icon_name="microphone", icon_size="2x")
     prompt_audio = None
+    
     if audio_bytes:
-        with st.spinner("Transcribiendo tu audio..."):
-            with open("temp_audio.wav", "wb") as f:
-                f.write(audio_bytes)
-            with open("temp_audio.wav", "rb") as audio_file:
-                transcript = cliente_audio.audio.transcriptions.create(model="whisper-1", file=audio_file)
-                prompt_audio = transcript.text
+        try:
+            with st.spinner("⏳ Transcribiendo tu audio..."):
+                with open("temp_audio.wav", "wb") as f:
+                    f.write(audio_bytes)
+                with open("temp_audio.wav", "rb") as audio_file:
+                    transcript = cliente_audio.audio.transcriptions.create(model="whisper-1", file=audio_file)
+                    prompt_audio = transcript.text
+                    st.success(f"🗣️ Te escuché decir: '{prompt_audio}'")
+        except Exception as e:
+            st.error("❌ Hubo un error procesando el audio. Asegurate de darle permisos al micrófono en el navegador.")
                 
     return f_anio, f_fuero, prompt_audio
 
@@ -312,7 +322,7 @@ def pantalla_invitado():
         st.markdown("👤 **Modo Invitado**")
         st.info(f"🎁 Consultas de prueba: {max(0, consultas_restantes)} / 5")
         
-        f_anio, f_fuero, prompt_audio = render_sidebar_premium() # <-- INTERFAZ PREMIUM
+        f_anio, f_fuero, prompt_audio = render_sidebar_premium() 
         
         st.divider()
         if st.button("🔑 Iniciar Sesión / Registrarse", type="primary", use_container_width=True):
@@ -358,7 +368,6 @@ def pantalla_invitado():
             st.session_state.show_login = True
             st.rerun()
     else:
-        # Lógica de input (Texto o Voz)
         prompt_texto = st.chat_input("Ej: ¿Qué dice la jurisprudencia sobre alimentos?")
         query_final = prompt_texto or prompt_audio
         
@@ -447,7 +456,7 @@ def pantalla_chat():
         else: 
             st.info(f"🎁 Prueba Gratis hasta el {fecha_trial_formateada}")
             
-        f_anio, f_fuero, prompt_audio = render_sidebar_premium() # <-- INTERFAZ PREMIUM
+        f_anio, f_fuero, prompt_audio = render_sidebar_premium() 
         
         st.divider()
         if not es_pro:
@@ -517,7 +526,6 @@ def pantalla_chat():
             
         st.download_button(label="📄 Exportar chat a texto (TXT)", data=chat_str, file_name=f"Reporte_{st.session_state.sesion_actual}.txt", mime="text/plain", use_container_width=True)
 
-    # Lógica de input (Texto o Voz)
     prompt_texto = st.chat_input("Escribí acá, o usá el micrófono de la izquierda...")
     query_final = prompt_texto or prompt_audio
     
@@ -539,7 +547,6 @@ def pantalla_chat():
                 
                 instruccion_filtrada = generar_instruccion_ia(contexto_final, f_anio, f_fuero)
                 mensajes = [SystemMessage(content=instruccion_filtrada)]
-                
                 for m in chat_actual[:-1]:
                     mensajes.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
                 mensajes.append(HumanMessage(content=chat_actual[-1]["content"]))
