@@ -8,4 +8,4 @@ supabase
 pysqlite3-binary
 gdown>=5.1.0
 extra-streamlit-components
-audio-recorder-streamlit
+
