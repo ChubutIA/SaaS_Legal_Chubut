@@ -53,34 +53,43 @@ st.markdown("""
             color: white !important;
             background-color: rgba(96, 165, 250, 0.1) !important;
         }
-                /* 1. Ocultar las flechas originales (Agresivo) */
-        button[data-testid="collapsedControl"] svg {
+        
+        /* --- TRUCO NUCLEAR PARA EL BOTÓN DE MENÚ LATERAL --- */
+        header [data-testid="collapsedControl"] svg {
             display: none !important;
+            visibility: hidden !important;
         }
-        
-        /* 2. Crear el nuevo botón de Menú Hamburguesa */
-        button[data-testid="collapsedControl"]::after {
+        header [data-testid="collapsedControl"] {
+            color: transparent !important;
+            background-color: transparent !important;
+            width: 100px !important;
+        }
+        header [data-testid="collapsedControl"]::before {
             content: "☰ MENÚ" !important;
-            display: block !important;
-            font-size: 14px !important;
-            font-weight: bold !important;
-            color: white !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: absolute !important;
+            top: 15px !important;
+            left: 15px !important;
+            font-size: 15px !important;
+            font-weight: 900 !important;
+            color: #ffffff !important;
             background-color: #1E3A8A !important;
-            padding: 6px 12px !important;
-            border-radius: 6px !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+            padding: 8px 14px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+            letter-spacing: 1px !important;
+            z-index: 9999 !important;
+            transition: all 0.3s ease !important;
         }
-        
-        /* 3. Ajustar el tamaño del botón invisible de fondo */
-        button[data-testid="collapsedControl"] {
-            width: auto !important;
-            border: none !important;
-            background: transparent !important;
+        header [data-testid="collapsedControl"]:active::before {
+            background-color: #152C69 !important;
+            transform: scale(0.95) !important;
         }
-
-    
     </style>
 """, unsafe_allow_html=True)
+
 
 # ==========================================
 # 2. SISTEMA BLINDADO DE COOKIES EN LA RAÍZ
