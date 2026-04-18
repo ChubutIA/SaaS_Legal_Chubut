@@ -53,23 +53,32 @@ st.markdown("""
             color: white !important;
             background-color: rgba(96, 165, 250, 0.1) !important;
         }
-                /* Ocultar la flechita por defecto de Streamlit */
-        [data-testid="collapsedControl"] svg {
+                /* 1. Ocultar las flechas originales (Agresivo) */
+        button[data-testid="collapsedControl"] svg {
             display: none !important;
         }
         
-        /* Poner el menú hamburguesa y la palabra Menú */
-        [data-testid="collapsedControl"]::before {
-            content: "☰ Menú" !important;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #60A5FA;
-            background-color: rgba(96, 165, 250, 0.1);
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #60A5FA;
+        /* 2. Crear el nuevo botón de Menú Hamburguesa */
+        button[data-testid="collapsedControl"]::after {
+            content: "☰ MENÚ" !important;
+            display: block !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            color: white !important;
+            background-color: #1E3A8A !important;
+            padding: 6px 12px !important;
+            border-radius: 6px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        }
+        
+        /* 3. Ajustar el tamaño del botón invisible de fondo */
+        button[data-testid="collapsedControl"] {
+            width: auto !important;
+            border: none !important;
+            background: transparent !important;
         }
 
+    
     </style>
 """, unsafe_allow_html=True)
 
