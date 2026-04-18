@@ -53,6 +53,23 @@ st.markdown("""
             color: white !important;
             background-color: rgba(96, 165, 250, 0.1) !important;
         }
+                /* Ocultar la flechita por defecto de Streamlit */
+        [data-testid="collapsedControl"] svg {
+            display: none !important;
+        }
+        
+        /* Poner el menú hamburguesa y la palabra Menú */
+        [data-testid="collapsedControl"]::before {
+            content: "☰ Menú" !important;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #60A5FA;
+            background-color: rgba(96, 165, 250, 0.1);
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #60A5FA;
+        }
+
     </style>
 """, unsafe_allow_html=True)
 
