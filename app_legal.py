@@ -53,28 +53,6 @@ st.markdown("""
             color: white !important;
             background-color: rgba(96, 165, 250, 0.1) !important;
         }
-        
-        /* --- TRUCO DEFINITIVO: MENÚ HAMBURGUESA --- */
-        [data-testid="collapsedControl"] svg,
-        [data-testid="stSidebarCollapsedControl"] svg,
-        button[kind="header"] svg {
-            display: none !important;
-        }
-        
-        [data-testid="collapsedControl"]::after,
-        [data-testid="stSidebarCollapsedControl"]::after,
-        button[kind="header"]::after {
-            content: "☰ MENÚ" !important;
-            visibility: visible !important;
-            display: block !important;
-            color: white !important;
-            background-color: #1E3A8A !important;
-            padding: 8px 15px !important;
-            border-radius: 8px !important;
-            font-size: 15px !important;
-            font-weight: bold !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -138,18 +116,19 @@ if galleta_invitado:
     st.session_state.consultas_gastadas = max(st.session_state.consultas_gastadas, int(galleta_invitado))
 
 # ==========================================
-# INSTRUCCIÓN ESTRICTA PARA LA IA (CHALECO)
+# INSTRUCCIÓN PARA LA IA (NUEVO COMPORTAMIENTO FLEXIBLE Y ANALÍTICO)
 # ==========================================
 def generar_instruccion_ia(contexto):
-    return f"""Sos Chubut.IA, un asistente jurídico estrictamente enfocado en la Provincia de Chubut.
-TU ÚNICA MISIÓN ES MOSTRAR JURISPRUDENCIA.
-REGLA DE ORO: Puedes responder saludos o cosas para una conversacion(ej.como estas, gracias, hola,etc), pero Si el usuario te pide cosas fuera del ámbito legal, DEBES NEGARTE CORTÉSMENTE y recordarle que solo estás capacitado para buscar fallos legales de Chubut.
+    return f"""Sos Chubut.IA, un asistente jurídico experto enfocado exclusivamente en la jurisprudencia de la Provincia de Chubut.
 
-CONTEXTO DE LA BASE DE DATOS:
+CONTEXTO DE LA BASE DE DATOS (EUREKA):
 {contexto}
 
-REGLAS ESTRICTAS DE FORMATO (No uses otro):
-Si la consulta es legal, debes estructurar CADA fallo encontrado exactamente así:
+DIRECTRICES DE COMPORTAMIENTO:
+1. CORTESÍA: Podés responder cordialmente a saludos o agradecimientos ("Hola", "Gracias", etc.), pero llevando rápidamente la conversación al ámbito legal.
+2. LÍMITE ESTRICTO: Si el usuario pregunta o pide algo que NO tiene relación con el ámbito legal, jurisprudencia, o las leyes de Chubut, DEBES NEGARTE CORTÉSMENTE indicando que solo estás capacitado para asistir en materia jurídica de Chubut.
+3. VERSATILIDAD ANALÍTICA: Estás autorizado a realizar análisis, comparaciones, resúmenes o explicaciones jurídicas siempre y cuando se basen en la jurisprudencia y el contexto proporcionado. Podés pensar como un abogado analizando un caso basándote en los fallos.
+4. FORMATO DE BÚSQUEDA DE FALLOS: Si el usuario te pide explícitamente "buscar fallos", "mostrar jurisprudencia" o listar casos, utiliza ESTRICTAMENTE este formato para cada fallo:
 
 📌 **[Nombre o Título del Fallo]**
 * 📅 **Fecha del Fallo:** [Copia la 'FECHA' exacta]
@@ -224,9 +203,9 @@ def pantalla_acceso():
                         st.warning("⚠️ Completá ambos campos.")
 
             if st.session_state.get("login_exitoso"):
-                st.success("✅ ¡Pase generado y guardado en tu navegador!")
-                st.info("Hacé clic abajo para confirmar tu entrada.")
-                if st.button("👉 ENTRAR A MI CUENTA", type="primary", use_container_width=True):
+                st.success("✅ ¡Pase VIP generado y guardado en tu navegador!")
+                st.info(" Hacé clic abajo para confirmar tu entrada.")
+                if st.button(" ENTRAR A MI CUENTA", type="primary", use_container_width=True):
                     st.session_state.user_data = st.session_state.temp_user
                     st.session_state.show_login = False
                     st.session_state.login_exitoso = False
