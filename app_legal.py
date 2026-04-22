@@ -58,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# FUNCIÓN PARA GENERAR PDF
+# FUNCIÓN PARA GENERAR PDF (LIMPIO DE EMOJIS)
 # ==========================================
 def generar_pdf(historial, titulo_chat):
     pdf = FPDF()
@@ -68,6 +68,7 @@ def generar_pdf(historial, titulo_chat):
     pdf.set_font("helvetica", "B", 16)
     pdf.cell(0, 10, "Reporte de Jurisprudencia - Chubut.IA", ln=True, align="C")
     pdf.set_font("helvetica", "", 10)
+    # Ajuste de hora argentina para el reporte
     pdf.cell(0, 10, f"Generado el: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
     pdf.ln(10)
     
@@ -84,7 +85,9 @@ def generar_pdf(historial, titulo_chat):
         
         pdf.set_font("helvetica", "", 10)
         
-        # ELIMINAMOS EMOJIS Y ASTERISCOS DE MARKDOWN PARA UN PDF LIMPIO
+        # FILTROS DE LIMPIEZA
+        # 1. Ignorar caracteres que no sean latin-1 (emojis)
+        # 2. Borrar asteriscos de Markdown
         texto_limpio = msg["content"].encode('latin-1', 'ignore').decode('latin-1')
         texto_limpio = texto_limpio.replace('**', '')
         
@@ -153,7 +156,7 @@ if galleta_invitado:
     st.session_state.consultas_gastadas = max(st.session_state.consultas_gastadas, int(galleta_invitado))
 
 # ==========================================
-# INSTRUCCIÓN PARA LA IA (NUEVO COMPORTAMIENTO FLEXIBLE Y ANALÍTICO)
+# INSTRUCCIÓN PARA LA IA
 # ==========================================
 def generar_instruccion_ia(contexto):
     return f"""Sos Chubut.IA, un asistente jurídico experto enfocado exclusivamente en la jurisprudencia de la Provincia de Chubut.
@@ -195,6 +198,7 @@ def mostrar_soporte():
 def verificar_pago_entrante(user_email):
     params = st.query_params
     if params.get("status") == "approved" and st.session_state.user_data:
+        # Ajuste huso horario para registro de pago
         venc_pro = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=30)
         supabase.table("usuarios").update({
             "plan": "pro",
@@ -320,6 +324,18 @@ def pantalla_invitado():
         if st.button("🔑 Iniciar Sesión / Registrarse", type="primary", use_container_width=True):
             st.session_state.show_login = True
             st.rerun()
+        
+        # SECCIÓN LEGAL EN MODO INVITADO
+        st.divider()
+        with st.expander("⚖️ Legales y Privacidad"):
+            st.markdown("""
+                <div style="font-size: 0.8rem; color: #9CA3AF;">
+                <b>Propiedad Intelectual:</b> El software y la marca Chubut.IA son propiedad exclusiva del desarrollador. Queda prohibida la reproducción total o parcial.<br><br>
+                <b>Responsabilidad:</b> Herramienta de asistencia basada en IA. La verificación en fuentes oficiales es responsabilidad del profesional.<br><br>
+                <b>Privacidad:</b> Cumplimos con la Ley 25.326. Sus consultas son confidenciales.
+                </div>
+            """, unsafe_allow_html=True)
+            
         mostrar_disclaimer()
         mostrar_soporte()
 
@@ -355,6 +371,7 @@ def pantalla_invitado():
             
         st.markdown("---")
         
+        # BOTÓN DE PDF PARA INVITADO
         pdf_bytes = generar_pdf(st.session_state.guest_history, "Chat de Prueba Invitado")
         st.download_button(
             label="📄 Exportar chat a PDF",
@@ -482,6 +499,18 @@ def pantalla_chat():
             st.session_state.user_data = None
             st.rerun()
             
+        # CUADRO LEGAL PROFESIONAL
+        st.divider()
+        with st.expander("⚖️ Legales y Privacidad"):
+            st.markdown("""
+                <div style="font-size: 0.8rem; color: #9CA3AF;">
+                <b>Propiedad Intelectual:</b> El software, la base de datos y la marca Chubut.IA son propiedad exclusiva del desarrollador. Queda prohibida la reproducción o ingeniería inversa.<br><br>
+                <b>Responsabilidad:</b> Chubut.IA es una herramienta de asistencia. Los resultados son informativos. La verificación en fuentes oficiales es responsabilidad del profesional.<br><br>
+                <b>Datos Personales:</b> Cumplimos con la Ley 25.326. Sus consultas son confidenciales y cifradas.<br><br>
+                <b>Uso Pro:</b> El acceso es personal e intransferible.
+                </div>
+            """, unsafe_allow_html=True)
+
         mostrar_disclaimer()
         mostrar_soporte()
 
@@ -527,6 +556,7 @@ def pantalla_chat():
             
         st.markdown("---")
         
+        # BOTÓN DE PDF PARA LOGUEADOS
         pdf_bytes = generar_pdf(chat_actual, st.session_state.sesion_actual)
         st.download_button(
             label="📄 Exportar chat a PDF",
