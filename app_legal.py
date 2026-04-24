@@ -2,7 +2,7 @@
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
- 
+
 import os
 import zipfile
 import urllib.request
@@ -16,14 +16,22 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from fpdf import FPDF
- 
+
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO PREMIUM
 st.set_page_config(page_title="Chubut.IA - Jurisprudencia", page_icon="logo.png", layout="wide")
- 
+
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap');
- 
+
+        /* ── BORDE BLANCO PARA EL LOGO ────────────────────── */
+        [data-testid="stImage"] {
+            filter: drop-shadow(1.5px 1.5px 0px white) 
+                    drop-shadow(-1.5px -1.5px 0px white) 
+                    drop-shadow(1.5px -1.5px 0px white) 
+                    drop-shadow(-1.5px 1.5px 0px white);
+        }
+
         /* ── VARIABLES DORADAS ─────────────────────────────── */
         :root {
             --gold-light:   #E8C97A;
@@ -39,20 +47,20 @@ st.markdown("""
             --navy-surface: #0F172A;
             --navy-hover:   #111827;
         }
- 
+
         /* ── BASE ─────────────────────────────────────────── */
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
         }
         footer { visibility: hidden; }
- 
+
         /* ── FONDO GENERAL ────────────────────────────────── */
         .stApp {
             background-color: var(--navy-deep);
             background-image:
                 radial-gradient(ellipse 80% 60% at 50% -10%, rgba(212,175,55,0.06) 0%, transparent 70%);
         }
- 
+
         /* ── SIDEBAR ──────────────────────────────────────── */
         [data-testid="stSidebar"] {
             background-color: var(--navy-card) !important;
@@ -64,7 +72,7 @@ st.markdown("""
             color: #94A3B8;
             font-size: 0.82rem;
         }
- 
+
         /* ── DIVISOR DORADO SIDEBAR ───────────────────────── */
         [data-testid="stSidebar"] hr {
             border: none !important;
@@ -73,7 +81,7 @@ st.markdown("""
             background: linear-gradient(90deg, transparent, var(--gold-main), transparent) !important;
             height: 1px !important;
         }
- 
+
         /* ── BOTONES SIDEBAR ──────────────────────────────── */
         [data-testid="stSidebar"] .stButton > button {
             width: 100%;
@@ -94,7 +102,7 @@ st.markdown("""
             border-color: var(--gold-border) !important;
             box-shadow: 0 0 10px rgba(212,175,55,0.08) !important;
         }
- 
+
         /* ── BOTÓN PRIMARIO ───────────────────────────────── */
         [data-testid="stSidebar"] .stButton > button[kind="primary"],
         .stButton > button[kind="primary"] {
@@ -114,7 +122,7 @@ st.markdown("""
             box-shadow: 0 2px 16px rgba(212,175,55,0.28), inset 0 1px 0 rgba(212,175,55,0.18) !important;
             border-color: var(--gold-main) !important;
         }
- 
+
         /* ── BURBUJAS DE CHAT — ASISTENTE ─────────────────── */
         div[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-assistant"]) {
             background-color: var(--navy-card);
@@ -130,7 +138,7 @@ st.markdown("""
             font-size: 0.925rem;
             line-height: 1.78;
         }
- 
+
         /* ── BURBUJAS DE CHAT — USUARIO ───────────────────── */
         div[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-user"]) {
             background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%) !important;
@@ -147,7 +155,7 @@ st.markdown("""
             color: #DBEAFE !important;
             font-size: 0.925rem !important;
         }
- 
+
         /* ── CHAT INPUT ───────────────────────────────────── */
         [data-testid="stChatInput"] textarea {
             background-color: var(--navy-card) !important;
@@ -165,7 +173,7 @@ st.markdown("""
         [data-testid="stChatInput"] textarea::placeholder {
             color: #475569 !important;
         }
- 
+
         /* ── DIVISORES GLOBALES ───────────────────────────── */
         hr {
             border: none !important;
@@ -173,7 +181,7 @@ st.markdown("""
             background: linear-gradient(90deg, transparent, var(--gold-border), transparent) !important;
             margin: 1rem 0 !important;
         }
- 
+
         /* ── BOTONES DE SUGERENCIA ────────────────────────── */
         .botones-sugerencia button {
             border: 1px solid var(--gold-border) !important;
@@ -194,7 +202,7 @@ st.markdown("""
             color: var(--gold-light) !important;
             box-shadow: 0 4px 16px rgba(212,175,55,0.12), inset 0 1px 0 rgba(212,175,55,0.12) !important;
         }
- 
+
         /* ── TABS ─────────────────────────────────────────── */
         .stTabs [data-baseweb="tab-list"] {
             background-color: transparent;
@@ -217,7 +225,7 @@ st.markdown("""
         .stTabs [data-baseweb="tab"]:hover {
             color: var(--gold-light) !important;
         }
- 
+
         /* ── INPUTS DE FORMULARIO ─────────────────────────── */
         .stTextInput input, .stTextArea textarea {
             background-color: var(--navy-card) !important;
@@ -238,13 +246,13 @@ st.markdown("""
             letter-spacing: 0.08em !important;
             text-transform: uppercase !important;
         }
- 
+
         /* ── ALERTS ───────────────────────────────────────── */
         .stAlert {
             border-radius: 8px !important;
             font-size: 0.83rem !important;
         }
- 
+
         /* ── DOWNLOAD BUTTON ──────────────────────────────── */
         .stDownloadButton > button {
             background-color: transparent !important;
@@ -262,7 +270,7 @@ st.markdown("""
             background-color: var(--gold-glow) !important;
             box-shadow: 0 2px 12px rgba(212,175,55,0.12) !important;
         }
- 
+
         /* ── EXPANDER ─────────────────────────────────────── */
         .streamlit-expanderHeader {
             font-size: 0.82rem !important;
@@ -276,7 +284,7 @@ st.markdown("""
             border: 1px solid var(--gold-border) !important;
             border-radius: 6px !important;
         }
- 
+
         /* ── LINK BUTTON ──────────────────────────────────── */
         .stLinkButton > a {
             border: 1px solid var(--gold-border-strong) !important;
@@ -290,7 +298,7 @@ st.markdown("""
             background: linear-gradient(135deg, rgba(212,175,55,0.20), rgba(212,175,55,0.10)) !important;
             box-shadow: 0 2px 16px rgba(212,175,55,0.22) !important;
         }
- 
+
         /* ── SCROLLBAR ────────────────────────────────────── */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -298,7 +306,7 @@ st.markdown("""
         ::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.40); }
     </style>
 """, unsafe_allow_html=True)
- 
+
 # ==========================================
 # FUNCIÓN PARA GENERAR PDF (LIMPIO DE EMOJIS)
 # ==========================================
@@ -328,50 +336,50 @@ def generar_pdf(historial, titulo_chat):
         pdf.ln(4)
         
     return bytes(pdf.output())
- 
+
 # ==========================================
 # 2. SISTEMA BLINDADO DE COOKIES EN LA RAÍZ
 # ==========================================
 cookie_manager = stx.CookieManager(key="gestor_chubut")
- 
+
 if "set_refresh_token" in st.session_state:
     vencimiento = datetime.now() + timedelta(days=30)
     cookie_manager.set("chubut_refresh", st.session_state.set_refresh_token, expires_at=vencimiento, key="set_ref_root")
     del st.session_state.set_refresh_token
- 
+
 if "del_tokens" in st.session_state:
     cookie_manager.delete("chubut_refresh", key="del_ref_root")
     del st.session_state.del_tokens
- 
+
 if "set_invitado" in st.session_state:
     vencimiento_inv = datetime.now() + timedelta(days=365)
     cookie_manager.set("chubut_invitado", str(st.session_state.set_invitado), expires_at=vencimiento_inv, key="set_inv_root")
     del st.session_state.set_invitado
- 
+
 mis_cookies = cookie_manager.get_all()
 if mis_cookies is None:
     st.markdown("<h3 style='text-align: center; color: #475569; margin-top: 20vh; font-family: Inter, sans-serif; font-weight: 300;'>Sincronizando entorno seguro...</h3>", unsafe_allow_html=True)
     st.stop()
- 
+
 # ==========================================
 # 3. VARIABLES DE ENTORNO Y SERVICIOS
 # ==========================================
 OPENAI_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
- 
+
 if not OPENAI_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     st.error("Error crítico: Faltan variables de configuración en Railway.")
     st.stop()
 else:
     os.environ["OPENAI_API_KEY"] = OPENAI_KEY
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
- 
+
 if "user_data" not in st.session_state: 
     st.session_state.user_data = None
- 
+
 token_guardado = mis_cookies.get("chubut_refresh")
- 
+
 if token_guardado and st.session_state.user_data is None:
     try:
         res = supabase.auth.refresh_session(token_guardado)
@@ -379,37 +387,37 @@ if token_guardado and st.session_state.user_data is None:
         st.session_state.set_refresh_token = res.session.refresh_token
     except Exception:
         pass 
- 
+
 if "show_login" not in st.session_state: st.session_state.show_login = False
 if "guest_history" not in st.session_state: st.session_state.guest_history = []
 if "consultas_gastadas" not in st.session_state: st.session_state.consultas_gastadas = 0
- 
+
 galleta_invitado = mis_cookies.get("chubut_invitado")
 if galleta_invitado:
     st.session_state.consultas_gastadas = max(st.session_state.consultas_gastadas, int(galleta_invitado))
- 
+
 # ==========================================
 # INSTRUCCIÓN PARA LA IA
 # ==========================================
 def generar_instruccion_ia(contexto):
     return f"""Sos Chubut.IA, un asistente jurídico experto enfocado exclusivamente en la jurisprudencia de la Provincia de Chubut.
- 
+
 CONTEXTO DE LA BASE DE DATOS (EUREKA):
 {contexto}
- 
+
 DIRECTRICES DE COMPORTAMIENTO:
 1. CORTESÍA: Podés responder cordialmente a saludos o agradecimientos, pero llevando rápidamente la conversación al ámbito legal.
 2. LÍMITE ESTRICTO: Si el usuario pregunta o pide algo que NO tiene relación con el ámbito legal de Chubut, DEBES NEGARTE CORTÉSMENTE.
 3. HONESTIDAD Y RELEVANCIA (MUY IMPORTANTE): Si en el CONTEXTO provisto no hay fallos que respondan a la pregunta específica del usuario, DEBES DECIRLO CLARAMENTE. NUNCA muestres "fallos generales" o desconectados del tema solo para rellenar. Si no hay fallos relevantes, responde únicamente: "No encontré jurisprudencia específica sobre este tema en los fallos que tengo registrados."
 4. FORMATO DE BÚSQUEDA DE FALLOS: Si encuentras fallos relevantes en el contexto, utiliza ESTRICTAMENTE este formato para cada fallo:
- 
+
 📌 **[Título Descriptivo del Caso - Ej: Amparo ambiental contra empresa minera]**
 * 📅 **Fecha del Fallo:** [Copia la 'FECHA' exacta]
 * 📖 **Cita Textual:** "[Extrae un fragmento que tenga sustancia jurídica real. Omite frases vacías o de mero trámite como 'se resuelve la cuestión planteada']"
 * 📝 **Resumen de los Hechos:** [Redacta un breve resumen claro del contexto del caso. Si el texto recuperado es solo procedimental y no explica los hechos, pon: "El documento trata sobre cuestiones de trámite y no detalla los hechos del caso principal"]
 * ⚖️ **Resolución:** [Decisión final del juez]
 * 🔗 **Ver fallo oficial:** [Pega la 'URL' tal cual, sin formato markdown]"""
- 
+
 # ==========================================
 # DESCARGO DE RESPONSABILIDAD LEGAL Y SOPORTE
 # ==========================================
@@ -430,7 +438,7 @@ def mostrar_disclaimer():
             y no reemplazan el asesoramiento legal profesional.
         </div>
     """, unsafe_allow_html=True)
- 
+
 def mostrar_soporte():
     st.markdown("""
         <div style="text-align: center; font-size: 0.77rem; color: #334155; margin-top: 8px; padding-bottom: 18px;">
@@ -441,7 +449,7 @@ def mostrar_soporte():
             </a>
         </div>
     """, unsafe_allow_html=True)
- 
+
 def verificar_pago_entrante(user_email):
     params = st.query_params
     if params.get("status") == "approved" and st.session_state.user_data:
@@ -452,7 +460,7 @@ def verificar_pago_entrante(user_email):
         }).eq("email", user_email).execute()
         st.success("¡Pago procesado con éxito! Tu Plan Pro está activo por 30 días.")
         st.query_params.clear()
- 
+
 # ==========================================
 # PANTALLA DE ACCESO (LOGIN / REGISTRO)
 # ==========================================
@@ -460,7 +468,7 @@ def pantalla_acceso():
     if st.button("← Volver al Chat de Prueba"):
         st.session_state.show_login = False
         st.rerun()
- 
+
     col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
@@ -482,7 +490,7 @@ def pantalla_acceso():
                 border-radius: 1px;
             "></div>
         """, unsafe_allow_html=True)
- 
+
         tab_in, tab_reg = st.tabs(["  Entrar  ", "  Registrarse  "])
         
         with tab_in:
@@ -491,7 +499,7 @@ def pantalla_acceso():
                     email = st.text_input("Email")
                     password = st.text_input("Contraseña", type="password")
                     btn_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
- 
+
                 if btn_login:
                     if email and password:
                         with st.spinner("Autenticando..."):
@@ -505,7 +513,7 @@ def pantalla_acceso():
                                 st.error("Credenciales incorrectas o email no confirmado.")
                     else:
                         st.warning("Completá ambos campos.")
- 
+
             if st.session_state.get("login_exitoso"):
                 st.success("Pase generado y guardado en tu navegador.")
                 st.info("Hacé clic abajo para confirmar tu entrada.")
@@ -514,7 +522,7 @@ def pantalla_acceso():
                     st.session_state.show_login = False
                     st.session_state.login_exitoso = False
                     st.rerun()
- 
+
         with tab_reg:
             with st.form("form_registro", clear_on_submit=False):
                 new_user = st.text_input("Nombre y Apellido")
@@ -554,7 +562,7 @@ def pantalla_acceso():
         st.write("")
         st.write("")
         mostrar_soporte()
- 
+
 # ==========================================
 # CEREBRO GLOBAL (DESCARGA DIRECTA DE GITHUB RELEASES)
 # ==========================================
@@ -569,18 +577,18 @@ def load_ia():
     emb = OpenAIEmbeddings(model="text-embedding-3-small")
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
- 
+
 vdb, llm = load_ia()
- 
+
 # ==========================================
 # PANTALLA MODO INVITADO (LÍMITE: 5 CONSULTAS)
 # ==========================================
 def pantalla_invitado():
     consultas_restantes = 5 - st.session_state.consultas_gastadas
- 
+
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
- 
+
         # Línea dorada decorativa bajo el logo
         st.markdown("""
             <div style="
@@ -589,7 +597,7 @@ def pantalla_invitado():
                 margin: 4px 0 16px 0;
             "></div>
         """, unsafe_allow_html=True)
- 
+
         st.markdown(f"""
             <div style="
                 background: linear-gradient(135deg, rgba(12,17,32,0.9) 0%, rgba(15,23,42,0.7) 100%);
@@ -609,11 +617,11 @@ def pantalla_invitado():
                 </p>
             </div>
         """, unsafe_allow_html=True)
- 
+
         if st.button("Iniciar Sesión / Registrarse", type="primary", use_container_width=True):
             st.session_state.show_login = True
             st.rerun()
- 
+
         st.markdown("""
             <div style="
                 height: 1px;
@@ -633,7 +641,7 @@ def pantalla_invitado():
             
         mostrar_disclaimer()
         mostrar_soporte()
- 
+
     if not st.session_state.guest_history:
         st.markdown("""
             <div style="
@@ -688,7 +696,7 @@ def pantalla_invitado():
                 margin: 28px 0 14px 0;
             '>Consultas frecuentes</p>
         """, unsafe_allow_html=True)
- 
+
         st.markdown("<div class='botones-sugerencia'>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         if c1.button("⚖️ Fallos sobre cuota alimentaria", use_container_width=True):
@@ -720,7 +728,7 @@ def pantalla_invitado():
             mime="application/pdf",
             use_container_width=True
         )
- 
+
     if st.session_state.consultas_gastadas >= 5:
         st.markdown("""
             <div style="
@@ -749,7 +757,7 @@ def pantalla_invitado():
         if prompt := st.chat_input("Consultá sobre jurisprudencia de Chubut..."):
             st.session_state.guest_history.append({"role": "user", "content": prompt})
             st.rerun()
- 
+
     if st.session_state.guest_history and st.session_state.guest_history[-1]["role"] == "user":
         with st.chat_message("assistant"):
             with st.spinner("Analizando jurisprudencia..."):
@@ -768,7 +776,7 @@ def pantalla_invitado():
                 st.session_state.consultas_gastadas += 1
                 st.session_state.set_invitado = st.session_state.consultas_gastadas
                 st.rerun() 
- 
+
 # ==========================================
 # PANTALLA DE CHAT (LOGUEADOS)
 # ==========================================
@@ -783,24 +791,24 @@ def pantalla_chat():
     fecha_trial_formateada = ""
     if datos.get("vencimiento_trial"):
         fecha_trial_formateada = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").strftime("%d/%m/%Y")
- 
+
     fecha_pro_formateada = ""
     if datos.get("vencimiento_pro"):
         fecha_pro_formateada = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").strftime("%d/%m/%Y")
- 
+
     es_pro = False
     if datos.get("plan") == "pro" and datos.get("vencimiento_pro"):
         venc_pro = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").date()
         if hoy <= venc_pro: es_pro = True
- 
+
     esta_en_trial = False
     if not es_pro and datos.get("vencimiento_trial"):
         venc_trial = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").date()
         if hoy <= venc_trial: esta_en_trial = True
- 
+
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
- 
+
         # Línea dorada decorativa
         st.markdown("""
             <div style="
@@ -809,7 +817,7 @@ def pantalla_chat():
                 margin: 4px 0 16px 0;
             "></div>
         """, unsafe_allow_html=True)
- 
+
         if es_pro:
             st.markdown(f"""
                 <div style="
@@ -891,7 +899,7 @@ def pantalla_chat():
                     ">Acceso Expirado</span>
                 </div>
             """, unsafe_allow_html=True)
- 
+
         st.markdown("""
             <div style="
                 height: 1px;
@@ -921,7 +929,7 @@ def pantalla_chat():
                 </div>
             """, unsafe_allow_html=True)
             st.link_button("✦ Activar Plan Pro", "https://mpago.la/2nDaBRx", type="primary", use_container_width=True)
- 
+
             st.markdown("""
                 <div style="
                     height: 1px;
@@ -929,7 +937,7 @@ def pantalla_chat():
                     margin: 12px 0;
                 "></div>
             """, unsafe_allow_html=True)
- 
+
         if st.button("+ Nueva Consulta", type="primary", use_container_width=True):
             nueva_id = f"Consulta {len(datos['historial']) + 1}"
             datos['historial'][nueva_id] = []
@@ -953,7 +961,7 @@ def pantalla_chat():
                     st.session_state.sesion_actual = list(historial.keys())[-1] if historial else "Nueva Consulta"
                     supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
                     st.rerun()
- 
+
         st.markdown("""
             <div style="
                 height: 1px;
@@ -967,7 +975,7 @@ def pantalla_chat():
             st.session_state.del_tokens = True
             st.session_state.user_data = None
             st.rerun()
- 
+
         st.markdown("""
             <div style="
                 height: 1px;
@@ -985,10 +993,10 @@ def pantalla_chat():
                     <b style="color: #A8882A;">Uso Pro:</b> El acceso es personal e intransferible.
                 </div>
             """, unsafe_allow_html=True)
- 
+
         mostrar_disclaimer()
         mostrar_soporte()
- 
+
     chat_actual = historial.get(st.session_state.sesion_actual, [])
     
     if not chat_actual:
@@ -1045,7 +1053,7 @@ def pantalla_chat():
                 margin: 28px 0 14px 0;
             '>Consultas frecuentes</p>
         """, unsafe_allow_html=True)
- 
+
         st.markdown("<div class='botones-sugerencia'>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         if c1.button("⚖️ Fallos sobre cuota alimentaria", key="btn_sug1", use_container_width=True):
@@ -1085,7 +1093,7 @@ def pantalla_chat():
             mime="application/pdf",
             use_container_width=True
         )
- 
+
     if not es_pro and not esta_en_trial:
         st.markdown("""
             <div style="
@@ -1110,7 +1118,7 @@ def pantalla_chat():
             historial[st.session_state.sesion_actual] = chat_actual
             supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
             st.rerun()
- 
+
         if chat_actual and chat_actual[-1]["role"] == "user":
             with st.chat_message("assistant"):
                 with st.spinner("Analizando jurisprudencia..."):
@@ -1134,10 +1142,10 @@ def pantalla_chat():
                             historial[nuevo_titulo] = historial.pop(st.session_state.sesion_actual)
                             st.session_state.sesion_actual = nuevo_titulo
                         except: pass
- 
+
                     supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
                     st.rerun()
- 
+
 # ==========================================
 # GESTOR CENTRAL DE PANTALLAS (RUTEADOR)
 # ==========================================
@@ -1147,4 +1155,3 @@ elif st.session_state.show_login:
     pantalla_acceso()
 else:
     pantalla_invitado()
- 
