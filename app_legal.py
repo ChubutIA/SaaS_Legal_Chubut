@@ -514,6 +514,24 @@ def pantalla_acceso():
                     else:
                         st.warning("Completá ambos campos.")
 
+                # --- NUEVO: BOTÓN DE RECUPERAR CONTRASEÑA ---
+                st.write("")
+                with st.expander("¿Olvidaste tu contraseña?"):
+                    with st.form("form_recuperar", clear_on_submit=True):
+                        email_recupero = st.text_input("Ingresá tu email registrado")
+                        btn_recuperar = st.form_submit_button("Enviar enlace", use_container_width=True)
+                        
+                        if btn_recuperar:
+                            if email_recupero:
+                                try:
+                                    supabase.auth.reset_password_email(email_recupero.strip())
+                                    st.success("¡Enlace enviado! Revisá tu bandeja de entrada o Spam.")
+                                except Exception as e:
+                                    st.error("Hubo un error. Verificá que el email esté bien escrito.")
+                            else:
+                                st.warning("Por favor, ingresá tu email.")
+                # --------------------------------------------
+
             if st.session_state.get("login_exitoso"):
                 st.success("Pase generado y guardado en tu navegador.")
                 st.info("Hacé clic abajo para confirmar tu entrada.")
