@@ -835,14 +835,28 @@ def pantalla_invitado():
         with st.chat_message("assistant"):
             with st.spinner("Analizando jurisprudencia..."):
                 
-                # --- OPTIMIZADOR HÍBRIDO: Mezcla tus palabras con términos clave ---
-                prompt_opt = f"Extrae los conceptos jurídicos clave de esta consulta en palabras clave simples (ej: locación, cobro, intereses, mora). Solo devuelve las palabras clave, separadas por comas. Consulta: '{st.session_state.guest_history[-1]['content']}'"
-                palabras_clave = llm.invoke([HumanMessage(content=prompt_opt)]).content
-                busqueda_hibrida = f"{st.session_state.guest_history[-1]['content']} {palabras_clave}"
+                # --- NUEVO: BÚSQUEDA MULTI-QUERY (EL MOTOR DEFINITIVO) ---
+                query_usuario = st.session_state.guest_history[-1]["content"]
                 
-                # Buscamos en la base usando la consulta original + las palabras clave
-                docs = vdb.similarity_search(busqueda_hibrida, k=10)
-                # --------------------------------------------------------
+                # 1. Buscamos con las palabras exactas del usuario
+                docs_original = vdb.similarity_search(query_usuario, k=6)
+                
+                # 2. La IA traduce la consulta al "Idioma de Juez"
+                prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia (ej: en lugar de 'cuando no se especifican' usa 'ante el silencio de las partes' o 'omisión contractual'). Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_usuario}'"
+                query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
+                docs_traducidos = vdb.similarity_search(query_traducida, k=6)
+                
+                # 3. Combinamos los resultados como una red gigante (evitando duplicados)
+                docs_unicos = []
+                textos_vistos = set()
+                for d in (docs_original + docs_traducidos):
+                    if d.page_content not in textos_vistos:
+                        textos_vistos.add(d.page_content)
+                        docs_unicos.append(d)
+                
+                # Nos quedamos con los 10 mejores absolutos
+                docs = docs_unicos[:10] 
+                # -----------------------------------------------------------
 
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
@@ -1205,14 +1219,28 @@ def pantalla_chat():
             with st.chat_message("assistant"):
                 with st.spinner("Analizando jurisprudencia..."):
                     
-                    # --- OPTIMIZADOR HÍBRIDO: Mezcla tus palabras con términos clave ---
-                    prompt_opt = f"Extrae los conceptos jurídicos clave de esta consulta en palabras clave simples (ej: locación, cobro, intereses, mora). Solo devuelve las palabras clave, separadas por comas. Consulta: '{chat_actual[-1]['content']}'"
-                    palabras_clave = llm.invoke([HumanMessage(content=prompt_opt)]).content
-                    busqueda_hibrida = f"{chat_actual[-1]['content']} {palabras_clave}"
+                    # --- NUEVO: BÚSQUEDA MULTI-QUERY (EL MOTOR DEFINITIVO) ---
+                    query_usuario = chat_actual[-1]["content"]
                     
-                    # Buscamos en la base usando la consulta original + las palabras clave
-                    docs = vdb.similarity_search(busqueda_hibrida, k=10)
-                    # --------------------------------------------------------
+                    # 1. Buscamos con las palabras exactas del usuario
+                    docs_original = vdb.similarity_search(query_usuario, k=6)
+                    
+                    # 2. La IA traduce la consulta al "Idioma de Juez"
+                    prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia (ej: en lugar de 'cuando no se especifican' usa 'ante el silencio de las partes' o 'omisión contractual'). Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_usuario}'"
+                    query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
+                    docs_traducidos = vdb.similarity_search(query_traducida, k=6)
+                    
+                    # 3. Combinamos los resultados como una red gigante (evitando duplicados)
+                    docs_unicos = []
+                    textos_vistos = set()
+                    for d in (docs_original + docs_traducidos):
+                        if d.page_content not in textos_vistos:
+                            textos_vistos.add(d.page_content)
+                            docs_unicos.append(d)
+                    
+                    # Nos quedamos con los 10 mejores absolutos
+                    docs = docs_unicos[:10] 
+                    # -----------------------------------------------------------
 
                     contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                     
