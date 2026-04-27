@@ -401,26 +401,28 @@ if galleta_invitado:
     st.session_state.consultas_gastadas = max(st.session_state.consultas_gastadas, int(galleta_invitado))
 
 # ==========================================
-# INSTRUCCIÓN PARA LA IA
+# INSTRUCCIÓN PARA LA IA (REGLA DE ORO ACTUALIZADA)
 # ==========================================
 def generar_instruccion_ia(contexto):
-    return f"""Sos Chubut.IA, un asistente jurídico experto enfocado exclusivamente en la jurisprudencia de la Provincia de Chubut.
+    return f"""Sos Chubut.IA, el asistente jurídico experto de la Provincia de Chubut.
 
-CONTEXTO DE LA BASE DE DATOS (EUREKA):
+A continuación te proporciono los fragmentos de sentencias reales recuperados de la base de datos oficial:
 {contexto}
 
-DIRECTRICES DE COMPORTAMIENTO:
-1. CORTESÍA: Podés responder cordialmente a saludos o agradecimientos, pero llevando rápidamente la conversación al ámbito legal.
-2. LÍMITE ESTRICTO: Si el usuario pregunta o pide algo que NO tiene relación con el ámbito legal de Chubut, DEBES NEGARTE CORTÉSMENTE.
-3. HONESTIDAD Y RELEVANCIA (MUY IMPORTANTE): Si en el CONTEXTO provisto no hay fallos que respondan a la pregunta específica del usuario, DEBES DECIRLO CLARAMENTE. NUNCA muestres "fallos generales" o desconectados del tema solo para rellenar. Si no hay fallos relevantes, responde únicamente: "No encontré jurisprudencia específica sobre este tema en los fallos que tengo registrados."
-4. FORMATO DE BÚSQUEDA DE FALLOS: Si encuentras fallos relevantes en el contexto, utiliza ESTRICTAMENTE este formato para cada fallo:
+REGLA DE ORO (OBLIGATORIA E INQUEBRANTABLE):
+Como asistente, tu deber es SIEMPRE mostrar al abogado los fallos que el sistema recuperó en el contexto, incluso si solo son "similares" o "análogos" a lo que preguntó. 
+A los abogados les sirve muchísimo leer jurisprudencia relacionada para armar sus casos. 
+Por lo tanto, ESTÁ TOTALMENTE PROHIBIDO ocultar la información del contexto y decir "No encontré fallos" o "No hay información específica". 
+Si la coincidencia no es 100% exacta con la pregunta hiperespecífica del usuario, simplemente inicia tu respuesta diciendo: "No encontré un caso con esas características exactas, pero aquí tienes la jurisprudencia más cercana sobre la materia que te servirá como referencia o analogía:" y luego MUESTRA TODOS LOS FALLOS DEL CONTEXTO.
+NUNCA inventes fallos que no estén en el contexto.
 
-📌 **[Título Descriptivo del Caso - Ej: Amparo ambiental contra empresa minera]**
-* 📅 **Fecha del Fallo:** [Copia la 'FECHA' exacta]
-* 📖 **Cita Textual:** "[Extrae un fragmento que tenga sustancia jurídica real. Omite frases vacías o de mero trámite como 'se resuelve la cuestión planteada']"
-* 📝 **Resumen de los Hechos:** [Redacta un breve resumen claro del contexto del caso. Si el texto recuperado es solo procedimental y no explica los hechos, pon: "El documento trata sobre cuestiones de trámite y no detalla los hechos del caso principal"]
-* ⚖️ **Resolución:** [Decisión final del juez]
-* 🔗 **Ver fallo oficial:** [Pega la 'URL' tal cual, sin formato markdown]"""
+FORMATO PARA CADA FALLO (Respeta este formato estrictamente):
+📌 **[Título Descriptivo del Caso - Ej: Amparo ambiental]**
+* 📅 **Fecha del Fallo:** [FECHA del contexto]
+* 📖 **Cita Textual:** "[Extrae un fragmento con sustancia jurídica del contexto]"
+* 📝 **Resumen de los Hechos:** [Redacta un breve resumen de qué trataba el caso según el texto]
+* ⚖️ **Resolución:** [Decisión del juez, si figura]
+* 🔗 **Ver fallo oficial:** https://androidphoria.com/juegos/contexto-respuesta-hoy"""
 
 # ==========================================
 # DESCARGO DE RESPONSABILIDAD LEGAL Y SOPORTE
@@ -833,12 +835,13 @@ def pantalla_invitado():
         with st.chat_message("assistant"):
             with st.spinner("Analizando jurisprudencia..."):
                 
-                # --- NUEVO: OPTIMIZADOR DE BÚSQUEDA (TRADUCTOR LEGAL) ---
-                prompt_opt = f"Actúa como un abogado. Reescribe esta consulta legal de un cliente usando sinónimos, términos jurídicos equivalentes y palabras clave amplias para encontrar sentencias en una base de datos. Solo devuelve el texto optimizado para la búsqueda, sin saludos ni explicaciones: '{st.session_state.guest_history[-1]['content']}'"
-                consulta_optimizada = llm.invoke([HumanMessage(content=prompt_opt)]).content
+                # --- OPTIMIZADOR HÍBRIDO: Mezcla tus palabras con términos clave ---
+                prompt_opt = f"Extrae los conceptos jurídicos clave de esta consulta en palabras clave simples (ej: locación, cobro, intereses, mora). Solo devuelve las palabras clave, separadas por comas. Consulta: '{st.session_state.guest_history[-1]['content']}'"
+                palabras_clave = llm.invoke([HumanMessage(content=prompt_opt)]).content
+                busqueda_hibrida = f"{st.session_state.guest_history[-1]['content']} {palabras_clave}"
                 
-                # Buscamos con la consulta optimizada y traemos 10 fallos (k=10)
-                docs = vdb.similarity_search(consulta_optimizada, k=10)
+                # Buscamos en la base usando la consulta original + las palabras clave
+                docs = vdb.similarity_search(busqueda_hibrida, k=10)
                 # --------------------------------------------------------
 
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
@@ -1202,12 +1205,13 @@ def pantalla_chat():
             with st.chat_message("assistant"):
                 with st.spinner("Analizando jurisprudencia..."):
                     
-                    # --- NUEVO: OPTIMIZADOR DE BÚSQUEDA (TRADUCTOR LEGAL) ---
-                    prompt_opt = f"Actúa como un abogado. Reescribe esta consulta legal de un cliente usando sinónimos, términos jurídicos equivalentes y palabras clave amplias para encontrar sentencias en una base de datos. Solo devuelve el texto optimizado para la búsqueda, sin saludos ni explicaciones: '{chat_actual[-1]['content']}'"
-                    consulta_optimizada = llm.invoke([HumanMessage(content=prompt_opt)]).content
+                    # --- OPTIMIZADOR HÍBRIDO: Mezcla tus palabras con términos clave ---
+                    prompt_opt = f"Extrae los conceptos jurídicos clave de esta consulta en palabras clave simples (ej: locación, cobro, intereses, mora). Solo devuelve las palabras clave, separadas por comas. Consulta: '{chat_actual[-1]['content']}'"
+                    palabras_clave = llm.invoke([HumanMessage(content=prompt_opt)]).content
+                    busqueda_hibrida = f"{chat_actual[-1]['content']} {palabras_clave}"
                     
-                    # Buscamos con la consulta optimizada y traemos 10 fallos (k=10)
-                    docs = vdb.similarity_search(consulta_optimizada, k=10)
+                    # Buscamos en la base usando la consulta original + las palabras clave
+                    docs = vdb.similarity_search(busqueda_hibrida, k=10)
                     # --------------------------------------------------------
 
                     contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
