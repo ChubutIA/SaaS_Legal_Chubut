@@ -421,7 +421,8 @@ FORMATO PARA BÚSQUEDAS NUEVAS (Respeta este formato estrictamente cuando te pid
 * 📖 **Cita Textual:** "[Extrae un fragmento con sustancia jurídica del contexto]"
 * 📝 **Resumen de los Hechos:** [Redacta un breve resumen de qué trataba el caso según el texto]
 * ⚖️ **Resolución:** [Decisión del juez, si figura]
-* 🔗 **Ver fallo oficial:** [URL del contexto]"""
+* 🔗 **Ver fallo oficial:** [Link al PDF oficial](INSERTA_AQUI_LA_URL_DEL_CONTEXTO)
+(Nota estricta para la IA: El enlace de arriba DEBE estar formateado en Markdown válido, usando los corchetes para el texto "Link al PDF oficial" y los paréntesis para la URL exacta)."""
 
 # ==========================================
 # DESCARGO DE RESPONSABILIDAD LEGAL Y SOPORTE
