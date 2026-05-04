@@ -409,14 +409,13 @@ def generar_instruccion_ia(contexto):
 A continuación te proporciono los fragmentos de sentencias reales recuperados de la base de datos oficial:
 {contexto}
 
-REGLA DE ORO (OBLIGATORIA E INQUEBRANTABLE):
-Como asistente, tu deber es SIEMPRE mostrar al abogado los fallos que el sistema recuperó en el contexto. A los abogados les sirve muchísimo leer jurisprudencia relacionada para armar sus casos. 
+REGLA DE ORO:
+Como asistente, tu deber es SIEMPRE mostrar los fallos relevantes. Tienes estrictamente prohibido usar frases evasivas o disculpas. Si los fallos responden a la pregunta, preséntalos con absoluta seguridad. NUNCA inventes fallos que no estén en el contexto.
 
-TIENES ESTRICTAMENTE PROHIBIDO usar frases de disculpa, evasivas o dudar de los resultados. NUNCA digas "No encontré un caso exacto" ni "Aquí tienes algo similar". 
-Si los fallos del contexto responden a la pregunta (aunque sea por analogía o tema general), preséntalos directamente con absoluta seguridad y autoridad (Ejemplo de inicio permitido: "Aquí tienes la jurisprudencia relevante sobre la materia:", o "Estos son los fallos destacados:").
-NUNCA inventes fallos que no estén en el contexto.
+REGLA PARA PREGUNTAS DE SEGUIMIENTO (¡MUY IMPORTANTE!):
+Si el usuario te pide resumir más, explicar mejor, o te hace una pregunta sobre un fallo que ya le mostraste en el mensaje anterior, responde de manera fluida, natural, conversacional y detallada. En estos casos de charla continua, NO es obligatorio que uses el formato estricto de viñetas, simplemente compórtate como un abogado explicando a fondo el caso usando tu memoria y el contexto.
 
-FORMATO PARA CADA FALLO (Respeta este formato estrictamente):
+FORMATO PARA BÚSQUEDAS NUEVAS (Respeta este formato estrictamente cuando te pidan buscar casos nuevos):
 📌 **[Título Descriptivo del Caso - Ej: Amparo ambiental]**
 * 📅 **Fecha del Fallo:** [FECHA del contexto]
 * 📖 **Cita Textual:** "[Extrae un fragmento con sustancia jurídica del contexto]"
@@ -835,14 +834,23 @@ def pantalla_invitado():
         with st.chat_message("assistant"):
             with st.spinner("Analizando jurisprudencia..."):
                 
-                # --- NUEVO: BÚSQUEDA MULTI-QUERY (EL MOTOR DEFINITIVO) ---
-                query_usuario = st.session_state.guest_history[-1]["content"]
+                # --- NUEVO: BÚSQUEDA MULTI-QUERY CON MEMORIA ---
+                historial_activo = st.session_state.guest_history
+                query_usuario = historial_activo[-1]["content"]
                 
-                # 1. Buscamos con las palabras exactas del usuario
-                docs_original = vdb.similarity_search(query_usuario, k=6)
+                # 0. REFORMULACIÓN CONTEXTUAL (El "Modo Memoria")
+                if len(historial_activo) > 1:
+                    historial_texto = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in historial_activo[-3:-1]]) 
+                    prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario}'. Solo devuelve la pregunta reescrita sin comillas."
+                    query_busqueda = llm.invoke([HumanMessage(content=prompt_ref)]).content.replace('"', '').strip()
+                else:
+                    query_busqueda = query_usuario
+                
+                # 1. Buscamos con la consulta completa (con memoria)
+                docs_original = vdb.similarity_search(query_busqueda, k=6)
                 
                 # 2. La IA traduce la consulta al "Idioma de Juez"
-                prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia (ej: en lugar de 'cuando no se especifican' usa 'ante el silencio de las partes' o 'omisión contractual'). Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_usuario}'"
+                prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_busqueda}'"
                 query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
                 docs_traducidos = vdb.similarity_search(query_traducida, k=6)
                 
@@ -1219,14 +1227,23 @@ def pantalla_chat():
             with st.chat_message("assistant"):
                 with st.spinner("Analizando jurisprudencia..."):
                     
-                    # --- NUEVO: BÚSQUEDA MULTI-QUERY (EL MOTOR DEFINITIVO) ---
-                    query_usuario = chat_actual[-1]["content"]
+                    # --- NUEVO: BÚSQUEDA MULTI-QUERY CON MEMORIA ---
+                    historial_activo = chat_actual
+                    query_usuario = historial_activo[-1]["content"]
                     
-                    # 1. Buscamos con las palabras exactas del usuario
-                    docs_original = vdb.similarity_search(query_usuario, k=6)
+                    # 0. REFORMULACIÓN CONTEXTUAL (El "Modo Memoria")
+                    if len(historial_activo) > 1:
+                        historial_texto = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in historial_activo[-3:-1]]) 
+                        prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario}'. Solo devuelve la pregunta reescrita sin comillas."
+                        query_busqueda = llm.invoke([HumanMessage(content=prompt_ref)]).content.replace('"', '').strip()
+                    else:
+                        query_busqueda = query_usuario
+                    
+                    # 1. Buscamos con la consulta completa (con memoria)
+                    docs_original = vdb.similarity_search(query_busqueda, k=6)
                     
                     # 2. La IA traduce la consulta al "Idioma de Juez"
-                    prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia (ej: en lugar de 'cuando no se especifican' usa 'ante el silencio de las partes' o 'omisión contractual'). Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_usuario}'"
+                    prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_busqueda}'"
                     query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
                     docs_traducidos = vdb.similarity_search(query_traducida, k=6)
                     
