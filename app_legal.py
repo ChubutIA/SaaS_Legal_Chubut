@@ -652,7 +652,9 @@ def load_ia():
     emb = OpenAIEmbeddings(model="text-embedding-3-small")
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
-    vdb, llm = load_ia()
+
+vdb, llm = load_ia()
+
 # ==========================================
 # PANTALLA MODO INVITADO (LÍMITE: 5 CONSULTAS)
 # ==========================================
