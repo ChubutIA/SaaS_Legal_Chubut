@@ -644,7 +644,7 @@ def pantalla_acceso():
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
         # REEMPLAZA EL ID POR EL DE TU ARCHIVO DE DRIVE 👇
-        url_directa = "https://drive.google.com/uc?id=1bV3SdXA2PdNexWs3FkExPY4AZ5zb4E26"
+        url_directa = "https://drive.google.com/uc?id=1J0O52QmGKZnx_gazbuZ7-Mq6R48pxz9E"
         
         # Usamos gdown para saltar el cartel de advertencia de Google
         gdown.download(url_directa, "base.zip", quiet=False)
