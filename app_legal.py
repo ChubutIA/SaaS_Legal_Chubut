@@ -8,7 +8,9 @@ import zipfile
 import urllib.request
 import time
 import json
-import gdown  # NUEVA LIBRERÍA PARA SALTAR EL CARTEL DE DRIVE
+import gdown
+import PyPDF2  # <-- Lector de PDFs
+from openai import OpenAI  # <-- Motor de transcripción de audio
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -407,11 +409,11 @@ if galleta_invitado:
 def generar_instruccion_ia(contexto):
     return f"""Sos Chubut.IA, el motor y asistente jurídico experto de la Provincia de Chubut.
 
-A continuación te proporciono los fragmentos de sentencias reales recuperados de la base de datos oficial:
+A continuación te proporciono los fragmentos de sentencias reales recuperados de la base de datos oficial o proporcionados por el usuario:
 {contexto}
 
 REGLA DE ORO:
-Como asistente, tu deber es SIEMPRE mostrar los fallos relevantes. Tienes estrictamente prohibido usar frases evasivas o disculpas. Si los fallos responden a la pregunta, preséntalos con absoluta seguridad. NUNCA inventes fallos que no estén en el contexto.
+Como asistente, tu deber es SIEMPRE mostrar los fallos relevantes. Tienes estrictamente prohibido usar frases evasivas o disculpas. Si los fallos responden a la pregunta, preséntalos con absoluta seguridad. NUNCA inventes fallos que no estén en el contexto. Si el usuario te envía un documento para analizar, compáralo con la base legal disponible de manera profesional.
 
 REGLA PARA PREGUNTAS DE SEGUIMIENTO (¡MUY IMPORTANTE!):
 Si el usuario te pide resumir más, explicar mejor, o te hace una pregunta sobre un fallo que ya le mostraste en el mensaje anterior, responde de manera fluida, natural, conversacional y detallada. En estos casos de charla continua, NO es obligatorio que uses el formato estricto de viñetas, simplemente compórtate como un abogado explicando a fondo el caso usando tu memoria y el contexto.
@@ -521,9 +523,7 @@ def pantalla_acceso():
                     else:
                         st.warning("Completá ambos campos.")
 
-                # --- NUEVO: FLUJO COMPLETO DE RECUPERAR CONTRASEÑA ---
                 st.write("")
-                # El expander se queda abierto si ya enviamos el código
                 with st.expander("¿Olvidaste tu contraseña?", expanded=(st.session_state.reset_estado == "codigo_enviado")):
                     
                     if st.session_state.reset_estado == "inicio":
@@ -546,7 +546,6 @@ def pantalla_acceso():
                     elif st.session_state.reset_estado == "codigo_enviado":
                         st.info(f"Revisá tu bandeja de entrada o Spam. Enviamos un código de seguridad a **{st.session_state.reset_email}**")
                         with st.form("form_nueva_clave", clear_on_submit=True):
-                            # Le sacamos lo de "6 dígitos" para evitar confusión si Supabase envía 8
                             otp_code = st.text_input("Ingresá el código de seguridad")
                             new_pass = st.text_input("Nueva contraseña", type="password")
                             new_pass_confirm = st.text_input("Confirmar nueva contraseña", type="password")
@@ -561,32 +560,27 @@ def pantalla_acceso():
                                     st.error("La contraseña debe tener al menos 6 caracteres.")
                                 else:
                                     try:
-                                        # 1. Validamos el código OTP
                                         supabase.auth.verify_otp({
                                             "email": st.session_state.reset_email,
                                             "token": otp_code.strip(),
                                             "type": "recovery"
                                         })
-                                        
-                                        # 2. Si el código es correcto, actualizamos la contraseña
                                         try:
                                             supabase.auth.update_user({"password": new_pass})
                                             st.success("¡Contraseña actualizada con éxito! Ya podés iniciar sesión arriba.")
                                             st.session_state.reset_estado = "inicio"
                                             st.session_state.reset_email = ""
-                                            supabase.auth.sign_out() # Cierra sesión fantasma
+                                            supabase.auth.sign_out() 
                                         except Exception as pw_error:
                                             st.error(f"El código era correcto, pero falló la contraseña: {str(pw_error)}")
                                             
                                     except Exception as otp_error:
-                                        # Mostramos el error exacto que tira Supabase
                                         st.error(f"No pudimos validar el código. Razón técnica: {str(otp_error)}")
                                         
                         if st.button("← Usar otro correo / Volver a intentar"):
                             st.session_state.reset_estado = "inicio"
                             st.session_state.reset_email = ""
                             st.rerun()
-                # --------------------------------------------
 
             if st.session_state.get("login_exitoso"):
                 st.success("Pase generado y guardado en tu navegador.")
@@ -643,12 +637,8 @@ def pantalla_acceso():
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
-        # REEMPLAZA EL ID POR EL DE TU ARCHIVO DE DRIVE 👇
         url_directa = "https://drive.google.com/uc?id=1J0O52QmGKZnx_gazbuZ7-Mq6R48pxz9E"
-        
-        # Usamos gdown para saltar el cartel de advertencia de Google
         gdown.download(url_directa, "base.zip", quiet=False)
-        
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
     
@@ -668,7 +658,6 @@ def pantalla_invitado():
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
 
-        # Línea dorada decorativa bajo el logo
         st.markdown("""
             <div style="
                 height: 1px;
@@ -833,35 +822,86 @@ def pantalla_invitado():
             st.session_state.show_login = True
             st.rerun()
     else:
-        if prompt := st.chat_input("Consultá sobre jurisprudencia de Chubut..."):
-            st.session_state.guest_history.append({"role": "user", "content": prompt})
-            st.rerun()
+        # AQUI AGREGAMOS LA NUEVA BARRA MULTIMODAL CON MICRÓFONO Y ARCHIVOS
+        if prompt := st.chat_input("Consultá, enviá un audio o subí un PDF/TXT...", accept_file=True, accept_audio=True):
+            texto_usuario = ""
+            archivos = []
+            audio_file = None
+            
+            if isinstance(prompt, dict):
+                texto_usuario = prompt.get("text") or ""
+                archivos = prompt.get("files", [])
+                audio_file = prompt.get("audio")
+            elif hasattr(prompt, 'text'):
+                texto_usuario = prompt.text or ""
+                archivos = getattr(prompt, "files", []) or []
+                audio_file = getattr(prompt, "audio", None)
+            else:
+                texto_usuario = str(prompt) if prompt else ""
+                
+            mensaje_final = texto_usuario
+            
+            if audio_file:
+                with st.spinner("Transcribiendo mensaje de voz..."):
+                    try:
+                        client_openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+                        audio_file.name = "audio.wav"
+                        transcripcion = client_openai.audio.transcriptions.create(
+                            model="whisper-1", 
+                            file=audio_file
+                        )
+                        if mensaje_final:
+                            mensaje_final += f"\n\n[Mensaje de Voz]: {transcripcion.text}"
+                        else:
+                            mensaje_final = transcripcion.text
+                    except Exception as e:
+                        st.error(f"Error en transcripción: {e}")
+            
+            if archivos:
+                with st.spinner("Procesando documento adjunto..."):
+                    texto_extraido = ""
+                    for f in archivos:
+                        if f.name.lower().endswith('.pdf'):
+                            try:
+                                pdf_reader = PyPDF2.PdfReader(f)
+                                for page in pdf_reader.pages:
+                                    txt = page.extract_text()
+                                    if txt: texto_extraido += txt + "\n"
+                            except Exception:
+                                texto_extraido += f"\n[Error al leer el archivo PDF: {f.name}]\n"
+                        elif f.name.lower().endswith('.txt'):
+                            texto_extraido += f.getvalue().decode('utf-8', errors='ignore') + "\n"
+                        else:
+                            texto_extraido += f"\n[Archivo adjunto: {f.name} (Por ahora solo extraemos texto de PDF y TXT)]\n"
+                    
+                    if texto_extraido.strip():
+                        mensaje_final += f"\n\n--- DOCUMENTO ADJUNTO PARA ANALIZAR ---\n{texto_extraido.strip()}"
+            
+            if mensaje_final.strip():
+                st.session_state.guest_history.append({"role": "user", "content": mensaje_final.strip()})
+                st.rerun()
 
     if st.session_state.guest_history and st.session_state.guest_history[-1]["role"] == "user":
         with st.chat_message("assistant"):
             with st.spinner("Analizando jurisprudencia..."):
-                
-                # --- NUEVO: BÚSQUEDA MULTI-QUERY CON MEMORIA ---
                 historial_activo = st.session_state.guest_history
                 query_usuario = historial_activo[-1]["content"]
                 
-                # 0. REFORMULACIÓN CONTEXTUAL (El "Modo Memoria")
                 if len(historial_activo) > 1:
                     historial_texto = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in historial_activo[-3:-1]]) 
-                    prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario}'. Solo devuelve la pregunta reescrita sin comillas."
+                    prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario[:1500]}'. Solo devuelve la pregunta reescrita sin comillas."
                     query_busqueda = llm.invoke([HumanMessage(content=prompt_ref)]).content.replace('"', '').strip()
                 else:
                     query_busqueda = query_usuario
                 
-                # 1. Buscamos con la consulta completa (con memoria)
-                docs_original = vdb.similarity_search(query_busqueda, k=6)
+                # ESCUDO ANTI-CRASHEOS: Solo busca similitud con el núcleo, no con el PDF entero
+                query_segura = query_busqueda[:3000]
+                docs_original = vdb.similarity_search(query_segura, k=6)
                 
-                # 2. La IA traduce la consulta al "Idioma de Juez"
-                prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_busqueda}'"
+                prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_segura[:1000]}'"
                 query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
                 docs_traducidos = vdb.similarity_search(query_traducida, k=6)
                 
-                # 3. Combinamos los resultados como una red gigante (evitando duplicados)
                 docs_unicos = []
                 textos_vistos = set()
                 for d in (docs_original + docs_traducidos):
@@ -869,9 +909,7 @@ def pantalla_invitado():
                         textos_vistos.add(d.page_content)
                         docs_unicos.append(d)
                 
-                # Nos quedamos con los 10 mejores absolutos
                 docs = docs_unicos[:10] 
-                # -----------------------------------------------------------
 
                 contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                 
@@ -920,7 +958,6 @@ def pantalla_chat():
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
 
-        # Línea dorada decorativa
         st.markdown("""
             <div style="
                 height: 1px;
@@ -1224,37 +1261,92 @@ def pantalla_chat():
             </div>
         """, unsafe_allow_html=True)
     else:
-        if prompt := st.chat_input("Consultá sobre jurisprudencia de Chubut..."):
-            chat_actual.append({"role": "user", "content": prompt})
-            historial[st.session_state.sesion_actual] = chat_actual
-            supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
-            st.rerun()
+        # AQUI AGREGAMOS LA NUEVA BARRA MULTIMODAL CON MICRÓFONO Y ARCHIVOS
+        if prompt := st.chat_input("Consultá, enviá un audio o subí un PDF/TXT...", accept_file=True, accept_audio=True):
+            texto_usuario = ""
+            archivos = []
+            audio_file = None
+            
+            # Desenvolver la respuesta del chat según la versión
+            if isinstance(prompt, dict):
+                texto_usuario = prompt.get("text") or ""
+                archivos = prompt.get("files", [])
+                audio_file = prompt.get("audio")
+            elif hasattr(prompt, 'text'):
+                texto_usuario = prompt.text or ""
+                archivos = getattr(prompt, "files", []) or []
+                audio_file = getattr(prompt, "audio", None)
+            else:
+                texto_usuario = str(prompt) if prompt else ""
+                
+            mensaje_final = texto_usuario
+            
+            # 1. Transcribir Audio
+            if audio_file:
+                with st.spinner("Transcribiendo mensaje de voz..."):
+                    try:
+                        client_openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+                        audio_file.name = "audio.wav" # Forzamos el nombre para que lo entienda Whisper
+                        transcripcion = client_openai.audio.transcriptions.create(
+                            model="whisper-1", 
+                            file=audio_file
+                        )
+                        if mensaje_final:
+                            mensaje_final += f"\n\n[Mensaje de Voz]: {transcripcion.text}"
+                        else:
+                            mensaje_final = transcripcion.text
+                    except Exception as e:
+                        st.error(f"Error en transcripción: {e}")
+            
+            # 2. Leer Archivos Adjuntos
+            if archivos:
+                with st.spinner("Procesando documento adjunto..."):
+                    texto_extraido = ""
+                    for f in archivos:
+                        if f.name.lower().endswith('.pdf'):
+                            try:
+                                pdf_reader = PyPDF2.PdfReader(f)
+                                for page in pdf_reader.pages:
+                                    txt = page.extract_text()
+                                    if txt: texto_extraido += txt + "\n"
+                            except Exception:
+                                texto_extraido += f"\n[Error al leer el archivo PDF: {f.name}]\n"
+                        elif f.name.lower().endswith('.txt'):
+                            texto_extraido += f.getvalue().decode('utf-8', errors='ignore') + "\n"
+                        else:
+                            texto_extraido += f"\n[Archivo adjunto: {f.name} (Por ahora solo extraemos texto de PDF y TXT)]\n"
+                    
+                    if texto_extraido.strip():
+                        mensaje_final += f"\n\n--- DOCUMENTO ADJUNTO PARA ANALIZAR ---\n{texto_extraido.strip()}"
+            
+            if mensaje_final.strip():
+                chat_actual.append({"role": "user", "content": mensaje_final.strip()})
+                historial[st.session_state.sesion_actual] = chat_actual
+                supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
+                st.rerun()
 
         if chat_actual and chat_actual[-1]["role"] == "user":
             with st.chat_message("assistant"):
                 with st.spinner("Analizando jurisprudencia..."):
                     
-                    # --- NUEVO: BÚSQUEDA MULTI-QUERY CON MEMORIA ---
                     historial_activo = chat_actual
                     query_usuario = historial_activo[-1]["content"]
                     
-                    # 0. REFORMULACIÓN CONTEXTUAL (El "Modo Memoria")
                     if len(historial_activo) > 1:
                         historial_texto = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in historial_activo[-3:-1]]) 
-                        prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario}'. Solo devuelve la pregunta reescrita sin comillas."
+                        prompt_ref = f"Basado en esta charla previa:\n{historial_texto}\n\nReescribe la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos. Si el usuario dice 'ese fallo', 'resúmelo' o algo similar, incluye obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario[:1500]}'. Solo devuelve la pregunta reescrita sin comillas."
                         query_busqueda = llm.invoke([HumanMessage(content=prompt_ref)]).content.replace('"', '').strip()
                     else:
                         query_busqueda = query_usuario
                     
-                    # 1. Buscamos con la consulta completa (con memoria)
-                    docs_original = vdb.similarity_search(query_busqueda, k=6)
+                    # ESCUDO ANTI-CRASHEOS: Limitamos el texto que busca por si suben un PDF gigante
+                    query_segura = query_busqueda[:3000]
+                    docs_original = vdb.similarity_search(query_segura, k=6)
                     
-                    # 2. La IA traduce la consulta al "Idioma de Juez"
-                    prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_busqueda}'"
+                    prompt_opt = f"Traduce esta consulta coloquial al lenguaje hiper-formal y técnico que usaría un juez en una sentencia. Enfócate en el núcleo jurídico. Solo devuelve la frase traducida, sin comillas: '{query_segura[:1000]}'"
                     query_traducida = llm.invoke([HumanMessage(content=prompt_opt)]).content.replace('"', '').strip()
                     docs_traducidos = vdb.similarity_search(query_traducida, k=6)
                     
-                    # 3. Combinamos los resultados como una red gigante (evitando duplicados)
                     docs_unicos = []
                     textos_vistos = set()
                     for d in (docs_original + docs_traducidos):
@@ -1262,9 +1354,7 @@ def pantalla_chat():
                             textos_vistos.add(d.page_content)
                             docs_unicos.append(d)
                     
-                    # Nos quedamos con los 10 mejores absolutos
                     docs = docs_unicos[:10] 
-                    # -----------------------------------------------------------
 
                     contexto_final = "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa')}\n🔗 URL: {d.metadata.get('link_pdf')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
                     
