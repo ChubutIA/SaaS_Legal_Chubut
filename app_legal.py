@@ -334,6 +334,12 @@ def generar_pdf(historial, titulo_chat):
         
         pdf.set_font("helvetica", "", 10)
         texto_limpio = msg["content"].encode('latin-1', 'ignore').decode('latin-1')
+        
+        # Filtramos el bloque oculto del PDF al exportar
+        if "--- DOCUMENTO ADJUNTO PARA ANALIZAR ---" in texto_limpio:
+            texto_limpio = texto_limpio.split("--- DOCUMENTO ADJUNTO PARA ANALIZAR ---")[0].strip()
+            texto_limpio += "\n\n[Documento adjunto procesado]"
+            
         texto_limpio = texto_limpio.replace('**', '')
         pdf.multi_cell(0, 6, texto_limpio)
         pdf.ln(4)
@@ -783,8 +789,16 @@ def pantalla_invitado():
         st.markdown("</div>", unsafe_allow_html=True)
             
     else:
+        # --- RENDERIZADO LIMPIO PARA INVITADOS ---
         for m in st.session_state.guest_history:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
+            with st.chat_message(m["role"]):
+                texto_mostrar = m["content"]
+                if "--- DOCUMENTO ADJUNTO PARA ANALIZAR ---" in texto_mostrar:
+                    texto_visible = texto_mostrar.split("--- DOCUMENTO ADJUNTO PARA ANALIZAR ---")[0].strip()
+                    st.markdown(texto_visible)
+                    st.caption("📎 *Documento analizado por la IA.*")
+                else:
+                    st.markdown(texto_mostrar)
             
         st.markdown("<div style='height:1px; background: linear-gradient(90deg, transparent, rgba(212,175,55,0.28), transparent); margin: 1.5rem 0;'></div>", unsafe_allow_html=True)
         
@@ -822,7 +836,6 @@ def pantalla_invitado():
             st.session_state.show_login = True
             st.rerun()
     else:
-        # AQUI AGREGAMOS LA NUEVA BARRA MULTIMODAL CON MICRÓFONO Y ARCHIVOS
         if prompt := st.chat_input("Consultá, enviá un audio o subí un PDF/TXT...", accept_file=True, accept_audio=True):
             texto_usuario = ""
             archivos = []
@@ -851,15 +864,17 @@ def pantalla_invitado():
                             file=audio_file
                         )
                         if mensaje_final:
-                            mensaje_final += f"\n\n[Mensaje de Voz]: {transcripcion.text}"
+                            mensaje_final += f"\n\n🎙️ **Mensaje de Voz:** {transcripcion.text}"
                         else:
-                            mensaje_final = transcripcion.text
+                            mensaje_final = f"🎙️ **Mensaje de Voz:** {transcripcion.text}"
                     except Exception as e:
                         st.error(f"Error en transcripción: {e}")
             
             if archivos:
                 with st.spinner("Procesando documento adjunto..."):
                     texto_extraido = ""
+                    nombres_archivos = ", ".join([f.name for f in archivos])
+                    
                     for f in archivos:
                         if f.name.lower().endswith('.pdf'):
                             try:
@@ -872,9 +887,14 @@ def pantalla_invitado():
                         elif f.name.lower().endswith('.txt'):
                             texto_extraido += f.getvalue().decode('utf-8', errors='ignore') + "\n"
                         else:
-                            texto_extraido += f"\n[Archivo adjunto: {f.name} (Por ahora solo extraemos texto de PDF y TXT)]\n"
+                            texto_extraido += f"\n[Archivo adjunto: {f.name}]\n"
                     
                     if texto_extraido.strip():
+                        if not mensaje_final.strip():
+                            mensaje_final = f"📄 **Archivo adjunto:** {nombres_archivos}"
+                        else:
+                            mensaje_final = f"📄 **Archivo adjunto:** {nombres_archivos}\n\n" + mensaje_final
+                            
                         mensaje_final += f"\n\n--- DOCUMENTO ADJUNTO PARA ANALIZAR ---\n{texto_extraido.strip()}"
             
             if mensaje_final.strip():
@@ -894,7 +914,6 @@ def pantalla_invitado():
                 else:
                     query_busqueda = query_usuario
                 
-                # ESCUDO ANTI-CRASHEOS: Solo busca similitud con el núcleo, no con el PDF entero
                 query_segura = query_busqueda[:3000]
                 docs_original = vdb.similarity_search(query_segura, k=6)
                 
@@ -1228,8 +1247,17 @@ def pantalla_chat():
         st.markdown("</div>", unsafe_allow_html=True)
         
     else:
+        # --- RENDERIZADO LIMPIO PARA LOGUEADOS ---
         for m in chat_actual:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
+            with st.chat_message(m["role"]):
+                texto_mostrar = m["content"]
+                if "--- DOCUMENTO ADJUNTO PARA ANALIZAR ---" in texto_mostrar:
+                    # Muestra solo la parte limpia (sin el texto gigante)
+                    texto_visible = texto_mostrar.split("--- DOCUMENTO ADJUNTO PARA ANALIZAR ---")[0].strip()
+                    st.markdown(texto_visible)
+                    st.caption("📎 *Documento analizado por la IA.*")
+                else:
+                    st.markdown(texto_mostrar)
             
         st.markdown("<div style='height:1px; background: linear-gradient(90deg, transparent, rgba(212,175,55,0.28), transparent); margin: 1.5rem 0;'></div>", unsafe_allow_html=True)
         
@@ -1261,13 +1289,11 @@ def pantalla_chat():
             </div>
         """, unsafe_allow_html=True)
     else:
-        # AQUI AGREGAMOS LA NUEVA BARRA MULTIMODAL CON MICRÓFONO Y ARCHIVOS
         if prompt := st.chat_input("Consultá, enviá un audio o subí un PDF/TXT...", accept_file=True, accept_audio=True):
             texto_usuario = ""
             archivos = []
             audio_file = None
             
-            # Desenvolver la respuesta del chat según la versión
             if isinstance(prompt, dict):
                 texto_usuario = prompt.get("text") or ""
                 archivos = prompt.get("files", [])
@@ -1281,27 +1307,27 @@ def pantalla_chat():
                 
             mensaje_final = texto_usuario
             
-            # 1. Transcribir Audio
             if audio_file:
                 with st.spinner("Transcribiendo mensaje de voz..."):
                     try:
                         client_openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-                        audio_file.name = "audio.wav" # Forzamos el nombre para que lo entienda Whisper
+                        audio_file.name = "audio.wav"
                         transcripcion = client_openai.audio.transcriptions.create(
                             model="whisper-1", 
                             file=audio_file
                         )
                         if mensaje_final:
-                            mensaje_final += f"\n\n[Mensaje de Voz]: {transcripcion.text}"
+                            mensaje_final += f"\n\n🎙️ **Mensaje de Voz:** {transcripcion.text}"
                         else:
-                            mensaje_final = transcripcion.text
+                            mensaje_final = f"🎙️ **Mensaje de Voz:** {transcripcion.text}"
                     except Exception as e:
                         st.error(f"Error en transcripción: {e}")
             
-            # 2. Leer Archivos Adjuntos
             if archivos:
                 with st.spinner("Procesando documento adjunto..."):
                     texto_extraido = ""
+                    nombres_archivos = ", ".join([f.name for f in archivos])
+                    
                     for f in archivos:
                         if f.name.lower().endswith('.pdf'):
                             try:
@@ -1314,9 +1340,14 @@ def pantalla_chat():
                         elif f.name.lower().endswith('.txt'):
                             texto_extraido += f.getvalue().decode('utf-8', errors='ignore') + "\n"
                         else:
-                            texto_extraido += f"\n[Archivo adjunto: {f.name} (Por ahora solo extraemos texto de PDF y TXT)]\n"
+                            texto_extraido += f"\n[Archivo adjunto: {f.name}]\n"
                     
                     if texto_extraido.strip():
+                        if not mensaje_final.strip():
+                            mensaje_final = f"📄 **Archivo adjunto:** {nombres_archivos}"
+                        else:
+                            mensaje_final = f"📄 **Archivo adjunto:** {nombres_archivos}\n\n" + mensaje_final
+                            
                         mensaje_final += f"\n\n--- DOCUMENTO ADJUNTO PARA ANALIZAR ---\n{texto_extraido.strip()}"
             
             if mensaje_final.strip():
@@ -1339,7 +1370,6 @@ def pantalla_chat():
                     else:
                         query_busqueda = query_usuario
                     
-                    # ESCUDO ANTI-CRASHEOS: Limitamos el texto que busca por si suben un PDF gigante
                     query_segura = query_busqueda[:3000]
                     docs_original = vdb.similarity_search(query_segura, k=6)
                     
