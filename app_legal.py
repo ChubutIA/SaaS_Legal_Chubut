@@ -19,7 +19,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from fpdf import FPDF
 
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO PREMIUM
-st.set_page_config(page_title="Chubut.IA - Jurisprudencia", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="Chubut.IA - Jurisprudencia", page_icon="favicon.png", layout="wide")
 
 st.markdown("""
     <style>
