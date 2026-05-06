@@ -418,7 +418,7 @@ Si el usuario te pide resumir más, explicar mejor, o te hace una pregunta sobre
 
 FORMATO PARA BÚSQUEDAS NUEVAS (Respeta este formato estrictamente cuando te pidan buscar casos nuevos):
 📌 **[Título Descriptivo del Caso - Ej: Amparo ambiental]**
-* 📅 **Fecha del Fallo:** [FECHA del contexto]
+* 📅 **Fecha del Fallo:** [Transforma la FECHA del contexto ESTRICTAMENTE al formato numérico DD/MM/AAAA. Ej: si dice '29 de Abril de 2026', escribe '29/04/2026'. Si el contexto solo dice 'Año 2026' y no hay día ni mes, escribe 'Sin fecha exacta (2026)']
 * 📖 **Cita Textual:** "[Extrae un fragmento con sustancia jurídica del contexto]"
 * 📝 **Resumen de los Hechos:** [Redacta un breve resumen de qué trataba el caso según el texto]
 * ⚖️ **Resolución:** [Decisión del juez, si figura]
