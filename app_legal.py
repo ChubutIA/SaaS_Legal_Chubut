@@ -432,7 +432,7 @@ def mostrar_disclaimer():
     st.markdown("""
         <div style="
             font-size: 0.72rem;
-            color: #2E3A4E;
+            color: #94A3B8;
             text-align: center;
             margin-top: 28px;
             padding: 12px 10px;
@@ -448,7 +448,7 @@ def mostrar_disclaimer():
 
 def mostrar_soporte():
     st.markdown("""
-        <div style="text-align: center; font-size: 0.77rem; color: #334155; margin-top: 8px; padding-bottom: 18px;">
+        <div style="text-align: center; font-size: 0.77rem; color: #94A3B8; margin-top: 8px; padding-bottom: 18px;">
             ¿Necesitás ayuda?<br>
             <a href="mailto:chubutiaoficial@gmail.com"
                style="color: #D4AF37; text-decoration: none; font-weight: 500; letter-spacing: 0.01em;">
@@ -954,7 +954,7 @@ def pantalla_chat():
                         letter-spacing: 0.10em;
                         text-transform: uppercase;
                     ">✦ Plan Pro</span>
-                    <p style="color: #4A3A10; font-size: 0.73rem; margin: 8px 0 0 0;">Vigente hasta el {fecha_pro_formateada}</p>
+                    <p style="color: #94A3B8; font-size: 0.73rem; margin: 8px 0 0 0;">Vigente hasta el {fecha_pro_formateada}</p>
                 </div>
             """, unsafe_allow_html=True)
         elif esta_en_trial:
@@ -982,7 +982,7 @@ def pantalla_chat():
                         letter-spacing: 0.08em;
                         text-transform: uppercase;
                     ">Prueba Gratuita</span>
-                    <p style="color: #4A3A10; font-size: 0.73rem; margin: 8px 0 0 0;">Vence el {fecha_trial_formateada}</p>
+                    <p style="color: #94A3B8; font-size: 0.73rem; margin: 8px 0 0 0;">Vence el {fecha_trial_formateada}</p>
                 </div>
             """, unsafe_allow_html=True)
         else:
