@@ -8,6 +8,7 @@ import zipfile
 import urllib.request
 import time
 import json
+import gdown  # NUEVA LIBRERÍA PARA SALTAR EL CARTEL DE DRIVE
 import streamlit as st
 import extra_streamlit_components as stx
 from datetime import datetime, timedelta
@@ -637,15 +638,17 @@ def pantalla_acceso():
         mostrar_soporte()
 
 # ==========================================
-# CEREBRO GLOBAL (DESCARGA DIRECTA DE GOOGLE DRIVE)
+# CEREBRO GLOBAL (DESCARGA DIRECTA DE GOOGLE DRIVE CON GDOWN)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
         # REEMPLAZA EL ID POR EL DE TU ARCHIVO DE DRIVE 👇
-        url_directa = "https://drive.google.com/uc?export=download&id=1_KlJ5kLswH48pFt-9xsfyMPNktOGDbxe"
+        url_directa = "https://drive.google.com/uc?id=1_KlJ5kLswH48pFt-9xsfyMPNktOGDbxe"
         
-        urllib.request.urlretrieve(url_directa, "base.zip")
+        # Usamos gdown para saltar el cartel de advertencia de Google
+        gdown.download(url_directa, "base.zip", quiet=False)
+        
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
     
@@ -653,6 +656,7 @@ def load_ia():
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
+# LA FUNCIÓN SE ENCIENDE ACÁ:
 vdb, llm = load_ia()
 
 # ==========================================
