@@ -9,3 +9,5 @@ pysqlite3-binary
 gdown>=5.1.0
 extra-streamlit-components
 fpdf2
+PyPDF2
+openai
