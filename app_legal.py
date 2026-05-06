@@ -637,12 +637,14 @@ def pantalla_acceso():
         mostrar_soporte()
 
 # ==========================================
-# CEREBRO GLOBAL (DESCARGA DIRECTA DE GITHUB RELEASES)
+# CEREBRO GLOBAL (DESCARGA DIRECTA DE GOOGLE DRIVE)
 # ==========================================
 @st.cache_resource(show_spinner="Conectando el cerebro jurídico de Chubut (puede demorar unos minutos)...")
 def load_ia():
     if not os.path.exists("MI_BASE_VECTORIAL"):
-        url_directa = "https://github.com/ChubutIA/SaaS_Legal_Chubut/releases/download/v1.0/MI_BASE_VECTORIAL.zip"
+        # REEMPLAZA EL ID POR EL DE TU ARCHIVO DE DRIVE 👇
+        url_directa = "https://drive.google.com/uc?export=download&id=1_KlJ5kLswH48pFt-9xsfyMPNktOGDbxe"
+        
         urllib.request.urlretrieve(url_directa, "base.zip")
         with zipfile.ZipFile("base.zip", 'r') as zr: 
             zr.extractall()
@@ -650,9 +652,6 @@ def load_ia():
     emb = OpenAIEmbeddings(model="text-embedding-3-small")
     vdb = Chroma(persist_directory="MI_BASE_VECTORIAL", embedding_function=emb)
     return vdb, ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
-
-vdb, llm = load_ia()
-
 # ==========================================
 # PANTALLA MODO INVITADO (LÍMITE: 5 CONSULTAS)
 # ==========================================
