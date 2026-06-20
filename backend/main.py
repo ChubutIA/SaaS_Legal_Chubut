@@ -7,16 +7,18 @@ try:
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except ImportError:
     pass
+
 from dotenv import load_dotenv
 load_dotenv()
 import os
+import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-# IMPORTACIONES AJUSTADAS PARA EJECUCIÓN LOCAL
+# IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
 from routers import auth, chat, upload, export, payment
 
@@ -64,8 +66,8 @@ app.include_router(payment.router,  prefix="/api/payment", tags=["Pagos"])
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
-# Ajustamos la ruta para que desde 'backend' suba un nivel a la raíz y luego baje a 'frontend'
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+# Esto busca la carpeta 'frontend' que está un nivel arriba de 'backend'
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
@@ -79,3 +81,11 @@ async def catch_all(full_path: str):
     if os.path.isfile(file_path):
         return FileResponse(file_path)
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+# ==========================================
+# EJECUCIÓN (RAILWAY FRIENDLY)
+# ==========================================
+if __name__ == "__main__":
+    # Railway asigna el puerto mediante la variable de entorno 'PORT'
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
