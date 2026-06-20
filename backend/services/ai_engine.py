@@ -61,16 +61,17 @@ REGLAS ESTRICTAS:
 1. Muestra SIEMPRE los fallos relevantes y reales del contexto.
 2. NUNCA inventes jurisprudencia.
 3. TIENES ESTRICTAMENTE PROHIBIDO usar la palabra 'undefined' en tus respuestas.
+4. Si el usuario pregunta algo que NO está en el contexto o es de conocimiento general, podés responder usando tu conocimiento previo, pero DEBES agregar obligatoriamente al final de tu respuesta EXACTAMENTE esta frase: "⚠️ *Nota: Esta respuesta se basa en conocimiento general. Mi base de datos oficial y mi especialidad es la jurisprudencia de la Provincia del Chubut.*"
 
 FORMATO OBLIGATORIO:
 📌 **[Título Descriptivo del Caso]**
-* 📅 **Fecha del Fallo:** [Fecha]
+* 📅 **Fecha del fallo:** [Fecha]
 * 📖 **Cita Textual:** "[Extracto]"
 * 📝 **Resumen de los Hechos:** [Resumen breve]
 * ⚖️ **Resolución:** [Decisión]
 * 🔗 **Ver fallo oficial:** [Acceder al documento oficial](URL_DEL_FALLO)
-(IMPORTANTE: En la última viñeta, debes reemplazar "URL_DEL_FALLO" EXCLUSIVAMENTE con la dirección web que aparece como 'ENLACE_OFICIAL' en el contexto. Si no hay enlace, escribe 'https://www.juschubut.gov.ar/')."""
-
+(IMPORTANTE: En la última viñeta, debes reemplazar "URL_DEL_FALLO" EXCLUSIVAMENTE con la dirección web que aparece como 'ENLACE_OFICIAL' en el contexto. Si no hay enlace, omite esa viñeta).
+"""
 # ── Súper Búsqueda Dual ──────────────────────────────────────────────────────
 async def super_search(
     query_usuario: str,
