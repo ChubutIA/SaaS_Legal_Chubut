@@ -5,6 +5,7 @@ import gdown
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from duckduckgo_search import DDGS
 
 # ── Singletons globales ──────────────────────────────────────────────────────
 _vdb: Chroma | None = None
@@ -141,6 +142,24 @@ async def super_search(
 
     return contexto_final, query_segura
 
+# ── Búsqueda Web en la Legislatura ───────────────────────────────────────────
+def buscar_legislatura(query: str) -> str:
+    print(f"🔍 Buscando en Legislatura: {query}")
+    try:
+        with DDGS() as ddgs:
+            # Forzamos la búsqueda solo en el dominio oficial
+            resultados = list(ddgs.text(f"{query} site:legislaturadelchubut.gob.ar", max_results=3))
+            
+            if not resultados:
+                return "No se encontraron resultados en la web oficial de la Legislatura para esta consulta."
+            
+            textos = []
+            for r in resultados:
+                textos.append(f"- {r['title']}: {r['body']}\n  (Link: {r['href']})")
+            return "\n\n".join(textos)
+    except Exception as e:
+        return f"Error técnico al consultar la web de la Legislatura: {e}"
+
 # ── Generación de respuesta ──────────────────────────────────────────────────
 async def generate_response(
     contexto: str,
@@ -149,14 +168,31 @@ async def generate_response(
     llm = get_llm()
     loop = asyncio.get_event_loop()
 
-    mensajes = [SystemMessage(content=build_system_prompt(contexto))]
+    # 1. Extraer la última pregunta del usuario
+    ultima_pregunta = historial_completo[-1]["content"]
+
+    # 2. Hacer la búsqueda en la Legislatura en segundo plano
+    resultados_web = await loop.run_in_executor(None, lambda: buscar_legislatura(ultima_pregunta))
+
+    # 3. Mezclar la jurisprudencia local con las leyes de internet
+    contexto_enriquecido = f"""
+=== JURISPRUDENCIA OFICIAL (Base de datos local) ===
+{contexto}
+
+=== LEGISLACIÓN OFICIAL (Búsqueda web en tiempo real en legislaturadelchubut.gob.ar) ===
+{resultados_web}
+    """
+
+    # 4. Armar los mensajes
+    mensajes = [SystemMessage(content=build_system_prompt(contexto_enriquecido))]
     for m in historial_completo[:-1]:
         if m["role"] == "user":
             mensajes.append(HumanMessage(content=m["content"]))
         else:
             mensajes.append(AIMessage(content=m["content"]))
-    mensajes.append(HumanMessage(content=historial_completo[-1]["content"]))
+    mensajes.append(HumanMessage(content=ultima_pregunta))
 
+    # 5. Generar la respuesta final
     respuesta = await loop.run_in_executor(None, lambda: llm.invoke(mensajes))
     return respuesta.content
 
