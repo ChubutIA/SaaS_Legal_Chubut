@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 # IMPORTACIONES AJUSTADAS PARA EJECUCIÓN LOCAL
-from services.ai_engine import initialize_ai
+from .services.ai_engine import initialize_ai
 from routers import auth, chat, upload, export, payment
 
 # ==========================================
