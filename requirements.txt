@@ -25,3 +25,4 @@ gdown>=5.2.0
 python-dotenv>=1.0.1
 pydantic[email]>=2.7.0
 httpx>=0.27.0
+duckduckgo-search
