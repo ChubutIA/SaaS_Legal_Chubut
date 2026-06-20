@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chubut.IA — Jurisprudencia</title>
+  <meta name="description" content="Motor de jurisprudencia inteligente para la Provincia de Chubut. Consultá fallos y sentencias con IA.">
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- DOMPurify for XSS protection -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR TOGGLE (Mobile only)
+============================================================ -->
+<button id="sidebar-toggle" aria-label="Abrir menú" title="Menú">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+</button>
+
+<!-- Mobile sidebar backdrop -->
+<div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
+
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div id="app-shell">
+
+  <!-- ========================================================
+       SIDEBAR
+  ======================================================== -->
+  <aside id="sidebar">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <img id="sidebar-logo" src="/static/assets/logo.png" alt="Chubut.IA"
+           class="sidebar-logo"
+           onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').style.display='block'">
+      <div id="sidebar-logo-fallback" class="sidebar-logo-fallback" style="display:none">Chubut.IA</div>
+      <div class="sidebar-divider"></div>
+    </div>
+
+    <!-- Scrollable inner content -->
+    <div class="sidebar-inner">
+
+      <!-- User card (auth mode) / Guest card (guest mode) -->
+      <div id="sidebar-user-area"></div>
+
+      <!-- Plan upgrade box (shown to non-pro users) -->
+      <div id="sidebar-plan-area"></div>
+
+      <!-- New Chat button (auth mode) -->
+      <button id="btn-new-chat" class="btn-primary hidden">+ Nueva Consulta</button>
+
+      <!-- Login button (guest mode) -->
+      <button id="btn-open-auth" class="btn-primary">Iniciar Sesión / Registrarse</button>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Chat history (auth mode) -->
+      <p class="sidebar-section-label" id="history-label" style="display:none">Historial</p>
+      <div id="chat-history-list" class="chat-history-list"></div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <button id="btn-logout" class="btn-ghost hidden">Cerrar Sesión</button>
+
+      <div style="margin-top:8px">
+        <button class="sidebar-terms-toggle" id="terms-toggle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          Términos y Privacidad
+        </button>
+        <div class="sidebar-terms-content" id="terms-content">
+          <strong>Propiedad Intelectual:</strong> El software y la marca Chubut.IA son propiedad exclusiva del desarrollador. Queda prohibida la reproducción total o parcial.<br><br>
+          <strong>Responsabilidad:</strong> Herramienta de asistencia basada en IA. La verificación en fuentes oficiales es responsabilidad del profesional.<br><br>
+          <strong>Privacidad:</strong> Cumplimos con la Ley 25.326. Sus consultas son confidenciales.
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        Chubut.IA es una herramienta de asistencia basada en inteligencia artificial.
+        Los fallos mostrados deben verificarse en fuentes oficiales y no reemplazan el asesoramiento profesional.
+      </div>
+
+      <div class="support-link">
+        ¿Necesitás ayuda?<br>
+        <a href="mailto:chubutiaoficial@gmail.com">chubutiaoficial@gmail.com</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================
+       CHAT MAIN
+  ======================================================== -->
+  <main id="chat-main">
+
+    <!-- Scroll container (hero OR messages live here) -->
+    <div id="scroll-container">
+
+      <!-- Welcome Hero -->
+      <div id="welcome-hero">
+        <div class="hero-aurora"></div>
+        <p class="hero-eyebrow" id="hero-eyebrow">Jurisprudencia · Provincia de Chubut</p>
+        <h1 class="hero-title" id="hero-title">Consultá la jurisprudencia<br>sin registrarte.</h1>
+        <div class="hero-divider"></div>
+        <p class="hero-subtitle" id="hero-subtitle">5 consultas gratuitas · Sin tarjeta de crédito</p>
+        <p class="suggestions-label">Consultas frecuentes</p>
+        <div class="suggestions-grid" id="suggestions-grid">
+          <button class="suggestion-btn" data-query="Mostrame fallos recientes sobre cuota alimentaria">⚖️ Fallos sobre cuota alimentaria</button>
+          <button class="suggestion-btn" data-query="Mostrame jurisprudencia sobre accidentes de tránsito">🚗 Jurisprudencia en accidentes de tránsito</button>
+          <button class="suggestion-btn" data-query="Busca fallos sobre despidos sin causa justificada">🏢 Fallos por despidos sin causa</button>
+          <button class="suggestion-btn" data-query="Busca fallos relacionados con mala praxis médica">🏥 Mala praxis médica</button>
+        </div>
+      </div>
+
+      <!-- Messages Container -->
+      <div id="messages-container" class="hidden"></div>
+
+    </div><!-- /scroll-container -->
+
+    <!-- Export Bar -->
+    <div id="export-bar" class="hidden">
+      <button id="btn-export-pdf" class="btn-export">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Exportar conversación a PDF
+      </button>
+    </div>
+
+    <!-- Access / Upgrade Wall -->
+    <div id="access-wall" class="hidden"></div>
+
+    <!-- Input Area -->
+    <div id="input-area">
+      <!-- File Preview (hidden by default) -->
+      <div id="file-preview" class="hidden">
+        <div class="file-preview-card">
+          <span class="file-preview-card__icon">📄</span>
+          <div class="file-preview-card__info">
+            <div class="file-preview-card__name" id="preview-file-name"></div>
+            <div class="file-preview-card__meta" id="preview-file-meta"></div>
+          </div>
+          <button class="file-preview-card__remove" id="btn-remove-file" title="Quitar archivo">×</button>
+        </div>
+      </div>
+
+      <!-- Input Row -->
+      <div class="input-row">
+        <!-- Attach file -->
+        <button class="input-icon-btn" id="btn-attach" title="Adjuntar PDF o TXT" aria-label="Adjuntar archivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+
+        <!-- Record audio -->
+        <button class="input-icon-btn" id="btn-record" title="Grabar mensaje de voz" aria-label="Grabar audio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+
+        <!-- Text input -->
+        <textarea
+          id="chat-textarea"
+          placeholder="Consultá jurisprudencia, adjuntá un PDF o grabá tu consulta..."
+          rows="1"
+          aria-label="Mensaje"
+        ></textarea>
+
+        <!-- Send -->
+        <button class="btn-send" id="btn-send" title="Enviar" aria-label="Enviar mensaje" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="input-hint">
+        Chubut.IA puede cometer errores. Verificá los fallos en las fuentes oficiales.
+      </p>
+    </div>
+
+  </main><!-- /chat-main -->
+
+</div><!-- /app-shell -->
+
+
+<!-- ============================================================
+     AUTH MODAL
+============================================================ -->
+<div id="auth-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Acceso al sistema">
+  <div class="auth-modal">
+
+    <!-- Close -->
+    <button class="btn-close-modal" id="btn-close-modal" aria-label="Cerrar">×</button>
+
+    <!-- Logo -->
+    <div class="modal-logo">
+      <img src="/static/assets/logo.png" alt="Chubut.IA" style="max-width:110px; margin:0 auto"
+           onerror="this.style.display='none'; document.getElementById('modal-logo-text').style.display='block'">
+      <div id="modal-logo-text" class="modal-logo-text" style="display:none">Chubut.IA</div>
+    </div>
+
+    <!-- Panel: Login -->
+    <div id="panel-login">
+      <h2 class="modal-title">Acceso al Sistema</h2>
+      <div class="modal-divider"></div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-panel="login">Entrar</button>
+        <button class="modal-tab" data-panel="register">Registrarse</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email</label>
+        <input type="email" id="login-email" class="form-input" placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">Contraseña</label>
+        <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <div id="login-feedback"></div>
+
+      <button id="btn-do-login" class="btn-primary" style="width:100%; margin-top:4px">
+        Iniciar Sesión
+      </button>
+
+      <button class="form-link" id="btn-show-reset" style="margin-top:10px">
+        ¿Olvidaste tu contraseña?
+      </button>
+    </div>
+
+    <!-- Panel: Register -->
+    <div id="panel-register" class="hidden">
+      <h2 class="modal-title">Crear Cuenta</h2>
+      <div class="modal-divider"></div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab" data-panel="login">Entrar</button>
+        <button class="modal-tab active" data-panel="register">Registrarse</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reg-nombre">Nombre y Apellido</label>
+        <input type="text" id="reg-nombre" class="form-input" placeholder="Ej: María González" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-email">Correo Electrónico</label>
+        <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-pass">Contraseña</label>
+        <input type="password" id="reg-pass" class="form-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-pass2">Confirmar Contraseña</label>
+        <input type="password" id="reg-pass2" class="form-input" placeholder="Repetí tu contraseña" autocomplete="new-password">
+      </div>
+
+      <div id="register-feedback"></div>
+
+      <button id="btn-do-register" class="btn-primary" style="width:100%; margin-top:4px">
+        Crear Cuenta
+      </button>
+    </div>
+
+    <!-- Panel: Reset Password -->
+    <div id="panel-reset" class="hidden">
+      <h2 class="modal-title">Recuperar Acceso</h2>
+      <div class="modal-divider"></div>
+
+      <!-- Step 1: Email -->
+      <div id="reset-step-1">
+        <p style="font-size:0.83rem; color:var(--text-secondary); margin-bottom:16px">
+          Ingresá tu email y te enviamos un código de recuperación.
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="reset-email">Email registrado</label>
+          <input type="email" id="reset-email" class="form-input" placeholder="tu@email.com">
+        </div>
+        <div id="reset-step1-feedback"></div>
+        <button id="btn-do-reset-request" class="btn-primary" style="width:100%; margin-top:4px">
+          Enviar Código
+        </button>
+      </div>
+
+      <!-- Step 2: Code + New Password -->
+      <div id="reset-step-2" class="hidden">
+        <div id="reset-step2-info" class="form-success" style="margin-bottom:14px">
+          Revisá tu bandeja de entrada o carpeta de Spam.
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reset-otp">Código de seguridad</label>
+          <input type="text" id="reset-otp" class="form-input" placeholder="Código del email" autocomplete="one-time-code">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reset-new-pass">Nueva contraseña</label>
+          <input type="password" id="reset-new-pass" class="form-input" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reset-confirm-pass">Confirmar contraseña</label>
+          <input type="password" id="reset-confirm-pass" class="form-input" placeholder="Repetí la contraseña">
+        </div>
+        <div id="reset-step2-feedback"></div>
+        <button id="btn-do-reset-confirm" class="btn-primary" style="width:100%; margin-top:4px">
+          Actualizar Contraseña
+        </button>
+        <button id="btn-reset-back" class="form-link" style="margin-top:8px; text-align:center">
+          ← Usar otro correo
+        </button>
+      </div>
+
+      <button class="form-link" id="btn-back-to-login" style="margin-top:12px; text-align:center">
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+     TOAST CONTAINER
+============================================================ -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="hidden-file-input" accept=".pdf,.txt" style="display:none" aria-hidden="true">
+
+
+<!-- ============================================================
+     JS MODULES (loaded as ES modules for clean imports)
+============================================================ -->
+<script type="module" src="/static/app.js"></script>
+
+</body>
+</html>
