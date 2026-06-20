@@ -143,12 +143,24 @@ async def super_search(
     return contexto_final, query_segura
 
 # ── Búsqueda Web en la Legislatura ───────────────────────────────────────────
-def buscar_legislatura(query: str) -> str:
-    print(f"🔍 Buscando en Legislatura: {query}")
+def extraer_keywords(query: str, llm) -> str:
+    """Limpia la pregunta coloquial para usar solo palabras clave en el buscador"""
+    try:
+        prompt = f"Convierte esta pregunta en 2 o 3 palabras clave para buscar en Google. Ignora saludos o frases como 'dame', 'dime', 'buscame'. Solo devuelve las palabras clave separadas por espacio. Pregunta: '{query}'"
+        res = llm.invoke([HumanMessage(content=prompt)])
+        return res.content.replace('"', '').strip()
+    except:
+        return query
+
+def buscar_legislatura(query: str, llm) -> str:
+    # 1. Limpiamos la consulta usando la IA
+    query_limpia = extraer_keywords(query, llm)
+    print(f"🔍 Buscando en Legislatura (limpio): {query_limpia}")
+    
     try:
         with DDGS() as ddgs:
-            # Forzamos la búsqueda solo en el dominio oficial
-            resultados = list(ddgs.text(f"{query} site:legislaturadelchubut.gob.ar", max_results=3))
+            # 2. Buscamos usando solo las palabras clave
+            resultados = list(ddgs.text(f"{query_limpia} site:legislaturadelchubut.gob.ar", max_results=3))
             
             if not resultados:
                 return "No se encontraron resultados en la web oficial de la Legislatura para esta consulta."
@@ -171,8 +183,8 @@ async def generate_response(
     # 1. Extraer la última pregunta del usuario
     ultima_pregunta = historial_completo[-1]["content"]
 
-    # 2. Hacer la búsqueda en la Legislatura en segundo plano
-    resultados_web = await loop.run_in_executor(None, lambda: buscar_legislatura(ultima_pregunta))
+    # 2. Hacer la búsqueda web (ahora pasándole el 'llm' para que limpie la pregunta)
+    resultados_web = await loop.run_in_executor(None, lambda: buscar_legislatura(ultima_pregunta, llm))
 
     # 3. Mezclar la jurisprudencia local con las leyes de internet
     contexto_enriquecido = f"""
