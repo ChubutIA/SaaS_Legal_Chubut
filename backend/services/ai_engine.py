@@ -286,10 +286,6 @@ def _formatear_docs_leyes(docs: list) -> str:
 # 5. SÚPER BÚSQUEDA DUAL (función principal de recuperación)
 # ══════════════════════════════════════════════════════════════════
 
-# ══════════════════════════════════════════════════════════════════
-# 5. SÚPER BÚSQUEDA DUAL (función principal de recuperación)
-# ══════════════════════════════════════════════════════════════════
-
 async def super_search(
     query_usuario: str,
     historial_previo: list[dict],
@@ -445,7 +441,7 @@ FORMATO MIXTO (cuando la respuesta combina ambas fuentes):
 Presentá primero la legislación aplicable (BLOQUE B) y luego la jurisprudencia
 que la interpreta o aplica (BLOQUE A).
 ════════════════════════════════════════════════════════════════"""
-════════════════════════════════════════════════════════════════"""
+
 
 
 # ══════════════════════════════════════════════════════════════════
