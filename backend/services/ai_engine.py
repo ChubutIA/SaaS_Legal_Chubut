@@ -286,6 +286,10 @@ def _formatear_docs_leyes(docs: list) -> str:
 # 5. SÚPER BÚSQUEDA DUAL (función principal de recuperación)
 # ══════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════
+# 5. SÚPER BÚSQUEDA DUAL (función principal de recuperación)
+# ══════════════════════════════════════════════════════════════════
+
 async def super_search(
     query_usuario: str,
     historial_previo: list[dict],
@@ -293,18 +297,7 @@ async def super_search(
     vdb_fallos: Chroma,
     vdb_leyes: Chroma | None,
 ) -> tuple[str, str, str]:
-    """
-    Pipeline completo de recuperación de contexto.
-
-    Pasos:
-      1. Reformulación con memoria conversacional
-      2. Traducción al lenguaje técnico-judicial
-      3. Clasificación de intención
-      4. Búsqueda en la(s) base(s) relevante(s) (en paralelo cuando corresponde)
-
-    Retorna:
-      (contexto_fallos, contexto_leyes, intent)
-    """
+    """Pipeline completo de recuperación de contexto."""
     loop = asyncio.get_event_loop()
 
     # ── Paso 1: Reformulación con memoria ─────────────────────────
@@ -355,7 +348,6 @@ async def super_search(
     contexto_leyes  = "(No se consultó el Digesto Provincial)"
 
     if intent == INTENT_CONVERSACION:
-        # No hace falta buscar nada; la IA responde con la memoria conversacional
         return contexto_fallos, contexto_leyes, intent
 
     if intent in (INTENT_FALLOS, INTENT_AMBOS):
@@ -367,9 +359,11 @@ async def super_search(
             docs_l = await _busqueda_dual_en_vdb(query_segura, query_tecnica, vdb_leyes)
             contexto_leyes = _formatear_docs_leyes(docs_l)
         else:
+            # ACÁ LE DAMOS PERMISO PARA USAR SU CONOCIMIENTO GENERAL
             contexto_leyes = (
-                "(La base del Digesto Provincial no está disponible en este momento. "
-                "Informá al usuario que esta función estará disponible próximamente.)"
+                "(La base oficial del Digesto Provincial no está conectada en este momento. "
+                "Utiliza tu conocimiento general para responder sobre la ley solicitada y "
+                "agrega OBLIGATORIAMENTE la advertencia al final de tu respuesta.)"
             )
 
     return contexto_fallos, contexto_leyes, intent
@@ -384,10 +378,7 @@ def build_system_prompt(
     contexto_leyes: str,
     intent: str,
 ) -> str:
-    """
-    Construye el system prompt con un CORTAFUEGOS DE CONTEXTO estricto
-    que mantiene las dos fuentes completamente separadas.
-    """
+    """Construye el system prompt con un CORTAFUEGOS DE CONTEXTO estricto."""
 
     # ── Sección de contexto según intención ───────────────────────
     if intent == INTENT_CONVERSACION:
@@ -422,42 +413,38 @@ REGLA 1 — CORTAFUEGOS DE CONTEXTO (crítica):
 Las fuentes BLOQUE A (jurisprudencia) y BLOQUE B (legislación) son independientes.
 NUNCA mezcles un fallo con una ley en la misma cita.
 NUNCA uses un link de jurisprudencia (juschubut.gov.ar / Eureka) para citar una ley.
-NUNCA uses metadata de una norma para describir un fallo.
-Si el contexto de un bloque está vacío, informalo claramente sin inventar datos del otro.
 
-REGLA 2 — PROHIBICIÓN TOTAL DE ALUCINACIÓN:
-NUNCA inventes números de ley, artículos, fechas ni URLs que no estén en el contexto.
-Si la información no está en los bloques provistos, decí explícitamente:
-"No encontré información sobre eso en la base de datos disponible."
+REGLA 2 — CONOCIMIENTO GENERAL Y ADVERTENCIA OBLIGATORIA:
+Si la información de una LEY no se encuentra en el BLOQUE B (ya sea porque está vacío o porque la norma no figura), TENÉS PERMITIDO responder utilizando tu conocimiento general previo sobre leyes argentinas y provinciales.
+⚠️ ATENCIÓN: Si usás tu conocimiento general, estás ESTRICTAMENTE OBLIGADO a agregar este texto exacto al final de tu respuesta:
+"⚠️ *Nota: Esta respuesta se basa en mi conocimiento general, ya que la base oficial de leyes no se encuentra conectada actualmente y la información no está verificada en tiempo real. Mi especialidad principal y base de datos oficial es la jurisprudencia de la Provincia del Chubut.*"
+NUNCA inventes URLs. Si usas conocimiento general, en el apartado de Fuente poné "Enlace no disponible en la base actual".
 
 REGLA 3 — CONVERSACIÓN FLUIDA EN SEGUIMIENTOS:
 Si el usuario pide resumir, explicar mejor, o hace una pregunta sobre algo
 que ya mencionaste en el mensaje anterior, respondé de forma natural y conversacional.
-No estás obligado a repetir el formato de viñetas. Comportate como un abogado
-explicando el caso a un colega.
 
 ════════════════════ FORMATOS DE RESPUESTA ═══════════════════
 
 FORMATO PARA FALLOS (usá este cuando presentes jurisprudencia):
 📌 **[Título Descriptivo del Caso]**
-* 📅 **Fecha del Fallo:** [DD/MM/AAAA — transformá el texto a formato numérico estricto]
+* 📅 **Fecha del Fallo:** [DD/MM/AAAA]
 * 📖 **Cita Textual:** "[fragmento con sustancia jurídica del BLOQUE A]"
 * 📝 **Resumen:** [qué trataba el caso]
 * ⚖️ **Resolución:** [decisión del juez, si figura]
 * 🔗 **Ver fallo oficial:** [Link al PDF oficial](URL_EXACTA_DEL_BLOQUE_A)
 
 FORMATO PARA LEYES (usá este cuando presentes normativa):
-📜 **[Tipo y Número de la Norma — Ej: Ley N° 5001]**
-* 🗓️ **Sancionada/Promulgada:** [año o fecha, si figura en el BLOQUE B]
-* 📋 **Artículo relevante:** "[texto literal del artículo del BLOQUE B]"
+📜 **[Tipo y Número de la Norma]**
+* 🗓️ **Sancionada/Promulgada:** [año o fecha, si figura o lo sabés]
+* 📋 **Artículo relevante:** "[texto literal o resumen del artículo]"
 * 💡 **Interpretación:** [explicación en lenguaje claro de qué implica este artículo]
-* 📁 **Fuente:** [nombre del archivo del BLOQUE B — NO uses links de jurisprudencia]
+* 📁 **Fuente:** [nombre del archivo del BLOQUE B o "Enlace no disponible en la base actual"]
 
 FORMATO MIXTO (cuando la respuesta combina ambas fuentes):
 Presentá primero la legislación aplicable (BLOQUE B) y luego la jurisprudencia
-que la interpreta o aplica (BLOQUE A), con una sección de transición que explique
-cómo los fallos interpretan la norma.
-
+que la interpreta o aplica (BLOQUE A).
+════════════════════════════════════════════════════════════════"""
 ════════════════════════════════════════════════════════════════"""
 
 
