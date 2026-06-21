@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, Request, status, Depends
 from pydantic import BaseModel
 
 from middleware.auth_guard import get_current_user
-from services.ai_engine import get_vdb, get_llm, super_search, generate_response, generate_chat_title
+# IMPORTACIONES ACTUALIZADAS PARA EL CEREBRO DUAL (v3.0)
+from services.ai_engine import get_vdb_fallos, get_vdb_leyes, get_llm, super_search, generate_response, generate_chat_title
 from services.supabase_client import get_supabase
 
 router = APIRouter()
@@ -76,14 +77,18 @@ async def chat_endpoint(
     query_usuario = historial[-1]["content"]
     historial_previo = historial[:-1]
 
-    vdb = get_vdb()
+    # OBTENER AMBAS BASES DE DATOS Y EL LLM
+    vdb_fallos = get_vdb_fallos()
+    vdb_leyes = get_vdb_leyes()
     llm = get_llm()
 
-    # Súper búsqueda dual
-    contexto, _ = await super_search(query_usuario, historial_previo, llm, vdb)
+    # Súper búsqueda dual (Extrae fallos, leyes e intención)
+    contexto_fallos, contexto_leyes, intent = await super_search(
+        query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
+    )
 
-    # Generar respuesta
-    respuesta = await generate_response(contexto, historial)
+    # Generar respuesta con los tres parámetros nuevos
+    respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial)
 
     # Actualizar historial en Supabase
     historial_db = datos.get("historial", {})
@@ -131,11 +136,16 @@ async def chat_guest_endpoint(payload: ChatPayload):
     query_usuario = historial[-1]["content"]
     historial_previo = historial[:-1]
 
-    vdb = get_vdb()
+    # OBTENER AMBAS BASES DE DATOS Y EL LLM PARA EL INVITADO TAMBIÉN
+    vdb_fallos = get_vdb_fallos()
+    vdb_leyes = get_vdb_leyes()
     llm = get_llm()
 
-    contexto, _ = await super_search(query_usuario, historial_previo, llm, vdb)
-    respuesta = await generate_response(contexto, historial)
+    # Súper búsqueda dual y generación
+    contexto_fallos, contexto_leyes, intent = await super_search(
+        query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
+    )
+    respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial)
 
     return {"ok": True, "respuesta": respuesta}
 
