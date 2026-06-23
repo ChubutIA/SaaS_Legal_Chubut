@@ -32,11 +32,23 @@ function setupMarked() {
   marked.setOptions({ renderer, breaks: true, gfm: true });
   markedReady = true;
 }
+
 function renderMarkdown(text) {
   setupMarked();
   if (typeof marked === 'undefined') return escapeHtml(text).replace(/\n/g, '<br>');
   const raw = marked.parse(text || '');
-  return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(raw) : raw;
+  
+  if (typeof DOMPurify !== 'undefined') {
+    // Parche: Obligamos a DOMPurify a permitir target="_blank" en los links
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+      if ('target' in node) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+    return DOMPurify.sanitize(raw);
+  }
+  return raw;
 }
 
 // ── Message Rendering ─────────────────────────────────────────────
@@ -48,8 +60,7 @@ export function renderAllMessages() {
     ? (state.historial[state.currentSessionId] || [])
     : state.guestHistory;
 
-  // ¡LA MAGIA ESTÁ ACÁ! Limpiamos el contenedor visual SIEMPRE,
-  // antes de decidir si mostramos el inicio o cargamos mensajes.
+  // Limpiamos el contenedor visual SIEMPRE
   container.innerHTML = '';
 
   if (history.length === 0) {
@@ -60,7 +71,7 @@ export function renderAllMessages() {
 
   showHero(false);
 
-  // Filtramos mensajes de usuario duplicados visualmente (el bug de sincronización)
+  // Filtramos mensajes de usuario duplicados visualmente
   const cleanHistory = history.filter((msg, index, arr) => {
     if (index === 0) return true;
     const prev = arr[index - 1];
@@ -93,7 +104,6 @@ function buildUserBubble(content) {
   let display = content;
   let fileChip = '';
 
-  // Extract and hide the document block
   if (content.includes('--- DOCUMENTO ADJUNTO PARA ANALIZAR ---')) {
     display = content.split('--- DOCUMENTO ADJUNTO PARA ANALIZAR ---')[0].trim();
     fileChip = `<div class="file-chip">
@@ -119,7 +129,6 @@ export async function sendMessage() {
   const textarea = document.getElementById('chat-textarea');
   let text = textarea ? textarea.value.trim() : '';
 
-  // Compose the full message content
   let messageContent = '';
   const parts = [];
 
@@ -138,21 +147,17 @@ export async function sendMessage() {
 
   messageContent = parts.join('\n\n');
 
-  // Append hidden document block
   if (state.pendingFile?.text) {
     messageContent += `\n\n--- DOCUMENTO ADJUNTO PARA ANALIZAR ---\n${state.pendingFile.text}`;
   }
 
-  // Clear input
   if (textarea) { textarea.value = ''; textarea.style.height = 'auto'; }
   clearPendingFile();
   clearPendingAudio();
   updateSendBtn();
 
-  // Ensure messages visible
   showHero(false);
 
-  // Append user message immediately
   const userMsg = { role: 'user', content: messageContent };
   if (state.user) {
     const current = state.historial[state.currentSessionId] || [];
@@ -174,13 +179,11 @@ export async function sendMessage() {
     let response;
 
     if (state.user) {
-      // Authenticated send
       const history = state.historial[state.currentSessionId] || [];
       response = await apiChat(history, state.currentSessionId);
 
       const aiMsg = { role: 'assistant', content: response.respuesta };
 
-      // Update historial from server response
       if (response.historial) {
         setState({ historial: response.historial });
         if (response.nuevo_titulo) {
@@ -197,7 +200,6 @@ export async function sendMessage() {
       appendMessageToDOM({ role: 'assistant', content: response.respuesta });
 
     } else {
-      // Guest send
       response = await apiChatGuest(state.guestHistory);
       const aiMsg = { role: 'assistant', content: response.respuesta };
       state.guestHistory.push(aiMsg);
@@ -206,13 +208,10 @@ export async function sendMessage() {
       hideTypingIndicator();
       appendMessageToDOM(aiMsg);
 
-      // Update guest counter in sidebar
       import('./ui.js').then(({ renderSidebar }) => renderSidebar());
 
-      // Check limit
       if (state.guestCount >= 5) {
         showAccessWall('guest-limit');
-        // Bind register button
         setTimeout(() => {
           document.getElementById('wall-btn-register')?.addEventListener('click', () => {
             import('./ui.js').then(({ showModal }) => showModal('register'));
@@ -273,7 +272,6 @@ export async function handleFileSelect(file) {
       }
     });
 
-    // Show preview card
     const preview = document.getElementById('file-preview');
     const nameEl = document.getElementById('preview-file-name');
     const metaEl = document.getElementById('preview-file-meta');
@@ -292,7 +290,6 @@ export function clearPendingFile() {
   setState({ pendingFile: null });
   const preview = document.getElementById('file-preview');
   if (preview) preview.classList.add('hidden');
-  // Reset hidden file input
   const inp = document.getElementById('hidden-file-input');
   if (inp) inp.value = '';
 }
@@ -311,11 +308,18 @@ export async function toggleRecording() {
 
 async function startRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Parche: Pedimos permisos de audio con opciones más amplias para navegadores estrictos
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+        } 
+    });
     audioChunks = [];
 
-    // Prefer webm, fallback to ogg, then mp4
-    const mimeType = ['audio/webm', 'audio/ogg', 'audio/mp4']
+    // Intentamos usar un formato que Opera GX/Chrome digiera mejor
+    const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4']
       .find(t => MediaRecorder.isTypeSupported(t)) || '';
 
     mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
@@ -335,8 +339,8 @@ async function startRecording() {
     setRecordingUI(true);
     showToast('Grabando... Hacé clic de nuevo para detener.', 'info');
   } catch (err) {
-    showToast('No se pudo acceder al micrófono.', 'error');
-    console.error(err);
+    showToast('No se pudo acceder al micrófono. Verificá los permisos del navegador.', 'error');
+    console.error("Error de Micrófono:", err);
   }
 }
 
@@ -356,7 +360,6 @@ async function processAudioBlob(blob) {
 
     setState({ pendingAudio: transcription });
 
-    // Put transcription into textarea
     const ta = document.getElementById('chat-textarea');
     if (ta) {
       ta.value = transcription;
