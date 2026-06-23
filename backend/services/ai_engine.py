@@ -169,7 +169,7 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
                     rama_desc = rama_data.get("descripcion", "General") if isinstance(rama_data, dict) else "General"
                     
                     # Generar el link directo a la búsqueda de esa ley
-                   link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?filter%5Bquery%5D={urllib.parse.quote(norma)}"
+                    link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?filter%5Bquery%5D={urllib.parse.quote(norma)}"
                     
                     if texto_completo and len(texto_completo) > 2000:
                         texto_completo = texto_completo[:2000] + "... [TEXTO TRUNCADO]"
@@ -188,6 +188,7 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
     except Exception as e:
         print(f"Error API Digesto: {e}")
         return "(Error de conexión con la API del Digesto Oficial. Podés usar tu conocimiento general.)"
+
 # ══════════════════════════════════════════════════════════════════
 # 5. SÚPER BÚSQUEDA DUAL
 # ══════════════════════════════════════════════════════════════════
