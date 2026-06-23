@@ -164,12 +164,18 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
                     texto_completo = doc.get("textoCompleto", "")
                     estado = doc.get("estadoConsolidacion", "Estado desconocido")
                     
-                    # Extraer la Rama
-                    rama_data = doc.get("rama", {})
+                    # Extraer datos exactos para armar la URL directa
+                    rama_data = doc.get("rama") or {}
                     rama_desc = rama_data.get("descripcion", "General") if isinstance(rama_data, dict) else "General"
+                    rama_id = rama_data.get("id", "") if isinstance(rama_data, dict) else ""
+                    numero_ley = doc.get("numero", "")
                     
-                    # Generar el link directo a la búsqueda de esa ley
-                    link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?filter%5Bquery%5D={urllib.parse.quote(norma)}"
+                    # Armar la URL mágica directa a la vista de la ley
+                    if rama_id and numero_ley:
+                        link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/rama/{rama_id}/ley/{numero_ley}"
+                    else:
+                        # Fallback por si la ley es muy vieja y no tiene rama
+                        link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?filter%5Bquery%5D={urllib.parse.quote(norma)}"
                     
                     if texto_completo and len(texto_completo) > 2000:
                         texto_completo = texto_completo[:2000] + "... [TEXTO TRUNCADO]"
