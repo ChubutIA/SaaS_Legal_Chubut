@@ -169,7 +169,7 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
                     rama_desc = rama_data.get("descripcion", "General") if isinstance(rama_data, dict) else "General"
                     
                     # Generar el link directo a la búsqueda de esa ley
-                    link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?query={urllib.parse.quote(norma)}"
+                   link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?filter%5Bquery%5D={urllib.parse.quote(norma)}"
                     
                     if texto_completo and len(texto_completo) > 2000:
                         texto_completo = texto_completo[:2000] + "... [TEXTO TRUNCADO]"
@@ -270,10 +270,11 @@ FORMATO PARA FALLOS (usá este cuando presentes jurisprudencia):
 * 🔗 **Ver fallo oficial:** [Link al PDF oficial](URL_EXACTA_DEL_BLOQUE_A)
 
 FORMATO PARA LEYES (usá este cuando presentes normativa del BLOQUE B):
-📜 **[Número Completo de la Norma y Estado (ej. VIGENTE)]**
-* 📋 **Artículo relevante o Cita Textual:** "[texto literal de la ley]"
-* 💡 **Interpretación/Resumen:** [explicación clara de qué implica la norma]
-* 🔗 **Fuente:** Digesto Oficial de la Provincia del Chubut
+📜 **[Número Completo de la Norma]**
+* 🏛️ **Rama:** [rama del BLOQUE B]
+* ✅ **Estado:** [estado del BLOQUE B]
+* 📋 **Artículo relevante o Resumen:** "[texto literal o explicación clara]"
+* 🔗 **Ver documento:** <a href="[Insertá exactamente el LINK_OFICIAL provisto en el BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Ley en el Digesto Oficial (Nueva Pestaña)</a>
 
 FORMATO MIXTO (cuando la respuesta combina ambas fuentes):
 Presentá primero la legislación aplicable (BLOQUE B) y luego la jurisprudencia que la interpreta o aplica (BLOQUE A).
