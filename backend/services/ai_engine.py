@@ -141,16 +141,13 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
     """Extrae palabras clave y busca directo en la API secreta de la Legislatura."""
     loop = asyncio.get_event_loop()
     
-    # 1. Limpiar la query usando el LLM (extraer keywords para la API)
     prompt_limpieza = f"Extraé solo 2 o 3 palabras clave legales de esta consulta para buscar en una base de datos. Ignorá saludos o verbos. Consulta: '{query_usuario}'. Palabras clave:"
     try:
         keywords = await loop.run_in_executor(None, lambda: llm.invoke([HumanMessage(content=prompt_limpieza)]).content.replace('"', '').strip())
     except:
         keywords = query_usuario
 
-    # 2. Consultar la API oficial del Digesto
     url = f"https://digesto.legislaturadelchubut.gob.ar/api/public/search/documentos?query={urllib.parse.quote(keywords)}&page=0&size=3"
-    print(f"🔍 API Digesto -> Buscando: {keywords}")
     
     try:
         async with httpx.AsyncClient() as client:
@@ -167,13 +164,22 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
                     texto_completo = doc.get("textoCompleto", "")
                     estado = doc.get("estadoConsolidacion", "Estado desconocido")
                     
-                    # Cortamos el texto si es una ley gigante para no saturar al LLM
+                    # Extraer la Rama
+                    rama_data = doc.get("rama", {})
+                    rama_desc = rama_data.get("descripcion", "General") if isinstance(rama_data, dict) else "General"
+                    
+                    # Generar el link directo a la búsqueda de esa ley
+                    link_oficial = f"https://digesto.legislaturadelchubut.gob.ar/public/result?query={urllib.parse.quote(norma)}"
+                    
                     if texto_completo and len(texto_completo) > 2000:
                         texto_completo = texto_completo[:2000] + "... [TEXTO TRUNCADO]"
                         
                     textos_leyes.append(
-                        f"📜 NORMA: {norma} (Estado: {estado})\n"
-                        f"📝 RESUMEN OFICIAL: {resumen}\n"
+                        f"📜 NORMA: {norma}\n"
+                        f"🏛️ RAMA: {rama_desc}\n"
+                        f"✅ ESTADO: {estado}\n"
+                        f"🔗 LINK_OFICIAL: {link_oficial}\n"
+                        f"📝 RESUMEN: {resumen}\n"
                         f"📄 TEXTO:\n{texto_completo}"
                     )
                 return "\n\n".join(textos_leyes)
@@ -182,7 +188,6 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
     except Exception as e:
         print(f"Error API Digesto: {e}")
         return "(Error de conexión con la API del Digesto Oficial. Podés usar tu conocimiento general.)"
-
 # ══════════════════════════════════════════════════════════════════
 # 5. SÚPER BÚSQUEDA DUAL
 # ══════════════════════════════════════════════════════════════════
