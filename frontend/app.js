@@ -4,6 +4,7 @@
 // ================================================================
 
 import { state, loadGuestCount } from './state.js';
+import { checkSession, doLogin, doRegister, doLogout, doResetRequest, doResetConfirm } from './auth.js';
 import { checkSession, doLogin, doRegister, doLogout, doResetRequest, doResetConfirm, doGoogleLogin } from './auth.js';
 import { sendMessage, handleFileSelect, clearPendingFile, toggleRecording, exportToPDF, switchSession, renderAllMessages } from './chat.js';
 import { apiNewSession, apiDeleteSession } from './api.js';
@@ -55,11 +56,11 @@ function bindSidebarEvents() {
       // Creamos un ID único usando la hora exacta para que NUNCA se mezclen
       const timestamp = new Date().toLocaleTimeString();
       const nuevaSesion = "Consulta " + timestamp;
-      
+
       // Forzamos un chat totalmente en blanco
       state.historial[nuevaSesion] = [];
       state.currentSessionId = nuevaSesion;
-      
+
       renderHistoryList();
       renderAllMessages();
     } catch (err) {
