@@ -1,7 +1,6 @@
 // ================================================================
 // API — Chubut.IA
 // All HTTP calls to the FastAPI backend
-// Cookies are sent automatically via credentials: 'include'
 // ================================================================
 
 const BASE = '/api';
@@ -10,6 +9,12 @@ const DEFAULT_OPTS = {
   credentials: 'include',
   headers: { 'Content-Type': 'application/json' },
 };
+
+// Ayudante para inyectar el token de Google/Supabase
+function getAuthHeaders() {
+  const token = localStorage.getItem('access_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
 
 async function handleResponse(res) {
   if (res.ok) {
@@ -54,6 +59,8 @@ export async function apiLogout() {
 
 export async function apiGetMe() {
   const res = await fetch(`${BASE}/auth/me`, {
+    method: 'GET',
+    headers: { ...DEFAULT_OPTS.headers, ...getAuthHeaders() },
     credentials: 'include',
   });
   return handleResponse(res);
@@ -91,6 +98,7 @@ export async function apiChat(historial, sesion_id) {
   const res = await fetch(`${BASE}/chat/`, {
     ...DEFAULT_OPTS,
     method: 'POST',
+    headers: { ...DEFAULT_OPTS.headers, ...getAuthHeaders() },
     body: JSON.stringify({ historial, sesion_id }),
   });
   return handleResponse(res);
@@ -109,6 +117,7 @@ export async function apiNewSession() {
   const res = await fetch(`${BASE}/chat/nueva-sesion`, {
     ...DEFAULT_OPTS,
     method: 'POST',
+    headers: { ...DEFAULT_OPTS.headers, ...getAuthHeaders() },
   });
   return handleResponse(res);
 }
@@ -118,6 +127,7 @@ export async function apiDeleteSession(sesionId) {
   const res = await fetch(`${BASE}/chat/sesion/${encoded}`, {
     ...DEFAULT_OPTS,
     method: 'DELETE',
+    headers: { ...DEFAULT_OPTS.headers, ...getAuthHeaders() },
   });
   return handleResponse(res);
 }
@@ -128,6 +138,7 @@ export async function apiUploadDocument(file) {
   form.append('file', file);
   const res = await fetch(`${BASE}/upload/document`, {
     method: 'POST',
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: form,
   });
@@ -139,6 +150,7 @@ export async function apiUploadAudio(blob) {
   form.append('file', blob, 'audio.webm');
   const res = await fetch(`${BASE}/upload/audio`, {
     method: 'POST',
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: form,
   });
@@ -151,6 +163,7 @@ export async function apiExportPDF(historial, titulo, isGuest = false) {
   const res = await fetch(endpoint, {
     ...DEFAULT_OPTS,
     method: 'POST',
+    headers: { ...DEFAULT_OPTS.headers, ...getAuthHeaders() },
     body: JSON.stringify({ historial, titulo }),
   });
   if (!res.ok) {
