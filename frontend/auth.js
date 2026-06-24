@@ -10,6 +10,21 @@ import { renderAllMessages } from './chat.js';
 
 // ── Session Check on Page Load ────────────────────────────────────
 export async function checkSession() {
+  // 1. Atrapamos el token de Google si venimos de un redireccionamiento
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    
+    if (accessToken) {
+      // Guardamos el token (cubrimos Cookies y LocalStorage para asegurar que tu API lo lea)
+      document.cookie = `access_token=${accessToken}; path=/; max-age=604800; Secure; SameSite=Lax`;
+      localStorage.setItem('access_token', accessToken);
+      
+      // Limpiamos la URL para que quede profesional y sin códigos raros a la vista
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }
+
   try {
     const data = await apiGetMe();
     if (data?.user) {
