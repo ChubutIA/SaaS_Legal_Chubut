@@ -22,27 +22,6 @@ export async function checkSession() {
   return false;
 }
 
-// ── Google Login ──────────────────────────────────────────────────
-export async function doGoogleLogin() {
-  const btn = document.getElementById('btn-google-login');
-  if (btn) { 
-    btn.disabled = true; 
-    btn.innerHTML = 'Conectando...'; 
-  }
-
-  try {
-    // Redirige al motor de autenticación de tu Supabase directamente
-    window.location.href = 'https://kxipbsrspqaezmdopqwj.supabase.co/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(window.location.origin);
-  } catch (err) {
-    console.error("Error al iniciar con Google:", err);
-    setFeedback('login-feedback', 'Error al conectar con Google.');
-    if (btn) { 
-      btn.disabled = false; 
-      btn.innerHTML = 'Continuar con Google'; 
-    }
-  }
-}
-
 // ── Login ─────────────────────────────────────────────────────────
 export async function doLogin() {
   const email = document.getElementById('login-email')?.value.trim();
