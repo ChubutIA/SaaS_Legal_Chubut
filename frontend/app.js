@@ -4,7 +4,7 @@
 // ================================================================
 
 import { state, loadGuestCount } from './state.js';
-import { checkSession, doLogin, doRegister, doLogout, doResetRequest, doResetConfirm } from './auth.js';
+import { checkSession, doLogin, doRegister, doLogout, doResetRequest, doResetConfirm, doGoogleLogin } from './auth.js';
 import { sendMessage, handleFileSelect, clearPendingFile, toggleRecording, exportToPDF, switchSession, renderAllMessages } from './chat.js';
 import { apiNewSession, apiDeleteSession } from './api.js';
 import {
@@ -196,6 +196,9 @@ function bindModalEvents() {
       });
     });
   });
+
+  // Google Login submit
+  document.getElementById('btn-google-login')?.addEventListener('click', doGoogleLogin);
 
   // Login submit
   document.getElementById('btn-do-login')?.addEventListener('click', doLogin);
