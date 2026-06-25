@@ -270,7 +270,7 @@ Si el usuario pide resumir, explicar mejor, o hace una pregunta sobre algo que y
 
 FORMATO PARA FALLOS (usá este cuando presentes jurisprudencia):
 📌 **[Título Descriptivo del Caso]**
-* 📅 **Fecha del Fallo:** [DD/MM/AAAA]
+* 📅 **Fecha del Fallo:** [AAAA] (Atención: Extraé y devolvé ÚNICAMENTE el año, ej: 2009. Bajo ninguna circunstancia incluyas días o meses)
 * 📖 **Cita Textual:** "[fragmento con sustancia jurídica del BLOQUE A]"
 * 📝 **Resumen:** [qué trataba el caso]
 * ⚖️ **Resolución:** [decisión del juez, si figura]
