@@ -4,12 +4,37 @@
 // ================================================================
 
 import { state, setState, getUserPlanStatus } from './state.js';
-import { apiGetMe, apiLogin, apiRegister, apiLogout, apiResetRequest, apiResetConfirm } from './api.js';
+import { apiGetMe, apiLogin, apiRegister, apiLogout, apiResetRequest, apiResetConfirm, apiGetGoogleUrl, apiGoogleCallback } from './api.js';
 import { showToast, setFeedback, hideModal, switchPanel, renderSidebar, renderHero, showAccessWall } from './ui.js';
 import { renderAllMessages } from './chat.js';
 
 // ── Session Check on Page Load ────────────────────────────────────
 export async function checkSession() {
+  // 1. Detectar si volvemos de Google con tokens en la URL
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || '';
+
+    // Limpiamos la URL para que no se vea el token feo en la barra del navegador
+    window.history.replaceState(null, '', window.location.pathname);
+
+    if (accessToken) {
+      try {
+        const data = await apiGoogleCallback(accessToken, refreshToken);
+        if (data?.user) {
+          onAuthSuccess(data.user);
+          showToast(`¡Bienvenido, ${data.user.usuario}!`, 'success');
+          return true;
+        }
+      } catch (err) {
+        console.error('Error en callback de Google:', err);
+        showToast('No se pudo completar el acceso con Google.', 'error');
+      }
+    }
+  }
+
+  // 2. Verificación normal con la cookie (si no venimos de Google)
   try {
     const data = await apiGetMe();
     if (data?.user) {
@@ -20,6 +45,27 @@ export async function checkSession() {
     // Not authenticated — stay in guest mode
   }
   return false;
+}
+
+// ── Google Login ──────────────────────────────────────────────────
+export async function doGoogleLogin() {
+  const btn = document.getElementById('btn-google-login');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Conectando...';
+  }
+
+  try {
+    const data = await apiGetGoogleUrl();
+    window.location.href = data.url; // Redirigimos a la pantalla de Google
+  } catch (err) {
+    console.error('Error al obtener URL de Google:', err);
+    setFeedback('login-feedback', 'No se pudo iniciar la autenticación con Google.');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Continuar con Google';
+    }
+  }
 }
 
 // ── Login ─────────────────────────────────────────────────────────
