@@ -1,3 +1,5 @@
+import os
+from urllib.parse import quote
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Response, Request, status
@@ -51,14 +53,15 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
         samesite="lax",
         max_age=COOKIE_MAX_AGE,
     )
-    response.set_cookie(
-        key=REFRESH_COOKIE,
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=COOKIE_MAX_AGE,
-    )
+    if refresh_token:
+        response.set_cookie(
+            key=REFRESH_COOKIE,
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=COOKIE_MAX_AGE,
+        )
 
 
 def _clear_auth_cookies(response: Response):
@@ -237,7 +240,19 @@ async def get_me(request: Request):
             "vencimiento_pro": datos.get("vencimiento_pro"),
             "historial": datos.get("historial", {"Nueva Consulta": []}),
         },
-    @router.post("/google-callback")
+    } # ¡ACÁ ESTÁ LA LLAVE QUE FALTABA!
+
+
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+
+@router.get("/google-url")
+async def get_google_url(request: Request):
+    supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    origin = str(request.base_url).rstrip("/")
+    url = f"{supabase_url}/auth/v1/authorize?provider=google&redirect_to={quote(origin)}"
+    return {"ok": True, "url": url}
+
+@router.post("/google-callback")
 async def google_callback(payload: GoogleCallbackPayload, response: Response):
     supabase = get_supabase()
 
@@ -257,7 +272,7 @@ async def google_callback(payload: GoogleCallbackPayload, response: Response):
     # Google devuelve el nombre en los metadatos
     nombre = meta.get("full_name") or meta.get("name") or email.split("@")[0]
 
-    # 2. Buscar o crear el perfil en la tabla `usuarios` (Con tu esquema exacto)
+    # 2. Buscar o crear el perfil en la tabla `usuarios`
     try:
         existing = supabase.table("usuarios").select("*").eq("email", email).execute()
 
@@ -280,26 +295,9 @@ async def google_callback(payload: GoogleCallbackPayload, response: Response):
         raise HTTPException(status_code=500, detail=f"Error al sincronizar perfil: {str(exc)}")
 
     # 3. Setear las MISMAS cookies que usa tu login normal
-    response.set_cookie(
-        key="sb_token",
-        value=payload.access_token,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=60 * 60 * 24 * 30, # 30 días
-    )
+    _set_auth_cookies(response, payload.access_token, payload.refresh_token or "")
 
-    if payload.refresh_token:
-        response.set_cookie(
-            key="sb_refresh",
-            value=payload.refresh_token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=60 * 60 * 24 * 30,
-        )
-
-    # 4. Devolvemos el usuario igual que en /login para que el frontend lo entienda
+    # 4. Devolvemos el usuario igual que en /login
     user_data = {
         "id":                sb_user.id,
         "email":             sb_user.email,
@@ -311,4 +309,3 @@ async def google_callback(payload: GoogleCallbackPayload, response: Response):
     }
 
     return {"ok": True, "user": user_data}
-    }
