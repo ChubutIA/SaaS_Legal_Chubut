@@ -37,7 +37,10 @@ class ResetConfirmPayload(BaseModel):
 class RefreshPayload(BaseModel):
     refresh_token: str
 
-
+class GoogleCallbackPayload(BaseModel):
+    access_token: str
+    refresh_token: str | None = None
+    
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
     response.set_cookie(
