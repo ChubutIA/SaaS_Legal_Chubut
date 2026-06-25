@@ -237,4 +237,78 @@ async def get_me(request: Request):
             "vencimiento_pro": datos.get("vencimiento_pro"),
             "historial": datos.get("historial", {"Nueva Consulta": []}),
         },
+    @router.post("/google-callback")
+async def google_callback(payload: GoogleCallbackPayload, response: Response):
+    supabase = get_supabase()
+
+    # 1. Validar el token contra Supabase
+    try:
+        user_resp = supabase.auth.get_user(payload.access_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+
+    if not user_resp or not user_resp.user:
+        raise HTTPException(status_code=401, detail="No se pudo obtener el usuario")
+
+    sb_user = user_resp.user
+    email = sb_user.email
+    meta = sb_user.user_metadata or {}
+
+    # Google devuelve el nombre en los metadatos
+    nombre = meta.get("full_name") or meta.get("name") or email.split("@")[0]
+
+    # 2. Buscar o crear el perfil en la tabla `usuarios` (Con tu esquema exacto)
+    try:
+        existing = supabase.table("usuarios").select("*").eq("email", email).execute()
+
+        if not existing.data:
+            # Primera vez: crear perfil con 7 días de plan gratis
+            venc_trial = (datetime.utcnow() - timedelta(hours=3)).date() + timedelta(days=7)
+            nuevo_perfil = {
+                "usuario": nombre,
+                "email": email,
+                "plan": "gratis",
+                "vencimiento_trial": str(venc_trial),
+                "historial": {"Nueva Consulta": []},
+            }
+            supabase.table("usuarios").insert(nuevo_perfil).execute()
+            datos = nuevo_perfil
+        else:
+            datos = existing.data[0]
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error al sincronizar perfil: {str(exc)}")
+
+    # 3. Setear las MISMAS cookies que usa tu login normal
+    response.set_cookie(
+        key="sb_token",
+        value=payload.access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 30, # 30 días
+    )
+
+    if payload.refresh_token:
+        response.set_cookie(
+            key="sb_refresh",
+            value=payload.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,
+        )
+
+    # 4. Devolvemos el usuario igual que en /login para que el frontend lo entienda
+    user_data = {
+        "id":                sb_user.id,
+        "email":             sb_user.email,
+        "usuario":           datos.get("usuario", ""),
+        "plan":              datos.get("plan", "gratis"),
+        "vencimiento_trial": datos.get("vencimiento_trial"),
+        "vencimiento_pro":   datos.get("vencimiento_pro"),
+        "historial":         datos.get("historial", {"Nueva Consulta": []}),
+    }
+
+    return {"ok": True, "user": user_data}
     }
