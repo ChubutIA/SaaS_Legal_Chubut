@@ -25,6 +25,23 @@ async function handleResponse(res) {
   throw new Error(detail);
 }
 
+// ── Google OAuth Nuevos Endpoints ─────────────────────────────────
+export async function apiGetGoogleUrl() {
+  const res = await fetch(`${BASE}/auth/google-url`, {
+    credentials: 'include',
+  });
+  return handleResponse(res);
+}
+
+export async function apiGoogleCallback(accessToken, refreshToken = '') {
+  const res = await fetch(`${BASE}/auth/google-callback`, {
+    ...DEFAULT_OPTS,
+    method: 'POST',
+    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
+  });
+  return handleResponse(res);
+}
+
 // ── Auth ──────────────────────────────────────────────────────────
 export async function apiLogin(email, password) {
   const res = await fetch(`${BASE}/auth/login`, {
