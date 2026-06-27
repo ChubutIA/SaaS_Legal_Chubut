@@ -123,10 +123,10 @@ function renderPlanArea(planStatus) {
       <div class="plan-upgrade-box__price">$6.500 <sub>ARS / mes</sub></div>
       <div class="plan-upgrade-box__desc">Consultas ilimitadas de jurisprudencia.</div>
     </div>
-    <a href="https://mpago.la/2nDaBRx" target="_blank" rel="noopener" class="btn-primary btn-primary--gold"
-       style="display:block; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:2px;">
+    <button id="btn-open-checkout" class="btn-primary btn-primary--gold"
+        style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:2px; border:none; cursor:pointer;">
       ✦ Activar Plan Pro
-    </a>`;
+    </button>`;
 }
 
 function renderSessionButtons(user) {
@@ -243,10 +243,10 @@ export function showAccessWall(type = null) {
       <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px">
         <h3>Tu período de acceso ha finalizado.</h3>
         <p>Activá el Plan Pro para continuar consultando jurisprudencia sin límites.</p>
-        <a href="https://mpago.la/2nDaBRx" target="_blank" class="btn-primary btn-primary--gold"
-           style="display:block; text-align:center; margin-top:14px; padding:9px 14px; border-radius:6px; font-size:0.83rem">
+        <button id="btn-open-checkout" class="btn-primary btn-primary--gold"
+            style="display:block; width:100%; text-align:center; margin-top:14px; padding:9px 14px; border-radius:6px; font-size:0.83rem; border:none; cursor:pointer;">
           ✦ Activar Plan Pro
-        </a>
+        </button>
       </div>`;
     if (inputArea) inputArea.style.display = 'none';
   }
