@@ -347,3 +347,50 @@ export function closeSidebar() {
   document.getElementById('sidebar-backdrop')?.classList.add('hidden');
   state.sidebarOpen = false;
 }
+// ── Checkout Modal ────────────────────────────────────────────────
+export function openCheckoutModal() {
+  const modal = document.getElementById('checkout-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+export function closeCheckoutModal() {
+  const modal = document.getElementById('checkout-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+}
+
+export function showPaymentResult(status, message) {
+  const container = document.getElementById('payment-brick-container');
+  const resultDiv = document.getElementById('payment-result');
+  
+  if (container) container.style.display = 'none';
+  
+  if (resultDiv) {
+    resultDiv.classList.remove('hidden');
+    let html = '';
+    
+    if (status === 'approved') {
+      html = `<h3 style="color: #4ade80;">✅ ¡Pago Exitoso!</h3><p>${message}</p><button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #c9a84c; border: none; border-radius: 4px; cursor: pointer; color: black; font-weight: bold;">Comenzar a usar Pro</button>`;
+    } else if (status === 'pending') {
+      html = `<h3 style="color: #fbbf24;">⏳ Pago Pendiente</h3><p>${message}</p><button onclick="document.getElementById('checkout-modal').classList.add('hidden')" style="margin-top: 15px; padding: 10px 20px; background: #333; border: 1px solid #555; border-radius: 4px; cursor: pointer; color: white;">Cerrar</button>`;
+    } else {
+      html = `<h3 style="color: #f87171;">❌ Error en el pago</h3><p>${message}</p><button id="btn-retry-payment" style="margin-top: 15px; padding: 10px 20px; background: #333; border: 1px solid #555; border-radius: 4px; cursor: pointer; color: white;">Intentar nuevamente</button>`;
+    }
+    
+    resultDiv.innerHTML = html;
+
+    const retryBtn = document.getElementById('btn-retry-payment');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        resultDiv.classList.add('hidden');
+        container.style.display = 'block';
+        document.dispatchEvent(new CustomEvent('chubut:retry-payment'));
+      });
+    }
+  }
+}
