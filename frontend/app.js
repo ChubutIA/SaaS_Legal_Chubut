@@ -12,7 +12,7 @@ import {
   showToast, autoResizeTextarea, updateSendBtn, checkPaymentRedirect,
   openSidebar, closeSidebar
 } from './ui.js';
-
+import { setupCheckoutListeners } from './checkout.js';
 // ── App Init ──────────────────────────────────────────────────────
 async function init() {
   loadGuestCount();
@@ -28,6 +28,7 @@ async function init() {
   bindInputEvents();
   bindModalEvents();
   bindSuggestionButtons();
+  setupCheckoutListeners();
 }
 
 // ── Sidebar Events ────────────────────────────────────────────────
