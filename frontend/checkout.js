@@ -26,13 +26,11 @@ export async function initPaymentBrick() {
   const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'es-AR' });
   const bricksBuilder = mp.bricks();
 
+  // Configuración ultra-simplificada a prueba de fallos
   const settings = {
     initialization: {
       amount: PLAN_PRO_AMOUNT,
-      payer: {
-        // En este punto estamos 100% seguros de que el usuario existe
-        email: state.user.email, 
-      },
+      // Eliminamos la pre-carga del email por si eso estaba trabando el renderizado
     },
     customization: {
       visual: {
@@ -42,13 +40,8 @@ export async function initPaymentBrick() {
             baseColor: '#c9a84c',
           }
         }
-      },
-      paymentMethods: {
-        creditCard: 'all',
-        debitCard: 'all',
-        ticket: 'none',
-        atm: 'none'
       }
+      // Eliminamos las restricciones de "paymentMethods" para evitar conflictos
     },
     callbacks: {
       onReady: () => {
@@ -79,36 +72,34 @@ export async function initPaymentBrick() {
     }
   };
 
-  brickController = await bricksBuilder.create('payment', 'payment-brick-container', settings);
+  try {
+    brickController = await bricksBuilder.create('payment', 'payment-brick-container', settings);
+  } catch (err) {
+    console.error("Fallo crítico al crear el Brick:", err);
+  }
 }
 
 export function setupCheckoutListeners() {
-  // Escuchamos los clics a nivel global para que no se pierdan si la UI se actualiza
   document.body.addEventListener('click', async (e) => {
     
-    // Si hicieron clic en el botón de Activar Plan Pro
     const btnOpen = e.target.closest('#btn-open-checkout');
     if (btnOpen) {
-      // BARRERA DE SEGURIDAD: Verificar si inició sesión
       if (!state.user || !state.user.email) {
         showToast('Tenés que iniciar sesión o registrarte para suscribirte al Plan Pro.', 'error');
-        showModal('login'); // Le abrimos el modal de login automáticamente
-        return; // Frenamos la ejecución acá
+        showModal('login');
+        return; 
       }
       
-      // Si tiene sesión, abrimos el checkout normal
       openCheckoutModal();
       await initPaymentBrick();
     }
 
-    // Si hicieron clic en cerrar la ventana de pago
     const btnClose = e.target.closest('#btn-close-checkout');
     if (btnClose) {
       closeCheckoutModal();
     }
   });
 
-  // Escuchar si tocan el botón de "Intentar nuevamente" en caso de tarjeta rechazada
   document.addEventListener('chubut:retry-payment', async () => {
     await initPaymentBrick();
   });
