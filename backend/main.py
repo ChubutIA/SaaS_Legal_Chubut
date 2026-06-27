@@ -21,6 +21,7 @@ from fastapi.responses import FileResponse
 # IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
 from routers import auth, chat, upload, export, payment
+from routers import auth, chat, payments  # <-- Asegurate de que tenga la "s"
 
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
@@ -62,7 +63,7 @@ app.include_router(chat.router,     prefix="/api/chat",    tags=["Chat IA"])
 app.include_router(upload.router,   prefix="/api/upload",  tags=["Archivos"])
 app.include_router(export.router,   prefix="/api/export",  tags=["Exportar"])
 app.include_router(payment.router,  prefix="/api/payment", tags=["Pagos"])
-
+app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
