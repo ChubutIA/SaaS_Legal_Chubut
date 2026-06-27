@@ -1,7 +1,8 @@
 import { state } from './state.js';
 import { processPayment } from './api.js';
-import { openCheckoutModal, closeCheckoutModal, showPaymentResult } from './ui.js';
+import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, showModal } from './ui.js';
 
+// Tu clave pública de Mercado Pago
 const MP_PUBLIC_KEY = 'APP_USR-58c1aa93-295b-4b5d-bb13-4de93f6b784e'; 
 const PLAN_PRO_AMOUNT = 6500;
 
@@ -29,7 +30,8 @@ export async function initPaymentBrick() {
     initialization: {
       amount: PLAN_PRO_AMOUNT,
       payer: {
-        email: state.user?.email || '', 
+        // En este punto estamos 100% seguros de que el usuario existe
+        email: state.user.email, 
       },
     },
     customization: {
@@ -50,7 +52,7 @@ export async function initPaymentBrick() {
     },
     callbacks: {
       onReady: () => {
-        console.log('Brick Renderizado');
+        console.log('Brick Renderizado exitosamente');
       },
       onSubmit: ({ selectedPaymentMethod, formData }) => {
         return new Promise((resolve, reject) => {
@@ -81,22 +83,32 @@ export async function initPaymentBrick() {
 }
 
 export function setupCheckoutListeners() {
-  // Asegurate de que tu botón para pagar en la web tenga el ID "btn-open-checkout"
-  const btnOpen = document.getElementById('btn-open-checkout');
-  if (btnOpen) {
-    btnOpen.addEventListener('click', async () => {
+  // Escuchamos los clics a nivel global para que no se pierdan si la UI se actualiza
+  document.body.addEventListener('click', async (e) => {
+    
+    // Si hicieron clic en el botón de Activar Plan Pro
+    const btnOpen = e.target.closest('#btn-open-checkout');
+    if (btnOpen) {
+      // BARRERA DE SEGURIDAD: Verificar si inició sesión
+      if (!state.user || !state.user.email) {
+        showToast('Tenés que iniciar sesión o registrarte para suscribirte al Plan Pro.', 'error');
+        showModal('login'); // Le abrimos el modal de login automáticamente
+        return; // Frenamos la ejecución acá
+      }
+      
+      // Si tiene sesión, abrimos el checkout normal
       openCheckoutModal();
       await initPaymentBrick();
-    });
-  }
+    }
 
-  const btnClose = document.getElementById('btn-close-checkout');
-  if (btnClose) {
-    btnClose.addEventListener('click', () => {
+    // Si hicieron clic en cerrar la ventana de pago
+    const btnClose = e.target.closest('#btn-close-checkout');
+    if (btnClose) {
       closeCheckoutModal();
-    });
-  }
+    }
+  });
 
+  // Escuchar si tocan el botón de "Intentar nuevamente" en caso de tarjeta rechazada
   document.addEventListener('chubut:retry-payment', async () => {
     await initPaymentBrick();
   });
