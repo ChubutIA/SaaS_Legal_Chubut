@@ -176,3 +176,31 @@ export async function apiExportPDF(historial, titulo, isGuest = false) {
   }
   return res.blob();
 }
+// ── Pagos (Mercado Pago) ──────────────────────────────────────────
+export async function processPayment(formData) {
+  const body = {
+    token: formData.token,
+    payment_method_id: formData.payment_method_id,
+    transaction_amount: formData.transaction_amount,
+    installments: formData.installments || 1,
+    issuer_id: formData.issuer_id || null,
+    description: 'Plan Pro - Chubut.IA',
+    payer: {
+      email: formData.payer.email,
+      first_name: formData.payer.first_name || '',
+      last_name: formData.payer.last_name || '',
+      identification: {
+        type: formData.payer.identification?.type || 'DNI',
+        number: formData.payer.identification?.number || ''
+      }
+    }
+  };
+
+  const res = await fetch(`${BASE}/payments/process`, {
+    ...DEFAULT_OPTS,
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  
+  return handleResponse(res);
+}
