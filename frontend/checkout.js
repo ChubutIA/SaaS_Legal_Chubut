@@ -3,7 +3,7 @@ import { processPayment } from './api.js';
 import { openCheckoutModal, closeCheckoutModal, showPaymentResult } from './ui.js';
 
 const MP_PUBLIC_KEY = 'APP_USR-58c1aa93-295b-4b5d-bb13-4de93f6b784e'; 
-const PLAN_PRO_AMOUNT = 3999;
+const PLAN_PRO_AMOUNT = 6500;
 
 let brickController = null;
 
