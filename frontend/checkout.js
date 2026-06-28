@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { processPayment } from './api.js';
 import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, showModal } from './ui.js';
 
-// Tu clave pública de Mercado Pago
+// Tu clave pública de Mercado Pago (¡Asegurate de usar la de PRUEBA que empieza con TEST-!)
 const MP_PUBLIC_KEY = 'APP_USR-e1647455-72b3-424b-bef9-100f062608fd'; 
 const PLAN_PRO_AMOUNT = 6500;
 
@@ -26,11 +26,9 @@ export async function initPaymentBrick() {
   const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'es-AR' });
   const bricksBuilder = mp.bricks();
 
-  // Configuración ultra-simplificada a prueba de fallos
   const settings = {
     initialization: {
       amount: PLAN_PRO_AMOUNT,
-      // Eliminamos la pre-carga del email por si eso estaba trabando el renderizado
     },
     customization: {
       visual: {
@@ -40,8 +38,13 @@ export async function initPaymentBrick() {
             baseColor: '#c9a84c',
           }
         }
+      },
+      // Le decimos a Mercado Pago qué opciones de pago mostrar en el formulario
+      paymentMethods: {
+        creditCard: 'all',
+        debitCard: 'all',
+        ticket: 'none'
       }
-      // Eliminamos las restricciones de "paymentMethods" para evitar conflictos
     },
     callbacks: {
       onReady: () => {
