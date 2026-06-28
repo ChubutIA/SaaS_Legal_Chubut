@@ -3,24 +3,19 @@ import { processPayment } from './api.js';
 import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, showModal } from './ui.js';
 
 // Tu clave pública de Mercado Pago (¡Asegurate de usar la de PRUEBA que empieza con TEST-!)
-const MP_PUBLIC_KEY = 'APP_USR-58c1aa93-295b-4b5d-bb13-4de93f6b784e'; 
+const MP_PUBLIC_KEY = 'TEST-ACA_VA_MI_CLAVE_DE_PRUEBA'; 
 const PLAN_PRO_AMOUNT = 6500;
 
 let brickController = null;
 
-// Nueva función para pedirle al backend el ID de preferencia
+// Función para pedirle al backend el ID de preferencia
 async function getPreferenceId() {
-  // Ajustá los headers según cómo manejes la autenticación (Bearer token de Supabase)
-  const token = localStorage.getItem('sb-tu_proyecto-auth-token'); // Cambiá esto si guardás el token con otro nombre
+  const token = localStorage.getItem('sb-tu_proyecto-auth-token'); 
   
-  // Usá la ruta completa si es necesario, ej: https://tu-railway-app.up.railway.app/api/payments/create-preference
   const res = await fetch('/api/payments/create-preference', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // Si usás cookies para auth, la siguiente línea no hace falta. 
-      // Si usás token JWT, asegurate de mandarlo acá:
-      // 'Authorization': `Bearer ${token}` 
     },
     credentials: 'include' 
   });
@@ -45,10 +40,9 @@ export async function initPaymentBrick() {
   const container = document.getElementById('payment-brick-container');
   if (container) {
     container.style.display = 'block';
-    container.innerHTML = 'Cargando opciones de pago...';
+    container.innerHTML = ''; // ACÁ BORRAMOS EL TEXTO DE "CARGANDO..."
   }
 
-  // 1. Obtenemos el preferenceId ANTES de inicializar
   let preferenceId;
   try {
     preferenceId = await getPreferenceId();
@@ -64,7 +58,7 @@ export async function initPaymentBrick() {
   const settings = {
     initialization: {
       amount: PLAN_PRO_AMOUNT,
-      preferenceId: preferenceId, // <--- ¡ACÁ ESTÁ LA MAGIA!
+      preferenceId: preferenceId,
     },
     customization: {
       visual: {
@@ -78,7 +72,8 @@ export async function initPaymentBrick() {
       paymentMethods: {
         creditCard: 'all',
         debitCard: 'all',
-        mercadoPago: 'all' // Ahora sí se va a mostrar
+        // ACÁ LE DECIMOS QUE SOLO MUESTRE SALDO EN CUENTA Y OCULTE MERCADO CRÉDITO
+        mercadoPago: ['wallet_purchase'] 
       }
     },
     callbacks: {
@@ -86,14 +81,10 @@ export async function initPaymentBrick() {
         console.log('Brick Renderizado exitosamente');
       },
       onSubmit: ({ selectedPaymentMethod, formData }) => {
-        // SI PAGA CON BILLETERA:
         if (selectedPaymentMethod === 'wallet_purchase') {
-          // El SDK de Mercado Pago lo redirige automáticamente.
-          // No procesamos nada manual acá, solo cerramos la promesa.
           return new Promise((resolve) => resolve());
         }
 
-        // SI PAGA CON TARJETA:
         return new Promise((resolve, reject) => {
           processPayment(formData)
             .then((result) => {
