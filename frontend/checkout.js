@@ -42,7 +42,8 @@ export async function initPaymentBrick() {
       // Dejamos solo los métodos que queremos incluir, sin enviar 'none' a los demás
       paymentMethods: {
         creditCard: 'all',
-        debitCard: 'all'
+        debitCard: 'all',
+        mercadoPago: 'all'
       }
     },
     callbacks: {
