@@ -13,8 +13,9 @@ from middleware.auth_guard import get_current_user
 router = APIRouter()
 
 # Inicializamos el SDK de Mercado Pago
-# Toma el token de forma segura desde las variables de Railway
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
+PLAN_PRO_AMOUNT = 6500.0
+
 if not MP_ACCESS_TOKEN:
     print("ADVERTENCIA: No se encontró MP_ACCESS_TOKEN en las variables de entorno.")
 sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
@@ -66,6 +67,44 @@ def _get_user_friendly_message(status: str, status_detail: str) -> str:
     }
     return messages.get(status_detail, f"Estado del pago: {status}. Detalle: {status_detail}")
 
+# ── Endpoint para crear Preferencia (Habilita Billetera) ──────────────────────
+@router.post("/create-preference")
+async def create_preference(auth: dict = Depends(get_current_user)):
+    user = auth["user"]
+    
+    preference_data = {
+        "items": [
+            {
+                "id": "plan_pro",
+                "title": "Plan Pro - Chubut.IA",
+                "quantity": 1,
+                "unit_price": PLAN_PRO_AMOUNT,
+                "currency_id": "ARS"
+            }
+        ],
+        "payer": {
+            "email": user.email
+        },
+        "back_urls": {
+            "success": "https://chubutia.com.ar/?status=approved",
+            "failure": "https://chubutia.com.ar/?status=failure",
+            "pending": "https://chubutia.com.ar/?status=pending"
+        },
+        "auto_return": "approved",
+        "external_reference": user.id,
+        "statement_descriptor": "CHUBUT.IA"
+    }
+
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response.get("response", {})
+        return {"preference_id": preference["id"]}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, 
+            detail=f"Error al crear preferencia de Mercado Pago: {str(e)}"
+        )
+
 # ── Endpoint de Pago ──────────────────────────────────────────────────────────
 @router.post("/process", response_model=PaymentResponse)
 async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(get_current_user)):
@@ -73,7 +112,7 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     user_email = user.email
     supabase = get_supabase()
 
-    # 1. Armar la información para MP forzando el email real del usuario
+    # 1. Armar la información para MP
     payment_data = {
         "transaction_amount": float(payload.transaction_amount),
         "token": payload.token,
@@ -93,13 +132,13 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     if payload.issuer_id:
         payment_data["issuer_id"] = payload.issuer_id
 
-    # 2. Llave de idempotencia para evitar cobros dobles
+    # 2. Llave de idempotencia
     request_options = mercadopago.config.RequestOptions()
     request_options.custom_headers = {
         "x-idempotency-key": str(uuid.uuid4())
     }
 
-    # 3. Procesar el pago con el SDK de MP
+    # 3. Procesar el pago
     try:
         payment_response = sdk.payment().create(payment_data, request_options)
         payment = payment_response.get("response", {})
@@ -113,7 +152,7 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     mp_status_detail = payment.get("status_detail", "")
     payment_id = payment.get("id")
 
-    # 4. Actualizamos a "Pro" en Supabase SIEMPRE RESPETANDO TU ESQUEMA
+    # 4. Actualizamos a "Pro" en Supabase
     if mp_status == "approved":
         venc_pro = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=30)
         try:
@@ -124,7 +163,7 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
         except Exception as e:
             print(f"CRÍTICO: Pago {payment_id} aprobado pero falló BD para {user_email}. Error: {e}")
 
-    # 5. Devolvemos la respuesta formateada al frontend
+    # 5. Respuesta
     return PaymentResponse(
         status=mp_status,
         payment_id=payment_id,
