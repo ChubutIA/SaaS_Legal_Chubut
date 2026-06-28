@@ -39,11 +39,12 @@ export async function initPaymentBrick() {
           }
         }
       },
-      paymentMethods: {
+     paymentMethods: {
         creditCard: 'all',
         debitCard: 'all',
-        // ¡Esta es la línea que habilita pagar con la app de Mercado Pago!
-        mercadoPago: 'all' 
+        mercadoPago: 'all',
+        bankTransfer: 'all',
+        atm: 'all'
       }
     },
     callbacks: {
