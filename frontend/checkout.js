@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { processPayment } from './api.js';
 import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, showModal } from './ui.js';
 
-// Tu clave pública de Mercado Pago (¡Asegurate de usar la de PRUEBA que empieza con TEST-!)
+// Tu clave pública de Mercado Pago (¡Acordate de poner tu clave TEST- acá!)
 const MP_PUBLIC_KEY = 'APP_USR-e1647455-72b3-424b-bef9-100f062608fd'; 
 const PLAN_PRO_AMOUNT = 6500;
 
@@ -39,11 +39,11 @@ export async function initPaymentBrick() {
           }
         }
       },
-      // Dejamos solo los métodos que queremos incluir, sin enviar 'none' a los demás
       paymentMethods: {
         creditCard: 'all',
         debitCard: 'all',
-        mercadoPago: 'all'
+        // ¡Esta es la línea que habilita pagar con la app de Mercado Pago!
+        mercadoPago: 'all' 
       }
     },
     callbacks: {
