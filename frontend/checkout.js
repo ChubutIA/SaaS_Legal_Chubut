@@ -39,11 +39,10 @@ export async function initPaymentBrick() {
           }
         }
       },
-      // Le decimos a Mercado Pago qué opciones de pago mostrar en el formulario
+      // Dejamos solo los métodos que queremos incluir, sin enviar 'none' a los demás
       paymentMethods: {
         creditCard: 'all',
-        debitCard: 'all',
-        ticket: 'none'
+        debitCard: 'all'
       }
     },
     callbacks: {
