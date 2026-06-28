@@ -3,7 +3,7 @@ import { processPayment } from './api.js';
 import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, showModal } from './ui.js';
 
 // Tu clave pública de Mercado Pago (¡Acordate de poner tu clave TEST- acá!)
-const MP_PUBLIC_KEY = 'APP_USR-e1647455-72b3-424b-bef9-100f062608fd'; 
+const MP_PUBLIC_KEY = 'APP_USR-58c1aa93-295b-4b5d-bb13-4de93f6b784e'; 
 const PLAN_PRO_AMOUNT = 6500;
 
 let brickController = null;
