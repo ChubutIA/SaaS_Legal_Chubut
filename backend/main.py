@@ -20,8 +20,8 @@ from fastapi.responses import FileResponse
 
 # IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
-# ACÁ ESTABA EL ERROR: Agregamos upload, export, y payment a la importación
-from routers import auth, chat, upload, export, payment, payments
+# CORRECCIÓN: Eliminamos "payment" (singular) que estaba rompiendo el servidor
+from routers import auth, chat, upload, export, payments
 
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
@@ -62,7 +62,7 @@ app.include_router(auth.router,     prefix="/api/auth",     tags=["Autenticació
 app.include_router(chat.router,     prefix="/api/chat",     tags=["Chat IA"])
 app.include_router(upload.router,   prefix="/api/upload",   tags=["Archivos"])
 app.include_router(export.router,   prefix="/api/export",   tags=["Exportar"])
-app.include_router(payment.router,  prefix="/api/payment",  tags=["Pagos"])
+# CORRECCIÓN: Dejamos únicamente el router correcto en plural
 app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
 
 # ==========================================
