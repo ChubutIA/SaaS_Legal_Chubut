@@ -91,22 +91,36 @@ a:hover { color: var(--gold-main); }
   z-index: 100;
 }
 
+/* Contenedor principal de la marca */
 .sidebar-brand {
-  padding: 20px 16px 0;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px 20px 10px 20px;
 }
 
+/* Fila que pone el logo y el texto lado a lado */
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+/* El icono de la balanza en miniatura */
 .sidebar-logo {
-  width: 100%;
-  max-width: 160px;
+  max-width: 42px; /* Tamaño sutil e ideal para barras laterales */
   height: auto;
-  margin: 0 auto;
   object-fit: contain;
-  filter:
-    drop-shadow(1px 1px 0 white)
-    drop-shadow(-1px -1px 0 white)
-    drop-shadow(1px -1px 0 white)
-    drop-shadow(-1px 1px 0 white);
+}
+
+/* El texto de Chubut.IA */
+.brand-text {
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif; /* Usa la fuente moderna que ya tenías */
 }
 
 .sidebar-logo-fallback {
