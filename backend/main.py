@@ -20,7 +20,6 @@ from fastapi.responses import FileResponse
 
 # IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
-from routers import auth, chat, upload, export, payment
 from routers import auth, chat, payments  # <-- Asegurate de que tenga la "s"
 
 # ==========================================
