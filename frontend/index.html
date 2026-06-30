@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chubut.IA — Jurisprudencia</title>
-  <meta name="description" content="Motor de jurisprudencia inteligente para la Provincia de Chubut. Consultá fallos y sentencias con IA.">
+  <title>Chubut.IA — Jurisprudencia y Legislatura</title>
+  <meta name="description" content="Tu asistente legal inteligente para la Provincia de Chubut. Consultá fallos, sentencias y legislación con IA.">
+  
+  <!-- RUTA DEL FAVICON CORREGIDA -->
   <link rel="icon" type="image/png" href="/static/favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,7 +35,8 @@
 
   <aside id="sidebar">
     <div class="sidebar-brand">
-      <img id="sidebar-logo" src="/static/assets/logo.png" alt="Chubut.IA"
+      <!-- RUTA DEL LOGO CORREGIDA -->
+      <img id="sidebar-logo" src="/static/logo.png" alt="Chubut.IA"
            class="sidebar-logo"
            onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').style.display='block'">
       <div id="sidebar-logo-fallback" class="sidebar-logo-fallback" style="display:none">Chubut.IA</div>
@@ -76,7 +79,7 @@
 
       <div class="disclaimer">
         Chubut.IA es una herramienta de asistencia basada en inteligencia artificial.
-        Los fallos mostrados deben verificarse en fuentes oficiales y no reemplazan el asesoramiento profesional.
+        Los resultados mostrados deben verificarse en fuentes oficiales y no reemplazan el asesoramiento profesional.
       </div>
 
       <div class="support-link">
@@ -92,8 +95,9 @@
 
       <div id="welcome-hero">
         <div class="hero-aurora"></div>
-        <p class="hero-eyebrow" id="hero-eyebrow">Jurisprudencia · Provincia de Chubut</p>
-        <h1 class="hero-title" id="hero-title">Consultá la jurisprudencia<br>sin registrarte.</h1>
+        <!-- ESLOGAN CORREGIDO -->
+        <p class="hero-eyebrow" id="hero-eyebrow">Jurisprudencia y Legislatura · Provincia de Chubut</p>
+        <h1 class="hero-title" id="hero-title">Toda la información legal<br>sin registrarte.</h1>
         <div class="hero-divider"></div>
         <p class="hero-subtitle" id="hero-subtitle">5 consultas gratuitas · Sin tarjeta de crédito</p>
         <p class="suggestions-label">Consultas frecuentes</p>
@@ -152,7 +156,7 @@
 
         <textarea
           id="chat-textarea"
-          placeholder="Consultá jurisprudencia, adjuntá un PDF o grabá tu consulta..."
+          placeholder="Consultá jurisprudencia o leyes, adjuntá un PDF o grabá tu consulta..."
           rows="1"
           aria-label="Mensaje"
         ></textarea>
@@ -166,7 +170,7 @@
       </div>
 
       <p class="input-hint">
-        Chubut.IA puede cometer errores. Verificá los fallos en las fuentes oficiales.
+        Chubut.IA puede cometer errores. Verificá la información en fuentes oficiales.
       </p>
     </div>
 
@@ -176,7 +180,8 @@
     <button class="btn-close-modal" id="btn-close-modal" aria-label="Cerrar">×</button>
 
     <div class="modal-logo">
-      <img src="/static/assets/logo.png" alt="Chubut.IA" style="max-width:110px; margin:0 auto"
+      <!-- RUTA DEL LOGO EN EL MODAL CORREGIDA -->
+      <img src="/static/logo.png" alt="Chubut.IA" style="max-width:110px; margin:0 auto"
            onerror="this.style.display='none'; document.getElementById('modal-logo-text').style.display='block'">
       <div id="modal-logo-text" class="modal-logo-text" style="display:none">Chubut.IA</div>
     </div>
