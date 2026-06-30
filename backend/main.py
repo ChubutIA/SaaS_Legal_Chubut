@@ -20,7 +20,8 @@ from fastapi.responses import FileResponse
 
 # IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
-from routers import auth, chat, payments  # <-- Asegurate de que tenga la "s"
+# ACÁ ESTABA EL ERROR: Agregamos upload, export, y payment a la importación
+from routers import auth, chat, upload, export, payment, payments
 
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
@@ -38,7 +39,7 @@ async def lifespan(app: FastAPI):
 # ==========================================
 app = FastAPI(
     title="Chubut.IA API",
-    description="Motor de jurisprudencia para la Provincia de Chubut",
+    description="Motor de jurisprudencia y legislatura para la Provincia de Chubut",
     version="2.0.0",
     lifespan=lifespan,
 )
@@ -57,12 +58,13 @@ app.add_middleware(
 # ==========================================
 # ROUTERS
 # ==========================================
-app.include_router(auth.router,     prefix="/api/auth",    tags=["Autenticación"])
-app.include_router(chat.router,     prefix="/api/chat",    tags=["Chat IA"])
-app.include_router(upload.router,   prefix="/api/upload",  tags=["Archivos"])
-app.include_router(export.router,   prefix="/api/export",  tags=["Exportar"])
-app.include_router(payment.router,  prefix="/api/payment", tags=["Pagos"])
+app.include_router(auth.router,     prefix="/api/auth",     tags=["Autenticación"])
+app.include_router(chat.router,     prefix="/api/chat",     tags=["Chat IA"])
+app.include_router(upload.router,   prefix="/api/upload",   tags=["Archivos"])
+app.include_router(export.router,   prefix="/api/export",   tags=["Exportar"])
+app.include_router(payment.router,  prefix="/api/payment",  tags=["Pagos"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
+
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
