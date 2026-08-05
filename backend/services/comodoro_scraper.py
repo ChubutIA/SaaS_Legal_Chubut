@@ -50,7 +50,6 @@ def buscar_ordenanzas_comodoro(palabra_clave):
         if tabla_resultados:
             filas = tabla_resultados.find_all('tr')[1:] # Saltamos el encabezado
             
-            # Limitamos a los primeros 3 resultados para que la lectura de PDFs sea rápida y fluida
             for fila in filas[:3]:
                 columnas = fila.find_all('td')
                 if len(columnas) >= 4:
@@ -58,26 +57,29 @@ def buscar_ordenanzas_comodoro(palabra_clave):
                     fecha = columnas[2].text.strip()
                     tema = columnas[3].text.strip()
                     
+                    # Buscar el link de descarga o visualización de forma segura
                     link_etiqueta = columnas[0].find('a')
-                    link = link_etiqueta['href'] if link_etiqueta else ""
-                    if link and not link.startswith("http"):
-                         link = f"https://digestocomodoro.gob.ar/{link}"
+                    link = ""
+                    if link_etiqueta and 'href' in link_etiqueta.attrs:
+                        link = link_etiqueta['href']
+                        # Si es un link relativo de ASP.NET, lo completamos
+                        if not link.startswith("http"):
+                            # Limpiamos puntos o barras extra si las hubiera
+                            link = link.lstrip("./")
+                            link = f"https://digestocomodoro.gob.ar/{link}"
                     
-                    # --- NUEVO: LEER EL PDF AUTOMÁTICAMENTE ---
+                    # --- LECTURA DEL PDF ---
                     texto_pdf = "(No se pudo extraer el texto del documento)"
-                    if link:
+                    if link and "verNorma" in link:
                         try:
-                            # Descargamos el contenido binario del PDF usando la sesión
                             res_pdf = session.get(link, timeout=10)
                             if res_pdf.status_code == 200:
-                                # Abrimos el PDF en memoria con PyMuPDF
                                 doc_pdf = fitz.open(stream=res_pdf.content, filetype="pdf")
                                 texto_acumulado = ""
                                 for pagina in doc_pdf:
                                     texto_acumulado += pagina.get_text()
                                 
                                 if texto_acumulado.strip():
-                                    # Recortamos a 2500 caracteres para no saturar a la IA
                                     texto_pdf = texto_acumulado.strip()[:2500] + "..."
                         except Exception as pdf_err:
                             texto_pdf = f"(Error al leer el PDF: {pdf_err})"
