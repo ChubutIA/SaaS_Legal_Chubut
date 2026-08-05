@@ -185,6 +185,7 @@ export async function processPayment(formData) {
     installments: formData.installments || 1,
     issuer_id: formData.issuer_id || null,
     description: 'Plan Pro - Chubut.IA',
+    tipo_plan: formData.tipo_plan || 'mensual', // <-- ACÁ ENVIAMOS EL TIPO DE PLAN AL BACKEND
     payer: {
       email: formData.payer.email,
       first_name: formData.payer.first_name || '',
