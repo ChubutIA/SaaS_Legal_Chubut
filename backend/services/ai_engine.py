@@ -19,7 +19,7 @@ import httpx
 import urllib.parse
 import urllib.parse
 
-from .comodoro_scraper import buscar_ordenanzas_comodoro
+from comodoro_scraper import buscar_ordenanzas_comodoro
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -219,7 +219,8 @@ async def buscar_ordenanzas_municipal(query_usuario: str, llm: ChatOpenAI) -> st
                 f"🏛️ ORDENANZA: {item['norma']}\n"
                 f"📅 FECHA: {item['fecha']}\n"
                 f"📝 TEMA: {item['tema']}\n"
-                f"🔗 LINK: {item['link']}"
+                f"🔗 LINK: {item['link']}\n"
+                f"📄 CONTENIDO EXTRAÍDO DEL DOCUMENTO:\n{item['contenido_pdf']}"
             )
         return "\n\n".join(textos)
     except Exception as e:
