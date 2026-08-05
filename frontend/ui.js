@@ -108,7 +108,7 @@ function renderUserArea(user, planStatus) {
     </div>`;
 }
 
-function renderPlanArea(planStatus) {
+export function renderPlanArea(planStatus) {
   const el = document.getElementById('sidebar-plan-area');
   if (!el) return;
 
@@ -119,14 +119,65 @@ function renderPlanArea(planStatus) {
 
   el.innerHTML = `
     <div class="plan-upgrade-box">
-      <div class="plan-upgrade-box__label">Plan Mensual Pro</div>
-      <div class="plan-upgrade-box__price">$6.500 <sub>ARS / mes</sub></div>
-      <div class="plan-upgrade-box__desc">Consultas ilimitadas de jurisprudencia.</div>
+      <div class="plan-selector-tabs" style="display:flex; gap:4px; margin-bottom:10px; background:rgba(0,0,0,0.3); padding:3px; border-radius:6px;">
+        <button id="tab-plan-mensual" class="plan-tab-btn active" style="flex:1; padding:4px 6px; font-size:0.70rem; border-radius:4px; background:var(--gold-glow); color:var(--gold-light); border:1px solid var(--gold-border); cursor:pointer;">Mensual</button>
+        <button id="tab-plan-anual" class="plan-tab-btn" style="flex:1; padding:4px 6px; font-size:0.70rem; border-radius:4px; background:transparent; color:var(--text-muted); border:none; cursor:pointer;">Anual 🔥</button>
+      </div>
+
+      <div id="plan-price-display">
+        <div class="plan-upgrade-box__label">Plan Mensual Pro</div>
+        <div class="plan-upgrade-box__price">$39.990 <sub>ARS / mes</sub></div>
+        <div class="plan-upgrade-box__desc">Acceso completo e ilimitado.</div>
+      </div>
     </div>
-    <button id="btn-open-checkout" class="btn-primary btn-primary--gold"
-        style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:2px; border:none; cursor:pointer;">
+    <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold"
+        style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:6px; border:none; cursor:pointer;">
       ✦ Activar Plan Pro
     </button>`;
+
+  // Listeners para cambiar entre mensual y anual en la barra lateral
+  setTimeout(() => {
+    const btnMensual = document.getElementById('tab-plan-mensual');
+    const btnAnual = document.getElementById('tab-plan-anual');
+    const display = document.getElementById('plan-price-display');
+    const checkoutBtn = document.getElementById('btn-open-checkout');
+
+    btnMensual?.addEventListener('click', () => {
+      btnMensual.style.background = 'var(--gold-glow)';
+      btnMensual.style.color = 'var(--gold-light)';
+      btnMensual.style.border = '1px solid var(--gold-border)';
+      
+      btnAnual.style.background = 'transparent';
+      btnAnual.style.color = 'var(--text-muted)';
+      btnAnual.style.border = 'none';
+
+      if (display) {
+        display.innerHTML = `
+          <div class="plan-upgrade-box__label">Plan Mensual Pro</div>
+          <div class="plan-upgrade-box__price">$39.990 <sub>ARS / mes</sub></div>
+          <div class="plan-upgrade-box__desc">Acceso completo e ilimitado.</div>`;
+      }
+      if (checkoutBtn) checkoutBtn.dataset.plan = 'mensual';
+    });
+
+    btnAnual?.addEventListener('click', () => {
+      btnAnual.style.background = 'var(--gold-glow)';
+      btnAnual.style.color = 'var(--gold-light)';
+      btnAnual.style.border = '1px solid var(--gold-border)';
+      
+      btnMensual.style.background = 'transparent';
+      btnMensual.style.color = 'var(--text-muted)';
+      btnMensual.style.border = 'none';
+
+      if (display) {
+        display.innerHTML = `
+          <div class="plan-upgrade-box__label" style="color:#34D399;">Plan Anual (Ahorrá 16%)</div>
+          <div class="plan-upgrade-box__price">$399.900 <sub>ARS / año</sub></div>
+          <div class="plan-upgrade-box__desc" style="color:#34D399;">¡2 meses GRATIS incluidos!</div>`;
+      }
+      if (checkoutBtn) checkoutBtn.dataset.plan = 'anual';
+    });
+  }, 50);
 }
 
 function renderSessionButtons(user) {
@@ -243,7 +294,7 @@ export function showAccessWall(type = null) {
       <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px">
         <h3>Tu período de acceso ha finalizado.</h3>
         <p>Activá el Plan Pro para continuar consultando jurisprudencia sin límites.</p>
-        <button id="btn-open-checkout" class="btn-primary btn-primary--gold"
+        <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold"
             style="display:block; width:100%; text-align:center; margin-top:14px; padding:9px 14px; border-radius:6px; font-size:0.83rem; border:none; cursor:pointer;">
           ✦ Activar Plan Pro
         </button>
