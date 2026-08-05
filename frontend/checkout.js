@@ -4,19 +4,18 @@ import { openCheckoutModal, closeCheckoutModal, showPaymentResult, showToast, sh
 
 // Tu clave pública de Mercado Pago (¡Asegurate de usar la de PRUEBA que empieza con TEST-!)
 const MP_PUBLIC_KEY = 'APP_USR-58c1aa93-295b-4b5d-bb13-4de93f6b784e'; 
-const PLAN_PRO_AMOUNT = 6500;
 
 let brickController = null;
+let currentPlanType = 'mensual';
 
-// Función para pedirle al backend el ID de preferencia
-async function getPreferenceId() {
-  const token = localStorage.getItem('sb-tu_proyecto-auth-token'); 
-  
+// Función para pedirle al backend el ID de preferencia y el monto
+async function getPreferenceId(tipoPlan) {
   const res = await fetch('/api/payments/create-preference', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ tipo_plan: tipoPlan }),
     credentials: 'include' 
   });
 
@@ -24,11 +23,11 @@ async function getPreferenceId() {
     throw new Error('No se pudo crear la preferencia de pago');
   }
   
-  const data = await res.json();
-  return data.preference_id;
+  return await res.json();
 }
 
-export async function initPaymentBrick() {
+export async function initPaymentBrick(tipoPlan = 'mensual') {
+  currentPlanType = tipoPlan;
   if (brickController) {
     await brickController.unmount();
     brickController = null;
@@ -43,9 +42,9 @@ export async function initPaymentBrick() {
     container.innerHTML = ''; // ACÁ BORRAMOS EL TEXTO DE "CARGANDO..."
   }
 
-  let preferenceId;
+  let prefData;
   try {
-    preferenceId = await getPreferenceId();
+    prefData = await getPreferenceId(tipoPlan);
   } catch (error) {
     console.error(error);
     if (container) container.innerHTML = 'Error al cargar el pago. Intentá de nuevo.';
@@ -57,8 +56,8 @@ export async function initPaymentBrick() {
 
   const settings = {
     initialization: {
-      amount: PLAN_PRO_AMOUNT,
-      preferenceId: preferenceId,
+      amount: prefData.amount,
+      preferenceId: prefData.preference_id,
     },
     customization: {
       visual: {
@@ -81,6 +80,7 @@ export async function initPaymentBrick() {
         console.log('Brick Renderizado exitosamente');
       },
       onSubmit: ({ selectedPaymentMethod, formData }) => {
+        formData.tipo_plan = currentPlanType;
         if (selectedPaymentMethod === 'wallet_purchase') {
           return new Promise((resolve) => resolve());
         }
@@ -127,8 +127,9 @@ export function setupCheckoutListeners() {
         return; 
       }
       
+      const plan = btnOpen.dataset.plan || 'mensual';
       openCheckoutModal();
-      await initPaymentBrick();
+      await initPaymentBrick(plan);
     }
 
     const btnClose = e.target.closest('#btn-close-checkout');
@@ -138,6 +139,6 @@ export function setupCheckoutListeners() {
   });
 
   document.addEventListener('chubut:retry-payment', async () => {
-    await initPaymentBrick();
+    await initPaymentBrick(currentPlanType);
   });
 }
