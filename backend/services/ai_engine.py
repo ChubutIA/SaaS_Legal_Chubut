@@ -17,7 +17,9 @@ import asyncio
 import gdown
 import httpx
 import urllib.parse
+import urllib.parse
 
+from comodoro_scraper import buscar_ordenanzas_comodoro
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -194,7 +196,34 @@ async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
     except Exception as e:
         print(f"Error API Digesto: {e}")
         return "(Error de conexión con la API del Digesto Oficial. Podés usar tu conocimiento general.)"
-
+async def buscar_ordenanzas_municipal(query_usuario: str, llm: ChatOpenAI) -> str:
+    """Extrae 1 sola palabra clave y busca en el scraper de Comodoro"""
+    loop = asyncio.get_event_loop()
+    
+    prompt = f"Extraé UNA (1) sola palabra clave principal de esta consulta legal para buscar en un digesto municipal. Ignorá verbos o saludos. Solo devolvé esa palabra. Consulta: '{query_usuario}'. Palabra clave:"
+    try:
+        keyword = await loop.run_in_executor(None, lambda: llm.invoke([HumanMessage(content=prompt)]).content.replace('"', '').strip())
+        keyword = keyword.split()[0] # Por si la IA devuelve más de una palabra
+    except:
+        keyword = query_usuario.split()[0]
+        
+    try:
+        # Llamamos a tu archivo comodoro_scraper.py
+        resultados = await loop.run_in_executor(None, buscar_ordenanzas_comodoro, keyword)
+        if not resultados:
+            return "(No se encontraron ordenanzas municipales para esta consulta.)"
+            
+        textos = []
+        for item in resultados:
+            textos.append(
+                f"🏛️ ORDENANZA: {item['norma']}\n"
+                f"📅 FECHA: {item['fecha']}\n"
+                f"📝 TEMA: {item['tema']}\n"
+                f"🔗 LINK: {item['link']}"
+            )
+        return "\n\n".join(textos)
+    except Exception as e:
+        return "(Error al consultar el digesto municipal de Comodoro.)"
 # ══════════════════════════════════════════════════════════════════
 # 5. SÚPER BÚSQUEDA DUAL
 # ══════════════════════════════════════════════════════════════════
@@ -229,8 +258,16 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
         contexto_fallos = _formatear_docs_fallos(docs_f)
 
     if intent in (INTENT_LEYES, INTENT_AMBOS):
-        # AHORA LLAMAMOS A LA API EN VIVO
-        contexto_leyes = await buscar_leyes_api_chubut(query_segura, llm)
+        # LLAMAMOS A LAS APIs PROVINCIAL Y MUNICIPAL EN PARALELO
+        task_provincial = buscar_leyes_api_chubut(query_segura, llm)
+        task_municipal = buscar_ordenanzas_municipal(query_segura, llm)
+        
+        res_provincial, res_municipal = await asyncio.gather(task_provincial, task_municipal)
+        
+        contexto_leyes = (
+            "=== LEYES PROVINCIALES (CHUBUT) ===\n" + res_provincial + "\n\n" +
+            "=== ORDENANZAS MUNICIPALES (COMODORO RIVADAVIA) ===\n" + res_municipal
+        )
 
     return contexto_fallos, contexto_leyes, intent
 
@@ -282,6 +319,12 @@ FORMATO PARA LEYES (usá este cuando presentes normativa del BLOQUE B):
 * ✅ **Estado:** [estado del BLOQUE B]
 * 📋 **Artículo relevante o Resumen:** "[texto literal o explicación clara]"
 * 🔗 **Ver documento:** <a href="[Insertá exactamente el LINK_OFICIAL provisto en el BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Ley en el Digesto Oficial (Nueva Pestaña)</a>
+
+FORMATO PARA ORDENANZAS MUNICIPALES (usá este cuando presentes normativa municipal):
+🏛️ **[Número de Ordenanza]**
+* 📅 **Fecha:** [Fecha]
+* 📋 **Tema:** [Tema de la ordenanza]
+* 🔗 **Ver documento:** <a href="[Insertá exactamente el LINK provisto en la base]" target="_blank" rel="noopener noreferrer">Abrir Ordenanza Municipal (Nueva Pestaña)</a>
 
 FORMATO MIXTO (cuando la respuesta combina ambas fuentes):
 Presentá primero la legislación aplicable (BLOQUE B) y luego la jurisprudencia que la interpreta o aplica (BLOQUE A).
