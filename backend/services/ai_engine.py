@@ -321,11 +321,12 @@ FORMATO PARA LEYES (usá este cuando presentes normativa del BLOQUE B):
 * 📋 **Artículo relevante o Resumen:** "[texto literal o explicación clara]"
 * 🔗 **Ver documento:** <a href="[Insertá exactamente el LINK_OFICIAL provisto en el BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Ley en el Digesto Oficial (Nueva Pestaña)</a>
 
-FORMATO PARA ORDENANZAS MUNICIPALES (usá este cuando presentes normativa municipal):
+FORMATO OBLIGATORIO PARA ORDENANZAS MUNICIPALES (CADA ORDENANZA DEBE LLEVAR SU LINK):
 🏛️ **[Número de Ordenanza]**
 * 📅 **Fecha:** [Fecha]
-* 📋 **Tema:** [Tema de la ordenanza]
+* 📋 **Tema:** [Tema]
 * 🔗 **Ver documento:** <a href="[Insertá exactamente el LINK provisto en la base]" target="_blank" rel="noopener noreferrer">Abrir Ordenanza Municipal (Nueva Pestaña)</a>
+* 📝 **Resumen Detallado:** [Explicación del contenido extraído del PDF]
 
 FORMATO MIXTO (cuando la respuesta combina ambas fuentes):
 Presentá primero la legislación aplicable (BLOQUE B) y luego la jurisprudencia que la interpreta o aplica (BLOQUE A).
