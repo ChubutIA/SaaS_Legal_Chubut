@@ -292,9 +292,9 @@ def build_system_prompt(contexto_fallos: str, contexto_leyes: str, intent: str) 
 ════════════════════ REGLAS ABSOLUTAS ════════════════════════
 
 REGLA 1 — CORTAFUEGOS DE CONTEXTO (crítica):
-Las fuentes BLOQUE A (jurisprudencia) y BLOQUE B (legislación) son independientes.
-NUNCA mezcles un fallo con una ley en la misma cita.
-NUNCA uses un link de jurisprudencia (juschubut.gov.ar / Eureka) para citar una ley.
+Las fuentes de Jurisprudencia (BLOQUE A), Legislación Provincial (BLOQUE B) y las Ordenanzas Municipales son totalmente independientes.
+- NUNCA uses un link de jurisprudencia (juschubut.gov.ar / Eureka) para citar una ley provincial o una ordenanza municipal.
+- Para las Ordenanzas Municipales, debés usar ÚNICAMENTE el link exacto que figura en el bloque de Ordenanzas (digestocomodoro.gob.ar). Jamás intercambies, reutilices ni inventes links entre bloques diferentes.
 
 REGLA 2 — CONOCIMIENTO GENERAL Y ADVERTENCIA OBLIGATORIA:
 Si el BLOQUE B indica que no se encontraron resultados, TENÉS PERMITIDO responder utilizando tu conocimiento general.
