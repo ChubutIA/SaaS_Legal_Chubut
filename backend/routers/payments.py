@@ -14,13 +14,29 @@ router = APIRouter()
 
 # Inicializamos el SDK de Mercado Pago
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
-PLAN_PRO_AMOUNT = 6500.0
+
+# Configuración de Precios y Días
+PLANES = {
+    "mensual": {
+        "monto": 39990.0,
+        "dias": 30,
+        "titulo": "Plan Pro Mensual - Chubut.IA"
+    },
+    "anual": {
+        "monto": 399900.0,  # 2 meses de regalo (10 cuotas en vez de 12)
+        "dias": 365,
+        "titulo": "Plan Pro Anual - Chubut.IA (Ahorro 16%)"
+    }
+}
 
 if not MP_ACCESS_TOKEN:
     print("ADVERTENCIA: No se encontró MP_ACCESS_TOKEN en las variables de entorno.")
 sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
 # ── Modelos de Datos (Pydantic) ───────────────────────────────────────────────
+class PreferenceRequest(BaseModel):
+    tipo_plan: str = "mensual" # "mensual" o "anual"
+
 class PayerIdentification(BaseModel):
     type: str = Field(..., examples=["DNI", "CUIL"])
     number: str
@@ -38,7 +54,8 @@ class ProcessPaymentRequest(BaseModel):
     installments: int
     issuer_id: Optional[str] = None
     payer: PayerData
-    description: str = "Plan Pro - Chubut.IA"
+    tipo_plan: str = "mensual"
+    description: Optional[str] = "Plan Pro - Chubut.IA"
 
 class PaymentResponse(BaseModel):
     status: str
@@ -69,16 +86,18 @@ def _get_user_friendly_message(status: str, status_detail: str) -> str:
 
 # ── Endpoint para crear Preferencia (Habilita Billetera) ──────────────────────
 @router.post("/create-preference")
-async def create_preference(auth: dict = Depends(get_current_user)):
+async def create_preference(payload: PreferenceRequest, auth: dict = Depends(get_current_user)):
     user = auth["user"]
+    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "mensual"
+    config_plan = PLANES[tipo]
     
     preference_data = {
         "items": [
             {
-                "id": "plan_pro",
-                "title": "Plan Pro - Chubut.IA",
+                "id": f"plan_pro_{tipo}",
+                "title": config_plan["titulo"],
                 "quantity": 1,
-                "unit_price": PLAN_PRO_AMOUNT,
+                "unit_price": config_plan["monto"],
                 "currency_id": "ARS"
             }
         ],
@@ -91,14 +110,14 @@ async def create_preference(auth: dict = Depends(get_current_user)):
             "pending": "https://chubutia.com.ar/?status=pending"
         },
         "auto_return": "approved",
-        "external_reference": user.id,
+        "external_reference": f"{user.id}:{tipo}",
         "statement_descriptor": "CHUBUT.IA"
     }
 
     try:
         preference_response = sdk.preference().create(preference_data)
         preference = preference_response.get("response", {})
-        return {"preference_id": preference["id"]}
+        return {"preference_id": preference["id"], "amount": config_plan["monto"]}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, 
@@ -112,14 +131,17 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     user_email = user.email
     supabase = get_supabase()
 
+    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "mensual"
+    config_plan = PLANES[tipo]
+
     # 1. Armar la información para MP
     payment_data = {
         "transaction_amount": float(payload.transaction_amount),
         "token": payload.token,
-        "description": payload.description,
+        "description": config_plan["titulo"],
         "installments": payload.installments,
         "payment_method_id": payload.payment_method_id,
-        "external_reference": user.id, 
+        "external_reference": f"{user.id}:{tipo}", 
         "payer": {
             "email": user_email, 
             "identification": {
@@ -154,7 +176,8 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
 
     # 4. Actualizamos a "Pro" en Supabase
     if mp_status == "approved":
-        venc_pro = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=30)
+        dias_a_sumar = config_plan["dias"]
+        venc_pro = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=dias_a_sumar)
         try:
             supabase.table("usuarios").update({
                 "plan": "pro",
