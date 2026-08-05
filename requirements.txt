@@ -20,7 +20,7 @@ supabase>=2.4.6
 PyPDF2>=3.0.1
 fpdf2>=2.7.9
 gdown>=5.2.0
-
+pymupdf
 # ── Utilities ───────────────────────────
 python-dotenv>=1.0.1
 pydantic[email]>=2.7.0
