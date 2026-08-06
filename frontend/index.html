@@ -23,15 +23,6 @@
 </head>
 <body>
 
-<!-- BUBBLE DE AVISO DE ÉXITO -->
-<div id="success-banner" style="background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%); border-bottom: 2px solid #c9a84c; color: #fff; padding: 12px 20px; text-align: center; font-size: 14px; position: relative; z-index: 1000; display: flex; justify-content: center; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-    <span style="flex-grow: 1;">
-         <strong>¡Gracias a la comunidad!</strong> Ya somos cientos de profesionales consultando jurisprudencia todos los días. Para garantizar servidores rápidos ante tanta demanda y seguir sumando funciones, actualizamos nuestros planes. <br>¡Aprovechá el nuevo <strong>descuento Anual</strong>!
-    </span>
-    <button onclick="document.getElementById('success-banner').style.display='none'" style="background: transparent; border: none; color: #c9a84c; font-size: 20px; cursor: pointer; font-weight: bold; padding: 0 10px;">
-        &times;
-    </button>
-</div>
 <button id="sidebar-toggle" aria-label="Abrir menú" title="Menú">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -46,9 +37,11 @@
     <!-- NUEVO DISEÑO DEL LOGO Y MARCA -->
     <div class="sidebar-brand">
       <div class="brand-container">
+    <a href="/" style="display: flex; align-items: center; text-decoration: none; color: inherit; cursor: pointer; width: 100%;">
         <img id="sidebar-logo" src="/static/logo.png" alt="Icono Chubut.IA" class="sidebar-logo">
         <span class="brand-text">Chubut.IA</span>
-      </div>
+    </a>
+</div>
       <div class="sidebar-divider"></div>
     </div>
 
@@ -100,6 +93,20 @@
 
   <main id="chat-main">
 
+    <div id="news-banner" class="news-banner">
+      <div class="news-banner__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l1.9 4.5L18 8l-4.1 1.5L12 14l-1.9-4.5L6 8l4.1-1.5z"/>
+          <path d="M5 17l.9 2.1L8 20l-2.1.9L5 23l-.9-2.1L2 20l2.1-.9z"/>
+          <path d="M19 15l.7 1.6L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/>
+        </svg>
+     </div>
+      <p class="news-banner__text">¡Gracias a la comunidad! Ya somos cientos de profesionales consultando jurisprudencia todos los días. Para garantizar servidores rápidos ante tanta demanda y seguir sumando funciones, actualizamos nuestros planes. <strong>¡Aprovechá el nuevo descuento Anual!</strong></p>
+      <button class="news-banner__close" aria-label="Cerrar aviso" title="Cerrar" onclick="this.closest('.news-banner').remove()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
     <div id="scroll-container">
 
       <div id="welcome-hero">
@@ -111,10 +118,42 @@
         <p class="hero-subtitle" id="hero-subtitle">5 consultas gratuitas · Sin tarjeta de crédito</p>
         <p class="suggestions-label">Consultas frecuentes</p>
         <div class="suggestions-grid" id="suggestions-grid">
-          <button class="suggestion-btn" data-query="Mostrame fallos recientes sobre cuota alimentaria">⚖️ Fallos sobre cuota alimentaria</button>
-          <button class="suggestion-btn" data-query="Mostrame jurisprudencia sobre accidentes de tránsito">🚗 Jurisprudencia en accidentes de tránsito</button>
-          <button class="suggestion-btn" data-query="Busca fallos sobre despidos sin causa justificada">🏢 Fallos por despidos sin causa</button>
-          <button class="suggestion-btn" data-query="Busca fallos relacionados con mala praxis médica">🏥 Mala praxis médica</button>
+          <button class="suggestion-btn suggestion-card" data-query="Mostrame jurisprudencia reciente de los tribunales de Chubut">
+            <span class="suggestion-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v18"/><path d="M5 7h14"/>
+                <path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/>
+                <path d="M8 21h8"/>
+              </svg>
+            </span>
+            <span class="suggestion-card__title">Jurisprudencia</span>
+            <span class="suggestion-card__desc">Fallos y sentencias de tribunales de Chubut</span>
+          </button>
+
+          <button class="suggestion-btn suggestion-card" data-query="Mostrame legislación provincial vigente en Chubut">
+            <span class="suggestion-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                <path d="M9 7h7"/><path d="M9 11h7"/>
+              </svg>
+            </span>
+            <span class="suggestion-card__title">Legislación Provincial</span>
+            <span class="suggestion-card__desc">Leyes y normativa del Digesto de Chubut</span>
+          </button>
+
+          <button class="suggestion-btn suggestion-card" data-query="Buscá ordenanzas municipales vigentes en Chubut">
+            <span class="suggestion-card__badge">¡Nuevo!</span>
+            <span class="suggestion-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="22" x2="21" y2="22"/>
+                <path d="M4 22V10l8-6 8 6v12"/>
+                <line x1="8" y1="22" x2="8" y2="13"/><line x1="12" y1="22" x2="12" y2="13"/><line x1="16" y1="22" x2="16" y2="13"/>
+              </svg>
+            </span>
+            <span class="suggestion-card__title">Ordenanzas Municipales</span>
+            <span class="suggestion-card__desc">Normativa vigente en municipios de la provincia</span>
+          </button>
         </div>
       </div>
 
