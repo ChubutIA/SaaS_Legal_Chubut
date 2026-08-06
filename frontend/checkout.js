@@ -128,6 +128,19 @@ export function setupCheckoutListeners() {
       }
       
       const plan = btnOpen.dataset.plan || 'mensual';
+
+      // --- LÓGICA NUEVA: CAMBIAR TEXTO DINÁMICAMENTE ---
+      const textElement = document.getElementById('checkout-plan-description');
+      if (textElement) {
+        if (plan === 'mensual') {
+          textElement.innerText = 'Acceso completo e ilimitado ($39.990 ARS / mes)';
+        } else {
+          // ACÁ PONÉ EL PRECIO REAL DE TU PLAN ANUAL
+          textElement.innerText = 'Acceso completo e ilimitado ($399.900 ARS / año)'; 
+        }
+      }
+      // -------------------------------------------------
+
       openCheckoutModal();
       await initPaymentBrick(plan);
     }
