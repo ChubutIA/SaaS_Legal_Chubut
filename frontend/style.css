@@ -827,18 +827,30 @@ a:hover { color: var(--gold-main); }
 .message-content strong { color: var(--text-primary); font-weight: 600; }
 .message-content em { font-style: italic; }
 .message-content ul, .message-content ol {
-  padding-left: 1.4em;
-  margin: 0.5em 0 0.75em;
+  padding-left: 1.5em;
+  margin: 0.6em 0 0.9em;
 }
-.message-content li { margin-bottom: 0.3em; }
-.message-content a {
+.message-content li {
+  margin-bottom: 0.45em;
+  line-height: 1.7;
+}
+.message-content li:last-child { margin-bottom: 0; }
+.message-content ul li::marker { color: var(--gold-muted); }
+.message-content ol li::marker { color: var(--gold-muted); font-weight: 600; }
+.message-content a,
+.message-content a:visited {
   color: var(--gold-light);
   text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: rgba(232,201,122,0.35);
-  transition: color var(--transition);
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(232,201,122,0.40);
+  font-weight: 500;
+  transition: color var(--transition), text-decoration-color var(--transition);
 }
-.message-content a:hover { color: var(--gold-main); }
+.message-content a:hover,
+.message-content a:focus-visible {
+  color: #F5E3A8;
+  text-decoration-color: currentColor;
+}
 .message-content code {
   font-family: 'Courier New', monospace;
   font-size: 0.82em;
@@ -863,13 +875,13 @@ a:hover { color: var(--gold-main); }
 }
 
 .message--user .message-bubble {
-  background: linear-gradient(135deg, #1B2A5C, #21408F);
-  border: 1px solid var(--gold-border);
+  background: linear-gradient(160deg, #23262E 0%, #181A20 100%);
+  border: 1px solid rgba(212,175,55,0.20);
   border-right: 3px solid var(--gold-border-strong);
   border-radius: 18px 3px 18px 18px;
   padding: 15px 19px;
-  box-shadow: 0 6px 22px rgba(30,58,138,0.30), inset 0 1px 0 rgba(255,255,255,0.06);
-  color: #E6EEFC;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
+  color: #EDEFF3;
   font-size: 0.925rem;
   line-height: 1.7;
 }
@@ -1047,16 +1059,18 @@ a:hover { color: var(--gold-main); }
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: var(--navy-deep);
+  background: linear-gradient(165deg, var(--navy-deep) 0%, #0C1120 100%);
   border: 1px solid var(--gold-border);
   border-radius: var(--radius-lg);
   padding: 8px 10px;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
 
 .input-row:focus-within {
   border-color: var(--gold-main);
-  box-shadow: 0 0 0 3px rgba(212,175,55,0.08), 0 0 20px rgba(212,175,55,0.05);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.12), 0 0 26px rgba(212,175,55,0.10), 0 4px 16px rgba(0,0,0,0.30);
+  transform: translateY(-1px);
 }
 
 .input-icon-btn {
