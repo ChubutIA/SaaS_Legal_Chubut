@@ -54,6 +54,8 @@ html, body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 img { display: block; }
@@ -577,11 +579,62 @@ a:hover { color: var(--gold-main); }
 
 .hero-subtitle {
   font-size: 0.95rem;
-  color: var(--text-muted);
-  font-weight: 300;
+  color: var(--text-secondary);
+  font-weight: 400;
   margin-bottom: 36px;
   position: relative;
 }
+
+/* ── News Banner (top del área de chat) ── */
+.news-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  margin: 14px 20px 0;
+  background: linear-gradient(90deg, rgba(212,175,55,0.08), rgba(212,175,55,0.03));
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 1px 0 rgba(212,175,55,0.06), 0 4px 16px rgba(0,0,0,0.20);
+}
+
+.news-banner__icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold-glow);
+  color: var(--gold-light);
+}
+
+.news-banner__icon svg { width: 16px; height: 16px; }
+
+.news-banner__text {
+  flex: 1;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.news-banner__text strong { color: var(--gold-light); font-weight: 600; }
+
+.news-banner__close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition);
+}
+
+.news-banner__close:hover { color: var(--gold-light); background: var(--gold-glow); }
+.news-banner__close svg { width: 14px; height: 14px; }
 
 /* ── Suggestions Grid ── */
 .suggestions-label {
@@ -595,9 +648,9 @@ a:hover { color: var(--gold-main); }
 
 .suggestions-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  max-width: 620px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  max-width: 780px;
   width: 100%;
 }
 
@@ -620,6 +673,80 @@ a:hover { color: var(--gold-main); }
   color: var(--gold-light);
   box-shadow: 0 4px 16px rgba(212,175,55,0.10), inset 0 1px 0 rgba(212,175,55,0.10);
   transform: translateY(-1px);
+}
+
+/* ── Suggestion Cards (empty state, premium) ── */
+.suggestion-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px 18px 18px;
+  background: linear-gradient(160deg, var(--navy-deep) 0%, var(--navy-surface) 100%);
+  overflow: hidden;
+}
+
+.suggestion-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% -10%, rgba(212,175,55,0.10), transparent 55%);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+
+.suggestion-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(212,175,55,0.14), inset 0 1px 0 rgba(212,175,55,0.10);
+}
+
+.suggestion-card:hover::before { opacity: 1; }
+
+.suggestion-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold-glow);
+  border: 1px solid var(--gold-border);
+  color: var(--gold-light);
+  flex-shrink: 0;
+}
+
+.suggestion-card__icon svg { width: 20px; height: 20px; }
+
+.suggestion-card__title {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.suggestion-card__desc {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.suggestion-card__badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--navy-void);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold-main));
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(212,175,55,0.35);
 }
 
 /* ── 8. MESSAGES ────────────────────────────────────────────────── */
@@ -648,31 +775,38 @@ a:hover { color: var(--gold-main); }
 }
 
 .message--ai .message-bubble {
-  background: var(--navy-deep);
-  border: 1px solid rgba(212,175,55,0.12);
+  background: linear-gradient(165deg, var(--navy-deep) 0%, #0A0F1D 100%);
+  border: 1px solid rgba(212,175,55,0.14);
   border-left: 3px solid var(--gold-border-strong);
-  border-radius: 2px 16px 16px 16px;
-  padding: 20px 22px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.30), 0 0 0 1px rgba(212,175,55,0.03);
+  border-radius: 3px 18px 18px 18px;
+  padding: 22px 24px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(212,175,55,0.04);
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: flex-start;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.message--ai .message-bubble:hover {
+  border-color: rgba(212,175,55,0.22);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.40), 0 0 0 1px rgba(212,175,55,0.06);
 }
 
 .message-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.06));
-  border: 1px solid var(--gold-border);
+  background: linear-gradient(135deg, rgba(212,175,55,0.20), rgba(212,175,55,0.05));
+  border: 1px solid var(--gold-border-strong);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--gold-muted);
-  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(212,175,55,0.10);
 }
 
 .message-avatar--loading {
@@ -682,9 +816,9 @@ a:hover { color: var(--gold-main); }
 .message-content {
   flex: 1;
   min-width: 0;
-  color: #CBD5E1;
-  font-size: 0.915rem;
-  line-height: 1.80;
+  color: #D6DEE9;
+  font-size: 0.925rem;
+  line-height: 1.85;
 }
 
 /* Markdown rendering inside AI messages */
@@ -729,15 +863,15 @@ a:hover { color: var(--gold-main); }
 }
 
 .message--user .message-bubble {
-  background: linear-gradient(135deg, #172554, #1E3A8A);
+  background: linear-gradient(135deg, #1B2A5C, #21408F);
   border: 1px solid var(--gold-border);
   border-right: 3px solid var(--gold-border-strong);
-  border-radius: 16px 2px 16px 16px;
-  padding: 14px 18px;
-  box-shadow: 0 4px 20px rgba(30,58,138,0.35), 0 0 0 1px rgba(212,175,55,0.04);
-  color: #DBEAFE;
-  font-size: 0.915rem;
-  line-height: 1.65;
+  border-radius: 18px 3px 18px 18px;
+  padding: 15px 19px;
+  box-shadow: 0 6px 22px rgba(30,58,138,0.30), inset 0 1px 0 rgba(255,255,255,0.06);
+  color: #E6EEFC;
+  font-size: 0.925rem;
+  line-height: 1.7;
 }
 
 /* ── File Attachment Chip ── */
