@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Response, Request, status
 from pydantic import BaseModel, EmailStr
 
 from services.supabase_client import get_supabase
+from services.rate_limiter import limiter
 
 router = APIRouter()
 
@@ -71,7 +72,8 @@ def _clear_auth_cookies(response: Response):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @router.post("/login")
-async def login(payload: LoginPayload, response: Response):
+@limiter.limit("10/minute")
+async def login(request: Request, payload: LoginPayload, response: Response):
     supabase = get_supabase()
     try:
         res = supabase.auth.sign_in_with_password(
@@ -104,7 +106,8 @@ async def login(payload: LoginPayload, response: Response):
 
 
 @router.post("/register")
-async def register(payload: RegisterPayload):
+@limiter.limit("5/hour")
+async def register(request: Request, payload: RegisterPayload):
     if len(payload.password) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres.")
 
@@ -185,7 +188,8 @@ async def logout(response: Response):
 
 
 @router.post("/reset-request")
-async def reset_request(payload: ResetRequestPayload):
+@limiter.limit("5/hour")
+async def reset_request(request: Request, payload: ResetRequestPayload):
     supabase = get_supabase()
     try:
         supabase.auth.reset_password_email(payload.email)
