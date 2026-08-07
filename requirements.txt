@@ -29,3 +29,6 @@ duckduckgo-search
 mercadopago
 requests
 beautifulsoup4
+
+# ── Seguridad ────────────────────────────
+slowapi>=0.1.9
