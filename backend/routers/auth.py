@@ -3,11 +3,14 @@ from urllib.parse import quote
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Response, Request, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 
 from services.supabase_client import get_supabase
 from services.rate_limiter import limiter, get_real_ip
 from services.turnstile import verify_turnstile
+from services.email_service import send_confirmation_email
+from services.confirmation_tokens import generar_token_confirmacion
 
 router = APIRouter()
 
@@ -103,6 +106,7 @@ async def login(request: Request, payload: LoginPayload, response: Response):
             "vencimiento_trial": datos.get("vencimiento_trial"),
             "vencimiento_pro": datos.get("vencimiento_pro"),
             "historial": datos.get("historial", {"Nueva Consulta": []}),
+            "confirmado": datos.get("confirmado", True),
         },
     }
 
@@ -140,6 +144,8 @@ async def register(request: Request, payload: RegisterPayload):
             }
         )
         venc_trial = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=7)
+        token, token_expira = generar_token_confirmacion()
+
         supabase.table("usuarios").insert(
             {
                 "usuario": payload.nombre,
@@ -147,15 +153,58 @@ async def register(request: Request, payload: RegisterPayload):
                 "plan": "gratis",
                 "vencimiento_trial": str(venc_trial),
                 "historial": {"Nueva Consulta": []},
+                "confirmado": False,
+                "token_confirmacion": token,
+                "token_confirmacion_expira": token_expira,
             }
         ).execute()
+
+        confirm_url = f"{str(request.base_url).rstrip('/')}/api/auth/confirm?token={token}"
+        email_enviado = await send_confirmation_email(payload.email, payload.nombre, confirm_url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear la cuenta: {str(e)}")
 
-    return {
-        "ok": True,
-        "message": "Cuenta creada. Revisá tu correo (incluyendo Spam) para confirmar tu cuenta.",
-    }
+    if email_enviado:
+        mensaje = "Cuenta creada. Revisá tu correo (incluyendo Spam) y hacé clic en el enlace para activar tus consultas gratuitas."
+    else:
+        mensaje = (
+            "Cuenta creada, pero no pudimos enviarte el mail de confirmación. "
+            "Escribinos a chubutiaoficial@gmail.com para activarla manualmente."
+        )
+
+    return {"ok": True, "message": mensaje}
+
+
+@router.get("/confirm")
+async def confirm_account(token: str, request: Request):
+    """
+    Endpoint público que se abre desde el link del mail. No requiere estar
+    logueado. Redirige siempre al frontend con un query param que el
+    propio index.html interpreta para mostrar un toast de éxito/error.
+    """
+    frontend_url = str(request.base_url).rstrip("/")
+    supabase = get_supabase()
+
+    if not token:
+        return RedirectResponse(f"{frontend_url}/?confirmacion=invalido")
+
+    res = supabase.table("usuarios").select("*").eq("token_confirmacion", token).execute()
+    if not res.data:
+        return RedirectResponse(f"{frontend_url}/?confirmacion=invalido")
+
+    datos = res.data[0]
+
+    expira_raw = datos.get("token_confirmacion_expira")
+    if expira_raw:
+        expira = datetime.fromisoformat(expira_raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        if datetime.utcnow() > expira:
+            return RedirectResponse(f"{frontend_url}/?confirmacion=expirado")
+
+    supabase.table("usuarios").update(
+        {"confirmado": True, "token_confirmacion": None, "token_confirmacion_expira": None}
+    ).eq("email", datos["email"]).execute()
+
+    return RedirectResponse(f"{frontend_url}/?confirmacion=ok")
 
 
 @router.post("/refresh")
@@ -181,6 +230,7 @@ async def refresh_session(payload: RefreshPayload, response: Response):
             "vencimiento_trial": datos.get("vencimiento_trial"),
             "vencimiento_pro": datos.get("vencimiento_pro"),
             "historial": datos.get("historial", {"Nueva Consulta": []}),
+            "confirmado": datos.get("confirmado", True),
         },
     }
 
@@ -252,6 +302,7 @@ async def get_me(request: Request):
             "vencimiento_trial": datos.get("vencimiento_trial"),
             "vencimiento_pro": datos.get("vencimiento_pro"),
             "historial": datos.get("historial", {"Nueva Consulta": []}),
+            "confirmado": datos.get("confirmado", True),
         },
     } # ¡ACÁ ESTÁ LA LLAVE QUE FALTABA!
 
@@ -298,6 +349,7 @@ async def google_callback(payload: GoogleCallbackPayload, response: Response):
                 "plan": "gratis",
                 "vencimiento_trial": str(venc_trial),
                 "historial": {"Nueva Consulta": []},
+                "confirmado": True,
             }
             supabase.table("usuarios").insert(nuevo_perfil).execute()
             datos = nuevo_perfil
@@ -319,6 +371,7 @@ async def google_callback(payload: GoogleCallbackPayload, response: Response):
         "vencimiento_trial": datos.get("vencimiento_trial"),
         "vencimiento_pro":   datos.get("vencimiento_pro"),
         "historial":         datos.get("historial", {"Nueva Consulta": []}),
+        "confirmado":        datos.get("confirmado", True),
     }
 
     return {"ok": True, "user": user_data}
