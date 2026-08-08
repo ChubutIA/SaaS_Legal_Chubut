@@ -52,11 +52,11 @@ export async function apiLogin(email, password) {
   return handleResponse(res);
 }
 
-export async function apiRegister(nombre, email, password) {
+export async function apiRegister(nombre, email, password, turnstileToken) {
   const res = await fetch(`${BASE}/auth/register`, {
     ...DEFAULT_OPTS,
     method: 'POST',
-    body: JSON.stringify({ nombre, email, password }),
+    body: JSON.stringify({ nombre, email, password, turnstile_token: turnstileToken }),
   });
   return handleResponse(res);
 }
