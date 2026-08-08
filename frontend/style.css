@@ -46,7 +46,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background: var(--navy-void);
   color: var(--text-primary);
@@ -75,7 +75,7 @@ a:hover { color: var(--gold-main); }
 /* ── 3. LAYOUT PRINCIPAL ────────────────────────────────────────── */
 #app-shell {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -501,7 +501,7 @@ a:hover { color: var(--gold-main); }
   min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
   background: var(--navy-void);
