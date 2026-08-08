@@ -1266,6 +1266,12 @@ a:hover { color: var(--gold-main); }
   margin-bottom: 14px;
 }
 
+.turnstile-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 12px;
+}
+
 .form-label {
   display: block;
   font-size: 0.70rem;
