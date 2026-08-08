@@ -70,7 +70,7 @@ export function renderSidebar() {
   renderPlanArea(planStatus);
   renderSessionButtons(user);
   renderHistoryList();
-  renderFooterButtons(user);
+  renderProfileArea(user, planStatus);
 }
 
 function renderUserArea(user, planStatus) {
@@ -92,20 +92,8 @@ function renderUserArea(user, planStatus) {
     return;
   }
 
-  const badgeMap = {
-    pro: `<span class="badge badge--pro">✦ Plan Pro</span>
-          <div class="user-card__footer">Vigente hasta el ${formatDate(user.vencimiento_pro)}</div>`,
-    trial: `<span class="badge badge--trial">Prueba Gratuita</span>
-            <div class="user-card__footer">Vence el ${formatDate(user.vencimiento_trial)}</div>`,
-    expired: `<span class="badge badge--expired">Acceso Expirado</span>`,
-  };
-
-  el.innerHTML = `
-    <div class="user-card">
-      <div class="user-card__label">Cuenta verificada</div>
-      <div class="user-card__name">${escapeHtml(user.usuario)}</div>
-      ${badgeMap[planStatus] || ''}
-    </div>`;
+  // Usuarios logueados ven su cuenta en el área de perfil (footer de la sidebar)
+  el.innerHTML = '';
 }
 
 export function renderPlanArea(planStatus) {
@@ -196,11 +184,105 @@ function renderSessionButtons(user) {
   }
 }
 
-function renderFooterButtons(user) {
-  const btnLogout = document.getElementById('btn-logout');
-  if (!btnLogout) return;
-  if (user) btnLogout.classList.remove('hidden');
-  else btnLogout.classList.add('hidden');
+function renderProfileArea(user, planStatus) {
+  const el = document.getElementById('sidebar-profile-area');
+  if (!el) return;
+
+  if (!user) {
+    el.innerHTML = '';
+    return;
+  }
+
+  const planLabelMap = {
+    pro: `Plan Pro · vence ${formatDate(user.vencimiento_pro)}`,
+    trial: `Prueba · vence ${formatDate(user.vencimiento_trial)}`,
+    expired: 'Acceso expirado',
+  };
+  const planLabel = planLabelMap[planStatus] || '';
+  const displayName = user.usuario || user.email || 'Mi cuenta';
+
+  el.innerHTML = `
+    <div class="profile-bar" id="profile-bar" tabindex="0" title="${escapeHtml(displayName)}">
+      <div class="profile-avatar">${getInitials(displayName)}</div>
+      <div class="profile-info">
+        <div class="profile-name">${escapeHtml(displayName)}</div>
+        <div class="profile-plan${planStatus === 'expired' ? ' profile-plan--expired' : ''}">${planLabel}</div>
+      </div>
+      <svg class="profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+
+      <div class="profile-dropdown" id="profile-dropdown">
+        <button class="profile-dropdown__item" id="btn-profile-settings" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Configuración
+        </button>
+        <div class="profile-dropdown__divider"></div>
+        <button class="profile-dropdown__item profile-dropdown__item--danger" id="btn-logout" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>`;
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = String(name).trim().split(/\s+/);
+  const initials = parts.slice(0, 2).map(p => p[0]?.toUpperCase() || '').join('');
+  return initials || '?';
+}
+
+export function toggleProfileMenu() {
+  const bar = document.getElementById('profile-bar');
+  const dd = document.getElementById('profile-dropdown');
+  if (!bar || !dd) return;
+  const isOpen = dd.classList.toggle('open');
+  bar.classList.toggle('open', isOpen);
+}
+
+export function closeProfileMenu() {
+  document.getElementById('profile-dropdown')?.classList.remove('open');
+  document.getElementById('profile-bar')?.classList.remove('open');
+}
+
+// ── Sidebar Collapse (desktop) ─────────────────────────────────────
+const SIDEBAR_COLLAPSE_KEY = 'chubut_sidebar_collapsed';
+
+export function initSidebarCollapse() {
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === '1';
+  } catch { /* localStorage bloqueado */ }
+  applyCollapseState(collapsed);
+}
+
+export function toggleSidebarCollapse() {
+  const shell = document.getElementById('app-shell');
+  const collapsed = !shell?.classList.contains('sidebar-collapsed');
+  applyCollapseState(collapsed);
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0');
+  } catch { /* localStorage bloqueado */ }
+}
+
+function applyCollapseState(collapsed) {
+  const shell = document.getElementById('app-shell');
+  if (!shell) return;
+  shell.classList.toggle('sidebar-collapsed', collapsed);
+  state.sidebarCollapsed = collapsed;
+
+  const btn = document.getElementById('btn-sidebar-collapse');
+  if (btn) btn.title = collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral';
+
+  closeProfileMenu();
 }
 
 export function renderHistoryList() {
@@ -370,8 +452,22 @@ export function autoResizeTextarea(el) {
 // ── Payment redirect check ─────────────────────────────────────────
 export function checkPaymentRedirect() {
   const params = new URLSearchParams(window.location.search);
+
   if (params.get('status') === 'approved') {
     showToast('¡Pago procesado! Tu Plan Pro está activo.', 'success');
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
+  const confirmacion = params.get('confirmacion');
+  if (confirmacion) {
+    const mensajes = {
+      ok: ['Cuenta confirmada exitosamente. ¡Ya podés hacer tus consultas gratuitas!', 'success'],
+      invalido: ['El enlace de confirmación no es válido.', 'error'],
+      expirado: ['El enlace de confirmación expiró. Iniciá sesión para pedir uno nuevo.', 'error'],
+    };
+    const [mensaje, tipo] = mensajes[confirmacion] || ['No pudimos confirmar tu cuenta.', 'error'];
+    showToast(mensaje, tipo);
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
