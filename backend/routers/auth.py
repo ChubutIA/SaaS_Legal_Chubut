@@ -165,7 +165,7 @@ async def register(request: Request, payload: RegisterPayload):
         raise HTTPException(status_code=500, detail=f"Error al crear la cuenta: {str(e)}")
 
     if email_enviado:
-        mensaje = "Cuenta creada. Revisá tu correo (incluyendo Spam) y hacé clic en el enlace para activar tus consultas gratuitas."
+        mensaje = "Cuenta creada. Revisá tu correo (incluyendo Spam) para confirmar tu cuenta."
     else:
         mensaje = (
             "Cuenta creada, pero no pudimos enviarte el mail de confirmación. "
