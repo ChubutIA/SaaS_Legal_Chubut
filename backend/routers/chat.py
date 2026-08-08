@@ -64,6 +64,12 @@ async def chat_endpoint(
 
     datos = db_res.data[0]
 
+    if not datos.get("confirmado", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Confirmá tu cuenta desde el enlace que te enviamos por correo para poder hacer consultas.",
+        )
+
     if not _validar_acceso(datos):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
