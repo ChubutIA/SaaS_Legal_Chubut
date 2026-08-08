@@ -370,8 +370,23 @@ export function autoResizeTextarea(el) {
 // ── Payment redirect check ─────────────────────────────────────────
 export function checkPaymentRedirect() {
   const params = new URLSearchParams(window.location.search);
+
   if (params.get('status') === 'approved') {
     showToast('¡Pago procesado! Tu Plan Pro está activo.', 'success');
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
+  // --- LÓGICA DE CONFIRMACIÓN DE CUENTA ---
+  const confirmacion = params.get('confirmacion');
+  if (confirmacion) {
+    const mensajes = {
+      ok: ['Cuenta confirmada exitosamente. ¡Ya podés hacer tus consultas gratuitas!', 'success'],
+      invalido: ['El enlace de confirmación no es válido.', 'error'],
+      expirado: ['El enlace de confirmación expiró. Iniciá sesión para pedir uno nuevo.', 'error'],
+    };
+    const [mensaje, tipo] = mensajes[confirmacion] || ['No pudimos confirmar tu cuenta.', 'error'];
+    showToast(mensaje, tipo);
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
