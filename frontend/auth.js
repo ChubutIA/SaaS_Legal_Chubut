@@ -113,11 +113,17 @@ export async function doRegister() {
     return;
   }
 
+  const turnstileToken = window.turnstile ? window.turnstile.getResponse() : '';
+  if (!turnstileToken) {
+    setFeedback('register-feedback', 'Completá la verificación de seguridad antes de continuar.');
+    return;
+  }
+
   const btn = document.getElementById('btn-do-register');
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
   try {
-    const data = await apiRegister(nombre, email, pass);
+    const data = await apiRegister(nombre, email, pass, turnstileToken);
     setFeedback(
       'register-feedback',
       data.message || 'Cuenta creada. Revisá tu correo para confirmarla.',
@@ -127,6 +133,7 @@ export async function doRegister() {
     setFeedback('register-feedback', err.message || 'Error al crear la cuenta.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Crear Cuenta'; }
+    window.turnstile?.reset();
   }
 }
 
