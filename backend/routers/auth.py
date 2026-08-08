@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Response, Request, status
 from pydantic import BaseModel, EmailStr
 
 from services.supabase_client import get_supabase
-from services.rate_limiter import limiter
+from services.rate_limiter import limiter, get_real_ip
+from services.turnstile import verify_turnstile
 
 router = APIRouter()
 
@@ -25,6 +26,7 @@ class RegisterPayload(BaseModel):
     nombre: str
     email: EmailStr
     password: str
+    turnstile_token: str
 
 
 class ResetRequestPayload(BaseModel):
@@ -110,6 +112,13 @@ async def login(request: Request, payload: LoginPayload, response: Response):
 async def register(request: Request, payload: RegisterPayload):
     if len(payload.password) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres.")
+
+    ip = get_real_ip(request)
+    if not await verify_turnstile(payload.turnstile_token, remote_ip=ip):
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo validar la verificación de seguridad. Recargá la página e intentá de nuevo.",
+        )
 
     supabase = get_supabase()
 
