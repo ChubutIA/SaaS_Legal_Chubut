@@ -498,7 +498,6 @@ a:hover { color: var(--gold-main); }
 /* ── 5. CHAT MAIN ───────────────────────────────────────────────── */
 #chat-main {
   flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -515,7 +514,6 @@ a:hover { color: var(--gold-main); }
 /* ── 6. SCROLL CONTAINER ────────────────────────────────────────── */
 #scroll-container {
   flex: 1;
-  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1176,8 +1174,6 @@ a:hover { color: var(--gold-main); }
   padding: 32px 28px;
   width: 100%;
   max-width: 420px;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
   position: relative;
   box-shadow: var(--shadow-lg), 0 0 60px rgba(212,175,55,0.06);
   animation: modal-in 0.28s cubic-bezier(0.22,1,0.36,1) both;
