@@ -120,6 +120,53 @@ async def clasificar_intencion(query: str, llm: ChatOpenAI) -> str:
         return INTENT_FALLOS
 
 # ══════════════════════════════════════════════════════════════════
+# 3b. CLASIFICADOR DE JURISDICCIÓN (provincial/municipal vs nacional)
+# ══════════════════════════════════════════════════════════════════
+_PATRONES_NACIONAL = re.compile(
+    r"\b(naci[oó]n(al)?|argentin[oa]|c[oó]digo civil|c[oó]digo penal|c[oó]digo de comercio|"
+    r"c[oó]digo civil y comercial|contrato de trabajo|\blct\b|constituci[oó]n nacional|"
+    r"defensa del consumidor|24\.?240|infoleg|boletín oficial(?! de chubut)|congreso de la naci[oó]n)\b",
+    re.IGNORECASE
+)
+_PATRONES_PROVINCIAL = re.compile(
+    r"\b(chubut|comodoro( rivadavia)?|provincial|municipal|ordenanza|digesto|legislatura del chubut)\b",
+    re.IGNORECASE
+)
+
+async def clasificar_jurisdiccion(query: str, llm: ChatOpenAI) -> str:
+    """Devuelve 'nacional', 'provincial' o 'ambas'."""
+    q = query.lower()
+    tiene_nacional = bool(_PATRONES_NACIONAL.search(q))
+    tiene_provincial = bool(_PATRONES_PROVINCIAL.search(q))
+
+    if tiene_nacional and not tiene_provincial:
+        return "nacional"
+    if tiene_provincial and not tiene_nacional:
+        return "provincial"
+    if tiene_nacional and tiene_provincial:
+        return "ambas"
+
+    # Ninguna palabra clave disparó: le preguntamos a la IA
+    prompt = (
+        f"Clasificá si esta consulta legal es sobre normativa NACIONAL argentina "
+        f"(leyes del Congreso, códigos, Constitución Nacional) o PROVINCIAL/MUNICIPAL "
+        f"(Chubut, Comodoro Rivadavia, ordenanzas). Respondé solo: nacional, provincial o ambas.\n"
+        f"Consulta: '{query[:500]}'"
+    )
+    loop = asyncio.get_event_loop()
+    try:
+        resultado = await loop.run_in_executor(None, lambda: llm.invoke([HumanMessage(content=prompt)]).content)
+        r = resultado.strip().lower()
+        if "nacional" in r and "provincial" not in r:
+            return "nacional"
+        if "provincial" in r and "nacional" not in r:
+            return "provincial"
+        return "ambas"
+    except Exception:
+        return "provincial"  # fallback: mantiene el comportamiento actual del sistema
+
+
+# ══════════════════════════════════════════════════════════════════
 # 4. BÚSQUEDA VECTORIAL (FALLOS) Y API (LEYES)
 # ══════════════════════════════════════════════════════════════════
 async def _busqueda_dual_en_vdb(query_original: str, query_tecnica: str, vdb: Chroma, k: int = 6, max_docs: int = 10) -> list:
@@ -226,6 +273,33 @@ async def buscar_ordenanzas_municipal(query_usuario: str, llm: ChatOpenAI) -> st
         return "\n\n".join(textos)
     except Exception as e:
         return "(Error al consultar el digesto municipal de Comodoro.)"
+async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -> str:
+    """Extrae palabras clave y busca en InfoLEG (legislación nacional)."""
+    loop = asyncio.get_event_loop()
+
+    prompt = f"Extraé solo 2 o 3 palabras clave legales de esta consulta para buscar en InfoLEG (base de legislación nacional argentina). Ignorá saludos o verbos. Consulta: '{query_usuario}'. Palabras clave:"
+    try:
+        keywords = await loop.run_in_executor(None, lambda: llm.invoke([HumanMessage(content=prompt)]).content.replace('"', '').strip())
+    except:
+        keywords = query_usuario
+
+    try:
+        resultados = await loop.run_in_executor(None, buscar_normas_infoleg, keywords)
+        if not resultados:
+            return "(No se encontraron normas nacionales en InfoLEG para esta consulta.)"
+
+        textos = []
+        for item in resultados:
+            textos.append(
+                f"📜 NORMA: {item['norma']}\n"
+                f"📅 FECHA: {item['fecha']}\n"
+                f"📝 TEMA: {item['tema']}\n"
+                f"🔗 LINK_OFICIAL: {item['link']}\n"
+                f"📄 TEXTO:\n{item['contenido_texto']}"
+            )
+        return "\n\n".join(textos)
+    except Exception as e:
+        return "(Error al consultar InfoLEG.)"
 # ══════════════════════════════════════════════════════════════════
 # 5. SÚPER BÚSQUEDA DUAL
 # ══════════════════════════════════════════════════════════════════
@@ -259,16 +333,27 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
         docs_f = await _busqueda_dual_en_vdb(query_segura, query_tecnica, vdb_fallos)
         contexto_fallos = _formatear_docs_fallos(docs_f)
 
-    if intent in (INTENT_LEYES, INTENT_AMBOS):
-        # LLAMAMOS A LAS APIs PROVINCIAL Y MUNICIPAL EN PARALELO
-        task_provincial = buscar_leyes_api_chubut(query_segura, llm)
-        task_municipal = buscar_ordenanzas_municipal(query_segura, llm)
-        
-        res_provincial, res_municipal = await asyncio.gather(task_provincial, task_municipal)
-        
-        contexto_leyes = (
-            "=== LEYES PROVINCIALES (CHUBUT) ===\n" + res_provincial + "\n\n" +
-            "=== ORDENANZAS MUNICIPALES (COMODORO RIVADAVIA) ===\n" + res_municipal
+       if intent in (INTENT_LEYES, INTENT_AMBOS):
+        jurisdiccion = await clasificar_jurisdiccion(query_segura, llm)
+
+        tareas: list = []
+        etiquetas: list[str] = []
+
+        if jurisdiccion in ("provincial", "ambas"):
+            tareas.append(buscar_leyes_api_chubut(query_segura, llm))
+            etiquetas.append("LEYES PROVINCIALES (CHUBUT)")
+            tareas.append(buscar_ordenanzas_municipal(query_segura, llm))
+            etiquetas.append("ORDENANZAS MUNICIPALES (COMODORO RIVADAVIA)")
+
+        if jurisdiccion in ("nacional", "ambas"):
+            tareas.append(buscar_leyes_nacionales_infoleg(query_segura, llm))
+            etiquetas.append("LEGISLACIÓN NACIONAL (INFOLEG)")
+
+        resultados_busqueda = await asyncio.gather(*tareas)
+
+        contexto_leyes = "\n\n".join(
+            f"=== {etiqueta} ===\n{resultado}"
+            for etiqueta, resultado in zip(etiquetas, resultados_busqueda)
         )
 
     return contexto_fallos, contexto_leyes, intent
@@ -296,6 +381,7 @@ REGLA 1 — CORTAFUEGOS DE CONTEXTO (crítica):
 Las fuentes de Jurisprudencia (BLOQUE A), Legislación Provincial (BLOQUE B) y las Ordenanzas Municipales son totalmente independientes.
 - NUNCA uses un link de jurisprudencia (juschubut.gov.ar / Eureka) para citar una ley provincial o una ordenanza municipal.
 - Para las Ordenanzas Municipales, debés usar ÚNICAMENTE el link exacto que figura en el bloque de Ordenanzas (digestocomodoro.gob.ar). Jamás intercambies, reutilices ni inventes links entre bloques diferentes.
+- NUNCA uses un link de InfoLEG (servicios.infoleg.gob.ar) para citar una ley provincial de Chubut, y viceversa: nunca uses un link del Digesto Provincial o Municipal para citar una norma nacional.
 
 REGLA 2 — CONOCIMIENTO GENERAL Y ADVERTENCIA OBLIGATORIA:
 Si el BLOQUE B indica que no se encontraron resultados, TENÉS PERMITIDO responder utilizando tu conocimiento general.
