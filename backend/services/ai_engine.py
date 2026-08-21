@@ -332,8 +332,8 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
     if intent in (INTENT_FALLOS, INTENT_AMBOS):
         docs_f = await _busqueda_dual_en_vdb(query_segura, query_tecnica, vdb_fallos)
         contexto_fallos = _formatear_docs_fallos(docs_f)
-
-       if intent in (INTENT_LEYES, INTENT_AMBOS):
+        
+    if intent in (INTENT_LEYES, INTENT_AMBOS):
         jurisdiccion = await clasificar_jurisdiccion(query_segura, llm)
 
         tareas: list = []
