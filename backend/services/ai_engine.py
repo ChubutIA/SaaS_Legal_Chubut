@@ -19,6 +19,7 @@ import httpx
 import urllib.parse
 import urllib.parse
 
+from services.infoleg_scraper import buscar_normas_infoleg
 from services.comodoro_scraper import buscar_ordenanzas_comodoro
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
