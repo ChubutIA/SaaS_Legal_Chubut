@@ -285,20 +285,22 @@ async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -
     """
     loop = asyncio.get_event_loop()
 
-    prompt = (
-        "Extraé de esta consulta legal EXCLUSIVAMENTE el mejor término de "
-        "búsqueda para InfoLEG (base de legislación nacional argentina), "
-        "en este orden de prioridad:\n"
-        "1) Si se menciona un número de ley, decreto o resolución, devolvé "
-        "SOLO ese número tal como aparece (con puntos si los tiene, sin la "
-        "palabra 'Ley' ni 'Decreto'). Ejemplo: 'Ley 24.240' → 24.240\n"
-        "2) Si no hay número, devolvé el nombre corto y oficial de la norma "
-        "en 2 a 4 palabras (ej: 'contrato de trabajo', 'defensa del "
+       prompt = (
+        "Extraé de esta consulta legal EXCLUSIVAMENTE el nombre completo "
+        "de la norma tal como aparece en su título oficial, para buscarla "
+        "como frase exacta en InfoLEG (base de legislación nacional "
+        "argentina). Reglas:\n"
+        "1) Si se menciona un número de ley, decreto o resolución, "
+        "devolvé el tipo + número tal como se escribe oficialmente. "
+        "Ejemplos: 'Ley 24.240', 'Decreto 770/2026', 'Resolución 424/2020'.\n"
+        "2) Si no hay número, devolvé el nombre corto y oficial de la "
+        "norma en 2 a 4 palabras (ej: 'contrato de trabajo', 'defensa del "
         "consumidor', 'código civil y comercial').\n"
-        "3) NUNCA devuelvas la pregunta completa, verbos conjugados, signos "
-        "de interrogación, comillas ni explicaciones. Solo el término.\n\n"
+        "3) NUNCA devuelvas solo el número pelado sin la palabra 'Ley'/"
+        "'Decreto'/etc., ni la pregunta completa, ni signos de "
+        "interrogación, ni comillas, ni explicaciones. Solo la frase.\n\n"
         f"Consulta: '{query_usuario}'\n"
-        "Término de búsqueda:"
+        "Nombre de la norma:"
     )
 
     try:
