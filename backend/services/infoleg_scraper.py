@@ -11,12 +11,18 @@ ENCODING = "iso-8859-1"
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+# Diccionario estático descubierto por ingeniería inversa
 MAPEO_TIPOS_NORMA = {
     "ley": "1",
     "decreto": "2",
     "resolucion": "3",
     "disposicion": "4",
+    "circular": "5",
+    "comunicacion": "6",
+    "decreto/ley": "7",
+    "decreto ley": "7",
     "decision administrativa": "8",
+    "acordada": "12",
 }
 
 def _headers_navegador_completos(referer: str) -> dict:
