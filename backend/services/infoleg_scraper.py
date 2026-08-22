@@ -104,7 +104,7 @@ def buscar_normas_infoleg(tipo_norma: str = None, numero: str = None, texto_libr
                 norma = titulo_tag.get_text(strip=True) if titulo_tag else item["titulo_lista"]
                 fecha_match = re.search(r"\d{1,2}/\d{1,2}/\d{4}", texto_limpio)
                 
-                if len(texto_limpio) > 2500: texto_limpio = texto_limpio[:2500] + "..."
+                if len(texto_limpio) > 40000: texto_limpio = texto_limpio[:40000] + "..."
                 
                 resultados.append({
                     "norma": norma,
