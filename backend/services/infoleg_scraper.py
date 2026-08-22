@@ -51,8 +51,11 @@ def _mapear_tipo_norma(tipo_norma_deseado: str) -> str:
         if clave_conocida in clave or clave in clave_conocida: return value
     return MAPEO_TIPOS_NORMA["ley"]
 
+# LA CLAVE DEL ÉXITO: Strings crudos en vez de diccionarios y a prueba de años
 def _payload_por_numero_string(tipo_norma_value: str, numero: str) -> str:
-    numero_limpio = re.sub(r"\D", "", str(numero or ""))
+    # Si la IA manda "50/2019", esto lo corta en la barra y se queda solo con el "50"
+    numero_base = str(numero or "").split('/')[0]
+    numero_limpio = re.sub(r"\D", "", numero_base)
     return f"tipoNorma={tipo_norma_value}&numero={numero_limpio}&anioSancion=&texto=&dependencia=&diaPubDesde=&mesPubDesde=0&anioPubDesde=&diaPubHasta=&mesPubHasta=0&anioPubHasta="
 
 def _payload_por_texto_libre_string(texto_libre: str) -> str:
