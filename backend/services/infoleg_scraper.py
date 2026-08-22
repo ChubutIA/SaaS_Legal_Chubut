@@ -20,9 +20,9 @@ inversa manual en el sitio, no solo con el cURL):
      Con frases largas esto devuelve decenas o cientos de miles de
      normas (ej. "contrato de trabajo" ≈ 170.000), inutilizable.
   3) La ÚNICA combinación que trae la norma exacta es `tipoNorma`
-     (seleccionado del <select>, ej. "Ley") + `numero` (SIN puntos,
-     ej. "24240"). Con eso el buscador filtra por norma puntual en vez
-     de por texto libre.
+     (código interno del <select>, ej. "1" para Ley) + `numero` (SIN
+     puntos, ej. "24240"). Con eso el buscador filtra por norma puntual
+     en vez de por texto libre.
 
 Por eso este scraper ya NO arma una sola "palabra_clave" de texto: pide
 tipo_norma + numero por separado (ai_engine.py se encarga de que el
@@ -31,16 +31,23 @@ LLM se los pase estructurados), y solo cae a búsqueda libre por
 conceptuales sin número identificable — con la advertencia de que ese
 modo puede devolver un volumen alto de resultados.
 
-GET  mostrarBusquedaNormas.do  → muestra el formulario, crea la
-                                  sesión, y de ahí leemos:
-                                  (a) el `action` real del <form>
-                                      (Struts le mete el jsessionid
-                                      ahí: buscarNormas.do;jsessionid=X)
-                                  (b) las opciones reales del
-                                      <select name="tipoNorma"> para
-                                      mapear "Ley"/"Decreto"/etc. al
-                                      value interno correcto sin
-                                      adivinarlo.
+✅ MAPEO DE tipoNorma CONFIRMADO POR DUMP DEL HTML (no leído en vivo):
+Antes intentábamos leer el `<select name="tipoNorma">` en cada corrida
+para sacar el `value` real sin adivinarlo. Roman hizo un dump directo
+del HTML del formulario y confirmó que esos values son fijos y
+numéricos (1=Ley, 2=Decreto, 3=Resolución, 4=Disposición, 8=Decisión
+Administrativa). Como son códigos estáticos del sitio (no cambian por
+sesión ni por request), hardcodearlos en `MAPEO_TIPOS_NORMA` es más
+simple y más confiable que seguir parseando el `<select>` — la lectura
+en vivo agregaba una petición HTTP extra y un punto de falla (mal
+matching de texto de opción) sin ninguna ventaja real, ya que estos
+valores no son el tipo de dato que el sitio vaya a randomizar.
+
+GET  mostrarBusquedaNormas.do  → muestra el formulario y crea la
+                                  sesión; de ahí leemos el `action`
+                                  real del <form> (Struts le mete el
+                                  jsessionid ahí:
+                                  buscarNormas.do;jsessionid=X).
 POST buscarNormas.do (URL dinámica con jsessionid) → procesa la
                                   búsqueda real.
 
@@ -51,6 +58,7 @@ la que se usa para extraer el texto completo de cada resultado.
 import requests
 from bs4 import BeautifulSoup
 import re
+import unicodedata
 import urllib.parse
 
 BASE_URL = "https://servicios.infoleg.gob.ar/infolegInternet/"
@@ -62,6 +70,17 @@ USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+
+# Values reales del <select name="tipoNorma">, confirmados por dump
+# directo del HTML (no se leen en vivo). Claves ya normalizadas
+# (minúsculas, sin tildes) para matchear con _normalizar_tipo_norma().
+MAPEO_TIPOS_NORMA = {
+    "ley": "1",
+    "decreto": "2",
+    "resolucion": "3",
+    "disposicion": "4",
+    "decision administrativa": "8",
+}
 
 
 def _headers_navegador_completos(referer: str) -> dict:
@@ -84,31 +103,39 @@ def _headers_navegador_completos(referer: str) -> dict:
     }
 
 
-def _mapear_tipo_norma(soup_form: BeautifulSoup, tipo_norma_deseado: str) -> str:
+def _normalizar_tipo_norma(tipo_norma_deseado: str) -> str:
     """
-    Lee el <select name="tipoNorma"> real del formulario y devuelve el
-    `value` de la <option> cuyo texto visible matchee (por substring,
-    case-insensitive) con tipo_norma_deseado (ej. "Ley", "Decreto").
-
-    No hardcodeamos los values porque en Struts suelen ser códigos
-    internos (ej. "1", "2", "TN003") que no se pueden adivinar sin ver
-    el HTML real — los leemos en cada corrida para no romper si el
-    sitio los cambia.
+    Normaliza el string que viene del LLM (minúsculas, sin tildes, sin
+    espacios extra) para poder buscarlo en MAPEO_TIPOS_NORMA sin
+    depender de que el LLM devuelva el texto exactamente igual a como
+    está escrito en el <select>.
     """
     if not tipo_norma_deseado:
         return ""
+    sin_tildes = unicodedata.normalize("NFKD", tipo_norma_deseado).encode("ascii", "ignore").decode("ascii")
+    return sin_tildes.strip().lower()
 
-    select = soup_form.find("select", {"name": "tipoNorma"})
-    if not select:
-        return ""
 
-    objetivo = tipo_norma_deseado.strip().lower()
-    for option in select.find_all("option"):
-        texto_opcion = option.get_text(strip=True).lower()
-        if objetivo in texto_opcion or texto_opcion in objetivo:
-            return option.get("value", "")
+def _mapear_tipo_norma(tipo_norma_deseado: str) -> str:
+    """
+    Devuelve el `value` numérico fijo de MAPEO_TIPOS_NORMA para el tipo
+    de norma pedido. Si no matchea ninguna clave (tipo desconocido o
+    vacío), asume "Ley" (value "1") por ser el tipo más común en
+    consultas legales, en vez de mandar el campo vacío (que en algunos
+    casos del formulario de InfoLEG puede comportarse distinto a
+    "cualquier tipo").
+    """
+    clave = _normalizar_tipo_norma(tipo_norma_deseado)
+    if clave in MAPEO_TIPOS_NORMA:
+        return MAPEO_TIPOS_NORMA[clave]
 
-    return ""
+    # Match parcial por si el LLM manda variantes (ej. "decreto del
+    # poder ejecutivo" en vez de "decreto")
+    for clave_conocida, value in MAPEO_TIPOS_NORMA.items():
+        if clave_conocida in clave or clave in clave_conocida:
+            return value
+
+    return MAPEO_TIPOS_NORMA["ley"]  # fallback: asumimos Ley
 
 
 def _payload_por_numero(tipo_norma_value: str, numero: str) -> dict:
@@ -195,7 +222,7 @@ def buscar_normas_infoleg(
 
         # 2) Armamos el payload según qué datos tengamos
         if numero:
-            tipo_norma_value = _mapear_tipo_norma(soup_form, tipo_norma)
+            tipo_norma_value = _mapear_tipo_norma(tipo_norma)
             payload = _payload_por_numero(tipo_norma_value, numero)
         elif texto_libre:
             payload = _payload_por_texto_libre(texto_libre)
