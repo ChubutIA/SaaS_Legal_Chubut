@@ -53,47 +53,36 @@ USER_AGENT = (
 )
 
 
-def _es_numero_norma(palabra_clave: str) -> bool:
-    """
-    True si la palabra_clave es (o parece) un número de norma: solo
-    dígitos y, opcionalmente, puntos como separador de miles
-    (ej: '24240' o '24.240'). Cualquier letra, espacio o símbolo la
-    descarta como "no numérica".
-    """
-    clave = palabra_clave.strip()
-    return bool(re.fullmatch(r"\d{1,3}(\.\d{3})*|\d+", clave))
-
-
 def _payload_busqueda(palabra_clave: str) -> dict:
     """
     Payload hardcodeado 1:1 con el capturado en DevTools (Copy as cURL).
-    Todos los campos van vacíos salvo los que correspondan según el
-    tipo de búsqueda.
+    Todos los campos van vacíos salvo `texto` (la palabra clave, entre
+    comillas) y los dos selects de mes, que el propio sitio manda en
+    "0" por defecto.
 
-    Enrutamiento condicional:
-    - Si `palabra_clave` es un número de norma (ej: '24240' o
-      '24.240'): va al campo `numero` SIN comillas y SIN puntos (el
-      campo es numérico), y `texto` queda vacío.
-    - Si es una frase (ej: 'contrato de trabajo'): va al campo `texto`
-      ENTRE COMILLAS para forzar frase exacta (ver nota abajo sobre por
-      qué hace falta), y `numero` queda vacío.
+    Se probó enrutar por número a un campo `numero` separado, pero ese
+    campo espera un ID interno de la base de InfoLEG (no el número
+    público de la ley/decreto) y además exige `tipoNorma` seteado con
+    el value exacto del <select> — mapear "Ley"/"Decreto"/etc. a esos
+    values agrega complejidad y otro punto de falla sin necesidad,
+    porque buscar por texto exacto ya cubre número y nombre de norma
+    igual de bien (ver ai_engine.py: ahora el LLM devuelve la frase
+    completa, ej. "Ley 24.240", no el número pelado).
 
     Nota sobre las comillas en `texto`: el motor de búsqueda de InfoLEG
-    matchea cada palabra del campo `texto` por separado si no van entre
-    comillas. Con una frase como "contrato de trabajo" sin comillas, la
-    palabra "de" sola matchea casi toda la base de datos (~410 mil
-    normas) y el resultado queda ordenado por fecha de publicación, por
-    eso siempre aparecían los últimos DNU en vez de resultados
-    relevantes. Ese mismo campo `texto` con comillas, en cambio, NO
-    sirve para buscar por número de norma (da 0 resultados) — de ahí
-    la necesidad de este enrutamiento.
+    matchea cada palabra por separado si no van entre comillas. Con una
+    frase como "contrato de trabajo" sin comillas, la palabra "de" sola
+    matchea casi toda la base de datos (~410 mil normas) y el resultado
+    queda ordenado por fecha de publicación, por eso siempre aparecían
+    los últimos DNU en vez de resultados relevantes. Envolver la frase
+    en comillas dobles fuerza la búsqueda de frase exacta.
     """
-    clave = palabra_clave.strip()
-    payload = {
+    frase_exacta = f'"{palabra_clave.strip()}"'
+    return {
         "tipoNorma": "",
         "numero": "",
         "anioSancion": "",
-        "texto": "",
+        "texto": frase_exacta,
         "dependencia": "",
         "diaPubDesde": "",
         "mesPubDesde": "0",
@@ -102,13 +91,6 @@ def _payload_busqueda(palabra_clave: str) -> dict:
         "mesPubHasta": "0",
         "anioPubHasta": "",
     }
-
-    if _es_numero_norma(clave):
-        payload["numero"] = clave.replace(".", "")
-    else:
-        payload["texto"] = f'"{clave}"'
-
-    return payload
 
 
 def _payload_busqueda_string(palabra_clave: str) -> str:
@@ -121,21 +103,11 @@ def _payload_busqueda_string(palabra_clave: str) -> str:
     sutil (orden de campos, codificación de vacíos, etc.) de lo que
     espera este backend Struts tan viejo.
 
-    Aplica el mismo enrutamiento condicional que _payload_busqueda:
-    número de norma → campo `numero` sin comillas; frase → campo
-    `texto` entre comillas.
+    También envuelve la frase en comillas dobles (ver docstring de
+    _payload_busqueda) para forzar búsqueda de frase exacta; quote_plus
+    codifica las comillas como %22 automáticamente.
     """
-    clave = palabra_clave.strip()
-
-    if _es_numero_norma(clave):
-        numero_encoded = urllib.parse.quote_plus(clave.replace(".", ""))
-        return (
-            f"tipoNorma=&numero={numero_encoded}&anioSancion=&texto=&dependencia="
-            f"&diaPubDesde=&mesPubDesde=0&anioPubDesde="
-            f"&diaPubHasta=&mesPubHasta=0&anioPubHasta="
-        )
-
-    texto_encoded = urllib.parse.quote_plus(f'"{clave}"')
+    texto_encoded = urllib.parse.quote_plus(f'"{palabra_clave.strip()}"')
     return (
         f"tipoNorma=&numero=&anioSancion=&texto={texto_encoded}&dependencia="
         f"&diaPubDesde=&mesPubDesde=0&anioPubDesde="
