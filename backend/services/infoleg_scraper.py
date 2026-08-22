@@ -55,67 +55,57 @@ def _payload_por_texto_libre_string(texto_libre: str) -> str:
     texto_encoded = urllib.parse.quote_plus((texto_libre or "").strip())
     return f"tipoNorma=&numero=&anioSancion=&texto={texto_encoded}&dependencia=&diaPubDesde=&mesPubDesde=0&anioPubDesde=&diaPubHasta=&mesPubHasta=0&anioPubHasta="
 
-def buscar_normas_infoleg(tipo_norma: str = None, numero: str = None, texto_libre: str = None, max_resultados: int = 3) -> list:
-    session = requests.Session()
-    headers = _headers_navegador_completos(referer=FORM_URL)
-    
+def _leer_norma_infoleg(session: requests.Session, headers: dict, url: str) -> dict:
+    """
+    Entra a la ficha de una norma, busca el "Texto Actualizado" y extrae el texto limpio.
+    """
     try:
-        resp_form = session.get(FORM_URL, headers=headers, timeout=10)
-        resp_form.encoding = ENCODING
-        soup_form = BeautifulSoup(resp_form.text, "html.parser")
-        
-        form_tag = soup_form.find("form")
-        action = form_tag.get("action") if form_tag else None
-        post_url = urllib.parse.urljoin(FORM_URL, action) if action else SEARCH_ACTION_URL
-        
-        if numero:
-            tipo_norma_value = _mapear_tipo_norma(tipo_norma)
-            payload = _payload_por_numero_string(tipo_norma_value, numero)
-        elif texto_libre:
-            payload = _payload_por_texto_libre_string(texto_libre)
+        resp = session.get(url, headers=headers, timeout=15)
+        resp.encoding = ENCODING
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        # ¡LA MAGIA PARA LEYES VIEJAS! Buscar el botón de Texto Actualizado
+        link_actualizado = None
+        for a in soup.find_all("a", href=True):
+            texto_enlace = a.get_text(strip=True).lower()
+            if "texto actualizado" in texto_enlace or "texact" in a["href"].lower():
+                link_actualizado = a["href"]
+                if not link_actualizado.startswith("http"):
+                    link_actualizado = urllib.parse.urljoin(BASE_URL, link_actualizado)
+                break
+                
+        # Si existe la versión moderna, la descargamos para leer esa
+        if link_actualizado:
+            resp_act = session.get(link_actualizado, headers=headers, timeout=15)
+            resp_act.encoding = ENCODING
+            soup_texto = BeautifulSoup(resp_act.text, "html.parser")
         else:
-            return []
-            
-        headers_post = _headers_navegador_completos(referer=FORM_URL)
-        resp_post = session.post(post_url, data=payload, headers=headers_post, timeout=15)
-        resp_post.encoding = ENCODING
-        soup_post = BeautifulSoup(resp_post.text, "html.parser")
-        
-        links_norma = []
-        for a in soup_post.find_all("a", href=True):
-            href = a["href"]
-            if "verNorma.do" in href and "id=" in href:
-                url_completa = href if href.startswith("http") else urllib.parse.urljoin(BASE_URL, href)
-                titulo = a.get_text(strip=True)
-                if url_completa not in [l["link"] for l in links_norma]:
-                    links_norma.append({"link": url_completa, "titulo_lista": titulo})
-                    
-        resultados = []
-        for item in links_norma[:max_resultados]:
-            try:
-                resp_norma = session.get(item["link"], headers=headers, timeout=15)
-                resp_norma.encoding = ENCODING
-                soup_norma = BeautifulSoup(resp_norma.text, "html.parser")
-                for tag in soup_norma(["script", "style", "nav", "header", "footer"]): tag.decompose()
-                texto_crudo = soup_norma.get_text(separator=" ")
-                texto_limpio = re.sub(r"\s+", " ", texto_crudo).strip()
-                
-                titulo_tag = soup_norma.find(["h1", "h2", "b"])
-                norma = titulo_tag.get_text(strip=True) if titulo_tag else item["titulo_lista"]
-                fecha_match = re.search(r"\d{1,2}/\d{1,2}/\d{4}", texto_limpio)
-                
-                if len(texto_limpio) > 40000: texto_limpio = texto_limpio[:40000] + "..."
-                
-                resultados.append({
-                    "norma": norma,
-                    "fecha": fecha_match.group(0) if fecha_match else "N/D",
-                    "tema": "N/D",
-                    "link": item["link"],
-                    "contenido_texto": texto_limpio
-                })
-            except Exception:
-                pass
-        return resultados
+            soup_texto = soup
+
+        # Extraer el título original de la primera página
+        titulo_tag = soup.find(["h1", "h2", "b"])
+        norma = titulo_tag.get_text(strip=True) if titulo_tag else None
+
+        # Limpiamos basura del HTML
+        for tag in soup_texto(["script", "style", "nav", "header", "footer"]): 
+            tag.decompose()
+
+        texto_crudo = soup_texto.get_text(separator=" ")
+        texto_limpio = re.sub(r"\s+", " ", texto_crudo).strip()
+
+        fecha_match = re.search(r"\d{1,2}/\d{1,2}/\d{4}", texto_limpio)
+        fecha = fecha_match.group(0) if fecha_match else "N/D"
+
+        # Límite bestial de 150.000 caracteres (aprox 40 páginas de texto puro)
+        if len(texto_limpio) > 150000: 
+            texto_limpio = texto_limpio[:150000] + "..."
+
+        return {
+            "norma": norma,
+            "fecha": fecha,
+            "tema": "N/D",
+            "link": url, # Mantenemos el link oficial de la ficha para el usuario
+            "contenido_texto": texto_limpio
+        }
     except Exception as e:
-        print(f"Error al buscar en InfoLEG: {e}")
-        return []
+        return {"contenido_texto": f"(Error al leer la norma: {e})"}
