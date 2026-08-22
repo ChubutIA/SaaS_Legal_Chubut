@@ -18,6 +18,7 @@ import gdown
 import httpx
 import urllib.parse
 import urllib.parse
+import json
 
 from services.infoleg_scraper import buscar_normas_infoleg
 from services.comodoro_scraper import buscar_ordenanzas_comodoro
@@ -273,52 +274,55 @@ async def buscar_ordenanzas_municipal(query_usuario: str, llm: ChatOpenAI) -> st
         return "\n\n".join(textos)
     except Exception as e:
         return "(Error al consultar el digesto municipal de Comodoro.)"
+
 async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -> str:
     """
-    Extrae un término de búsqueda LIMPIO y lo pasa a buscar_normas_infoleg.
-
-    Importante: el scraper ahora busca frase exacta entre comillas
-    (ver infoleg_scraper.py), así que no le podemos mandar la pregunta
-    completa del usuario ("¿Qué dice la Ley 24.240 sobre...?") porque
-    entre comillas eso da 0 resultados. Necesitamos SOLO el número de
-    norma o su nombre corto oficial.
+    Extrae tipo_norma + numero estructurados (el ÚNICO combo que
+    InfoLEG resuelve a una norma exacta) y, si no hay número
+    identificable, cae a texto_libre como último recurso.
     """
     loop = asyncio.get_event_loop()
 
     prompt = (
-        "Extraé de esta consulta legal EXCLUSIVAMENTE el nombre completo "
-        "de la norma tal como aparece en su título oficial, para buscarla "
-        "como frase exacta en InfoLEG (base de legislación nacional "
-        "argentina). Reglas:\n"
-        "1) Si se menciona un número de ley, decreto o resolución, "
-        "devolvé el tipo + número tal como se escribe oficialmente. "
-        "Ejemplos: 'Ley 24.240', 'Decreto 770/2026', 'Resolución 424/2020'.\n"
-        "2) Si no hay número, devolvé el nombre corto y oficial de la "
-        "norma en 2 a 4 palabras (ej: 'contrato de trabajo', 'defensa del "
-        "consumidor', 'código civil y comercial').\n"
-        "3) NUNCA devuelvas solo el número pelado sin la palabra 'Ley'/"
-        "'Decreto'/etc., ni la pregunta completa, ni signos de "
-        "interrogación, ni comillas, ni explicaciones. Solo la frase.\n\n"
-        f"Consulta: '{query_usuario}'\n"
-        "Nombre de la norma:"
+        "Analizá esta consulta legal y respondé ÚNICAMENTE un JSON (sin "
+        "markdown, sin backticks, sin texto adicional) con esta forma:\n"
+        '{"tipo_norma": "...", "numero": "...", "texto_libre": "..."}\n\n'
+        "Reglas:\n"
+        "1) Si la consulta menciona un número de ley, decreto, resolución, "
+        "etc.: completá 'tipo_norma' con el tipo genérico tal como podría "
+        "aparecer en un selector (Ley, Decreto, Resolución, Decreto de "
+        "Necesidad y Urgencia, Disposición, Código, etc.) y 'numero' con "
+        "el número SIN puntos ni barra de año (ej: 'Ley 24.240' → "
+        'tipo_norma=\"Ley\", numero=\"24240\"). Dejá "texto_libre" en null.\n'
+        "2) Si NO hay número identificable (consulta conceptual, ej. "
+        "'código civil y comercial' o 'contrato de trabajo' sin número): "
+        'dejá "tipo_norma" y "numero" en null, y completá "texto_libre" '
+        "con 2 a 4 palabras clave (sin comillas, sin puntuación).\n"
+        "3) Nunca agregues explicaciones fuera del JSON.\n\n"
+        f"Consulta: '{query_usuario}'"
     )
 
     try:
         respuesta_llm = await loop.run_in_executor(
             None, lambda: llm.invoke([HumanMessage(content=prompt)]).content
         )
-        # Limpieza agresiva: sacamos comillas, signos de interrogación,
-        # puntos finales sueltos y espacios extra que a veces agrega el LLM.
-        keywords = respuesta_llm.strip().strip('"\'').strip("¿?.:").strip()
-        if not keywords:
-            keywords = query_usuario
+        # Limpieza por si el LLM igual mete backticks de markdown
+        limpio = respuesta_llm.strip().strip("`").replace("json\n", "").strip()
+        datos = json.loads(limpio)
+        tipo_norma = datos.get("tipo_norma")
+        numero = datos.get("numero")
+        texto_libre = datos.get("texto_libre")
     except Exception:
-        keywords = query_usuario
+        # Si el JSON viene roto, no abortamos: probamos como texto libre
+        tipo_norma, numero, texto_libre = None, None, query_usuario
 
     try:
-        resultados = await loop.run_in_executor(None, buscar_normas_infoleg, keywords)
+        resultados = await loop.run_in_executor(
+            None,
+            lambda: buscar_normas_infoleg(tipo_norma=tipo_norma, numero=numero, texto_libre=texto_libre),
+        )
         if not resultados:
-            return f"(No se encontraron normas nacionales en InfoLEG para el término '{keywords}'.)"
+            return f"(No se encontraron normas nacionales en InfoLEG para tipo='{tipo_norma}' numero='{numero}' texto='{texto_libre}'.)"
 
         textos = []
         for item in resultados:
