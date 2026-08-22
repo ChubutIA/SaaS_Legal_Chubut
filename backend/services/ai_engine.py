@@ -445,11 +445,11 @@ FORMATO PARA LEYES PROVINCIALES (Digesto Chubut):
 * 🔗 **Ver documento oficial:** <a href="[LINK_OFICIAL del BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Norma en el Digesto Oficial (Nueva Pestaña)</a>
 
 FORMATO PARA LEGISLACIÓN NACIONAL (InfoLEG):
-📜 **[Número Completo de la Norma]**
+📜 **[Número Completo de la Norma] - [Nombre de la Norma]**
 * 🏛️ **Rama:** Nacional
 * ✅ **Estado:** Vigente (salvo indicación contraria)
 * 📋 **Análisis:** [tu explicación basada en el texto]
-* 🔗 **Ver normativa:** <a href="[LINK_OFICIAL del BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Ley en InfoLEG (Nueva Pestaña)</a>
+* 🔗 **Ver normativa:** Es obligatorio que incluyas siempre este enlace: <a href="[LINK_OFICIAL del BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Ley en InfoLEG (Nueva Pestaña)</a>
 
 FORMATO PARA ORDENANZAS MUNICIPALES:
 🏛️ **[Número de Ordenanza]**
