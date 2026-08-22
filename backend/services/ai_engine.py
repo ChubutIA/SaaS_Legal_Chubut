@@ -285,7 +285,7 @@ async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -
     """
     loop = asyncio.get_event_loop()
 
-       prompt = (
+    prompt = (
         "Extraé de esta consulta legal EXCLUSIVAMENTE el nombre completo "
         "de la norma tal como aparece en su título oficial, para buscarla "
         "como frase exacta en InfoLEG (base de legislación nacional "
