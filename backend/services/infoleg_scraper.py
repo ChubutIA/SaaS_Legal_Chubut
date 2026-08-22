@@ -21,6 +21,7 @@ MAPEO_TIPOS_NORMA = {
     "comunicacion": "6",
     "decreto/ley": "7",
     "decreto ley": "7",
+    "decreto-ley": "7", # <-- ¡Agregamos la versión con guion!
     "decision administrativa": "8",
     "acordada": "12",
 }
