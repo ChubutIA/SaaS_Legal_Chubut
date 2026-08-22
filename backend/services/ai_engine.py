@@ -306,14 +306,18 @@ async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -
         respuesta_llm = await loop.run_in_executor(
             None, lambda: llm.invoke([HumanMessage(content=prompt)]).content
         )
-        # Limpieza por si el LLM igual mete backticks de markdown
-        limpio = respuesta_llm.strip().strip("`").replace("json\n", "").strip()
-        datos = json.loads(limpio)
+        # Extracción a prueba de balas: buscamos el bloque JSON usando Regex
+        match = re.search(r'\{.*\}', respuesta_llm, re.DOTALL)
+        if match:
+            datos = json.loads(match.group(0))
+        else:
+            datos = {}
+            
         tipo_norma = datos.get("tipo_norma")
         numero = datos.get("numero")
         texto_libre = datos.get("texto_libre")
     except Exception:
-        # Si el JSON viene roto, no abortamos: probamos como texto libre
+        # Si el JSON viene roto, probamos como texto libre
         tipo_norma, numero, texto_libre = None, None, query_usuario
 
     try:
