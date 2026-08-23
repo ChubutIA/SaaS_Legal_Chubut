@@ -225,6 +225,24 @@ export function renderHistoryList() {
   `).join('');
 }
 
+// ── Welcome Hero ──────────────────────────────────────────────────
+export function renderHero() {
+  const user = state.user;
+  const eyebrow = document.getElementById('hero-eyebrow');
+  const title = document.getElementById('hero-title');
+  const subtitle = document.getElementById('hero-subtitle');
+
+  if (user) {
+    if (eyebrow) eyebrow.textContent = `Bienvenido, ${user.usuario}`;
+    if (title) title.innerHTML = '¿En qué puedo<br>asistirte hoy?';
+    if (subtitle) subtitle.textContent = 'Jurisprudencia completa de la Provincia de Chubut';
+  } else {
+    if (eyebrow) eyebrow.textContent = 'Asistente Legal Inteligente';
+    if (title) title.innerHTML = 'Redactá demandas y fundamentá<br>tus casos en minutos.';
+    if (subtitle) subtitle.textContent = '2 consultas gratuitas · Enlaces oficiales garantizados';
+  }
+}
+
 // ── Chat Display Helpers ──────────────────────────────────────────
 export function showHero(show = true) {
   const hero = document.getElementById('welcome-hero');
