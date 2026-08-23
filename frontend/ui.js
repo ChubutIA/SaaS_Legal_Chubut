@@ -117,65 +117,21 @@ export function renderPlanArea(planStatus) {
     return;
   }
 
-  // Agregamos un selector extra para que puedan ver los precios del plan Inicial también
   el.innerHTML = `
-    <div class="plan-upgrade-box">
-      <div class="plan-selector-tabs" style="display:flex; gap:4px; margin-bottom:10px; background:rgba(0,0,0,0.3); padding:3px; border-radius:6px;">
-        <button id="tab-plan-mensual" class="plan-tab-btn active" style="flex:1; padding:4px 6px; font-size:0.70rem; border-radius:4px; background:var(--gold-glow); color:var(--gold-light); border:1px solid var(--gold-border); cursor:pointer;">Mensual</button>
-        <button id="tab-plan-anual" class="plan-tab-btn" style="flex:1; padding:4px 6px; font-size:0.70rem; border-radius:4px; background:transparent; color:var(--text-muted); border:none; cursor:pointer;">Anual 🔥</button>
-      </div>
-
-      <div id="plan-price-display">
-        <div class="plan-upgrade-box__label">Plan Pro (Recomendado)</div>
-        <div class="plan-upgrade-box__price">$29.990 <sub>ARS / mes</sub></div>
-        <div class="plan-upgrade-box__desc">O el Plan Inicial por $19.990 / mes.</div>
-      </div>
+    <div class="plan-upgrade-box" style="text-align: center;">
+      <div class="plan-upgrade-box__label" style="color: var(--gold-light); margin-bottom: 5px;">Planes Pro</div>
+      <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 8px;">Mensual o Anual con 25% OFF</div>
     </div>
-    <button id="btn-open-checkout" data-plan="pro_mensual" class="btn-primary btn-primary--gold"
-        style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:6px; border:none; cursor:pointer;">
+    <button id="btn-show-plans" class="btn-primary btn-primary--gold"
+        style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; border:none; cursor:pointer;">
       ✦ Ver Planes y Suscribirse
     </button>`;
 
+  // Escuchamos el clic y abrimos el muro de pago
   setTimeout(() => {
-    const btnMensual = document.getElementById('tab-plan-mensual');
-    const btnAnual = document.getElementById('tab-plan-anual');
-    const display = document.getElementById('plan-price-display');
-    const checkoutBtn = document.getElementById('btn-open-checkout');
-
-    btnMensual?.addEventListener('click', () => {
-      btnMensual.style.background = 'var(--gold-glow)';
-      btnMensual.style.color = 'var(--gold-light)';
-      btnMensual.style.border = '1px solid var(--gold-border)';
-      
-      btnAnual.style.background = 'transparent';
-      btnAnual.style.color = 'var(--text-muted)';
-      btnAnual.style.border = 'none';
-
-      if (display) {
-        display.innerHTML = `
-          <div class="plan-upgrade-box__label">Plan Pro (Recomendado)</div>
-          <div class="plan-upgrade-box__price">$29.990 <sub>ARS / mes</sub></div>
-          <div class="plan-upgrade-box__desc">O el Plan Inicial por $19.990 / mes.</div>`;
-      }
-      if (checkoutBtn) checkoutBtn.dataset.plan = 'pro_mensual';
-    });
-
-    btnAnual?.addEventListener('click', () => {
-      btnAnual.style.background = 'var(--gold-glow)';
-      btnAnual.style.color = 'var(--gold-light)';
-      btnAnual.style.border = '1px solid var(--gold-border)';
-      
-      btnMensual.style.background = 'transparent';
-      btnMensual.style.color = 'var(--text-muted)';
-      btnMensual.style.border = 'none';
-
-      if (display) {
-        display.innerHTML = `
-          <div class="plan-upgrade-box__label" style="color:#34D399;">Planes Anuales (Ahorrá 25%)</div>
-          <div class="plan-upgrade-box__price">Desde $179.900 <sub>ARS / año</sub></div>
-          <div class="plan-upgrade-box__desc" style="color:#34D399;">¡3 meses GRATIS incluidos!</div>`;
-      }
-      if (checkoutBtn) checkoutBtn.dataset.plan = 'pro_anual';
+    const btnShowPlans = document.getElementById('btn-show-plans');
+    btnShowPlans?.addEventListener('click', () => {
+      showAccessWall('expired'); 
     });
   }, 50);
 }
