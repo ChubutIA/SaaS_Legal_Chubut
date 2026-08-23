@@ -119,32 +119,114 @@ export async function initPaymentBrick(tipoPlan = 'mensual') {
 export function setupCheckoutListeners() {
   document.body.addEventListener('click', async (e) => {
     
-    const btnOpen = e.target.closest('#btn-open-checkout');
-    if (btnOpen) {
+    // 1. Ahora escuchamos CUALQUIER botón que tenga el atributo "data-plan"
+    const btnPlan = e.target.closest('[data-plan]');
+    
+    if (btnPlan) {
+      // Ignoramos los clics en las pestañitas de "Mensual / Anual" de la barra lateral
+      if (btnPlan.classList.contains('plan-tab-btn')) return;
+
+      // 2. Validación de usuario logueado
       if (!state.user || !state.user.email) {
-        showToast('Tenés que iniciar sesión o registrarte para suscribirte al Plan Pro.', 'error');
-        showModal('login');
+        import('./ui.js').then(m => {
+          m.showToast('Tenés que iniciar sesión o registrarte para suscribirte.', 'error');
+          m.showModal('login');
+        });
         return; 
       }
       
-      const plan = btnOpen.dataset.plan || 'mensual';
+      // 3. Identificamos qué plan eligió
+      let plan = btnPlan.dataset.plan; 
+      // Parche de compatibilidad por si algún botón viejo dice "mensual" en vez de "pro_mensual"
+      if (plan === 'mensual') plan = 'pro_mensual';
+      if (plan === 'anual') plan = 'pro_anual';
 
-      // --- LÓGICA NUEVA: CAMBIAR TEXTO DINÁMICAMENTE ---
-      const textElement = document.getElementById('checkout-plan-description');
-      if (textElement) {
-        if (plan === 'mensual') {
-          textElement.innerText = 'Acceso completo e ilimitado ($39.990 ARS / mes)';
-        } else {
-          // ACÁ PONÉ EL PRECIO REAL DE TU PLAN ANUAL
-          textElement.innerText = 'Acceso completo e ilimitado ($399.900 ARS / año)'; 
+      // 4. Cambiamos el texto del modal dinámicamente buscando el H2 y el P
+      const modal = document.getElementById('checkout-modal');
+      if (modal) {
+        const h2 = modal.querySelector('h2');
+        const p = modal.querySelector('p');
+        
+        if (plan === 'inicial') {
+          if(h2) h2.innerText = 'Plan Inicial - Chubut.IA';
+          if(p) p.innerText = 'Consultas rápidas y legislación oficial ($19.990 / mes)';
+        } else if (plan === 'pro_mensual') {
+          if(h2) h2.innerText = 'Plan Pro - Chubut.IA';
+          if(p) p.innerText = 'El arsenal completo para el abogado moderno ($29.990 / mes)';
+        } else if (plan === 'pro_anual') {
+          if(h2) h2.innerText = 'Plan Pro Anual - Chubut.IA';
+          if(p) p.innerText = 'Acceso completo e ilimitado ($399.900 / año)'; 
         }
       }
-      // -------------------------------------------------
 
       openCheckoutModal();
+      
+      // 5. Llamamos a Mercado Pago pasándole el ID correcto del plan
       await initPaymentBrick(plan);
     }
 
+    // 6. Cerrar el modal
+    const btnClose = e.target.closest('#btn-close-checkout');
+    if (btnClose) {
+      closeCheckoutModal();
+    }
+  });
+
+  document.addEventListener('chubut:retry-payment', async () => {
+    await initPaymentBrick(currentPlanType);
+  });
+}
+
+export function setupCheckoutListeners() {
+  document.body.addEventListener('click', async (e) => {
+    
+    // 1. Ahora escuchamos CUALQUIER botón que tenga el atributo "data-plan"
+    const btnPlan = e.target.closest('[data-plan]');
+    
+    if (btnPlan) {
+      // Ignoramos los clics en las pestañitas de "Mensual / Anual" de la barra lateral
+      if (btnPlan.classList.contains('plan-tab-btn')) return;
+
+      // 2. Validación de usuario logueado
+      if (!state.user || !state.user.email) {
+        import('./ui.js').then(m => {
+          m.showToast('Tenés que iniciar sesión o registrarte para suscribirte.', 'error');
+          m.showModal('login');
+        });
+        return; 
+      }
+      
+      // 3. Identificamos qué plan eligió
+      let plan = btnPlan.dataset.plan; 
+      // Parche de compatibilidad por si algún botón viejo dice "mensual" en vez de "pro_mensual"
+      if (plan === 'mensual') plan = 'pro_mensual';
+      if (plan === 'anual') plan = 'pro_anual';
+
+      // 4. Cambiamos el texto del modal dinámicamente buscando el H2 y el P
+      const modal = document.getElementById('checkout-modal');
+      if (modal) {
+        const h2 = modal.querySelector('h2');
+        const p = modal.querySelector('p');
+        
+        if (plan === 'inicial') {
+          if(h2) h2.innerText = 'Plan Inicial - Chubut.IA';
+          if(p) p.innerText = 'Consultas rápidas y legislación oficial ($19.990 / mes)';
+        } else if (plan === 'pro_mensual') {
+          if(h2) h2.innerText = 'Plan Pro - Chubut.IA';
+          if(p) p.innerText = 'El arsenal completo para el abogado moderno ($29.990 / mes)';
+        } else if (plan === 'pro_anual') {
+          if(h2) h2.innerText = 'Plan Pro Anual - Chubut.IA';
+          if(p) p.innerText = 'Acceso completo e ilimitado ($399.900 / año)'; 
+        }
+      }
+
+      openCheckoutModal();
+      
+      // 5. Llamamos a Mercado Pago pasándole el ID correcto del plan
+      await initPaymentBrick(plan);
+    }
+
+    // 6. Cerrar el modal
     const btnClose = e.target.closest('#btn-close-checkout');
     if (btnClose) {
       closeCheckoutModal();
