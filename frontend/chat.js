@@ -210,7 +210,7 @@ export async function sendMessage() {
 
       import('./ui.js').then(({ renderSidebar }) => renderSidebar());
 
-      if (state.guestCount >= 5) {
+      if (state.guestCount >= 2) {
         showAccessWall('guest-limit');
         setTimeout(() => {
           document.getElementById('wall-btn-register')?.addEventListener('click', () => {
