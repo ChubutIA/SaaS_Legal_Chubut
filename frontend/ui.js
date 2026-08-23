@@ -225,24 +225,6 @@ export function renderHistoryList() {
   `).join('');
 }
 
-// ── Welcome Hero ──────────────────────────────────────────────────
-export function renderHero() {
-  const user = state.user;
-  const eyebrow = document.getElementById('hero-eyebrow');
-  const title = document.getElementById('hero-title');
-  const subtitle = document.getElementById('hero-subtitle');
-
-  if (user) {
-    if (eyebrow) eyebrow.textContent = `Bienvenido, ${user.usuario}`;
-    if (title) title.innerHTML = '¿En qué puedo<br>asistirte hoy?';
-    if (subtitle) subtitle.textContent = 'Jurisprudencia completa de la Provincia de Chubut';
-  } else {
-    if (eyebrow) eyebrow.textContent = 'Jurisprudencia · Provincia de Chubut';
-    if (title) title.innerHTML = 'Consultá la jurisprudencia<br>sin registrarte.';
-    if (subtitle) subtitle.textContent = '5 consultas gratuitas · Sin tarjeta de crédito';
-  }
-}
-
 // ── Chat Display Helpers ──────────────────────────────────────────
 export function showHero(show = true) {
   const hero = document.getElementById('welcome-hero');
@@ -277,32 +259,80 @@ export function showAccessWall(type = null) {
   }
 
   el.classList.remove('hidden');
+  
+  // Ocultamos la barra de chat para que no puedan escribir
+  if (inputArea) inputArea.style.display = 'none';
 
   if (type === 'guest-limit') {
     el.innerHTML = `
-      <div class="upgrade-wall" style="margin:12px 20px">
-        <h3>Alcanzaste el límite de consultas gratuitas.</h3>
-        <p style="margin-top:6px">Creá una cuenta gratuita para continuar con 7 días de prueba completa.</p>
-        <button id="wall-btn-register" class="btn-primary" style="margin-top:14px; width:100%">
-          Crear cuenta — 7 días sin costo
+      <div class="upgrade-wall" style="margin:12px 20px; max-width: 600px; margin: 0 auto; text-align: center;">
+        <h3 style="font-size: 1.4rem; color: #fff; margin-bottom: 10px;">Límite de prueba alcanzado</h3>
+        <p style="color: #aaa; margin-bottom: 20px;">Para seguir buscando jurisprudencia y leyes, creá una cuenta gratuita.</p>
+        
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 20px; text-align: left;">
+            <ul style="list-style: none; padding: 0; margin: 0; color: #ddd; font-size: 0.9rem;">
+                <li style="margin-bottom: 10px;">✅ Guardá tu historial de consultas</li>
+                <li style="margin-bottom: 10px;">✅ Accedé a leyes nacionales (InfoLEG)</li>
+                <li>✅ 7 días de prueba completa sin tarjeta</li>
+            </ul>
+        </div>
+
+        <button id="wall-btn-register" class="btn-primary" style="margin-top:20px; width:100%; font-size: 1rem; padding: 12px;">
+          Crear cuenta gratis
         </button>
       </div>`;
-    // Hide input
-    if (inputArea) inputArea.style.display = 'none';
   } else if (type === 'expired') {
+    // EL NUEVO MURO DE VENTAS ESTILO APPLE
     el.innerHTML = `
-      <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px">
-        <h3>Tu período de acceso ha finalizado.</h3>
-        <p>Activá el Plan Pro para continuar consultando jurisprudencia sin límites.</p>
-        <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold"
-            style="display:block; width:100%; text-align:center; margin-top:14px; padding:9px 14px; border-radius:6px; font-size:0.83rem; border:none; cursor:pointer;">
-          ✦ Activar Plan Pro
-        </button>
+      <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px; max-width: 700px; margin: 0 auto; text-align: center;">
+        <h2 style="font-size: 1.8rem; color: #fff; margin-bottom: 10px;">Elegí el plan ideal para tu estudio</h2>
+        <p style="color: #aaa; margin-bottom: 30px;">Redactá demandas y fundamentá tus casos en minutos, no en horas.</p>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; text-align: left;">
+            
+            <!-- PLAN INICIAL -->
+            <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px; display: flex; flex-direction: column;">
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Plan Inicial</h3>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$19.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">Para consultas rápidas y legislación oficial.</p>
+                
+                <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; font-size: 0.9rem; flex-grow: 1;">
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Leyes Nacionales (InfoLEG)</li>
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Leyes Provinciales (Chubut)</li>
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Ordenanzas Municipales</li>
+                    <li style="margin-bottom: 12px; color: #555;">❌ Jurisprudencia completa</li>
+                    <li style="color: #555;">❌ Análisis de PDFs (Expedientes)</li>
+                </ul>
+                
+                <!-- Este botón por ahora llama al checkout mensual estándar, luego lo separaremos -->
+                <button class="btn-secondary" data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px;">Elegir Inicial</button>
+            </div>
+
+            <!-- PLAN PRO (Recomendado) -->
+            <div style="flex: 1; min-width: 250px; background: rgba(201, 168, 76, 0.1); border: 1px solid #c9a84c; border-radius: 12px; padding: 25px; position: relative; display: flex; flex-direction: column;">
+                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #c9a84c; color: #000; font-size: 0.75rem; font-weight: bold; padding: 4px 12px; border-radius: 20px;">RECOMENDADO</div>
+                
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px; color: #c9a84c;">Plan Pro</h3>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$29.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">El arsenal completo para el abogado moderno.</p>
+                
+                <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; font-size: 0.9rem; flex-grow: 1;">
+                    <li style="margin-bottom: 12px; color: #fff; font-weight: 500;">✅ Todo lo del Plan Inicial</li>
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Búsqueda de Jurisprudencia</li>
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Subida y análisis de PDFs</li>
+                    <li style="color: #c9a84c; font-weight: 500;">✦ Acceso anticipado a Calculadora</li>
+                </ul>
+                
+                <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold" style="width: 100%; border-radius: 8px; padding: 10px; border: none;">✦ Elegir Pro</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 25px;">
+            <p style="font-size: 0.8rem; color: #888;">¿Buscás ahorrar? <a href="#" id="link-ahorro-anual" style="color: #c9a84c; text-decoration: underline;">Conocé los planes Semestrales y Anuales</a></p>
+        </div>
       </div>`;
-    if (inputArea) inputArea.style.display = 'none';
   }
 }
-
 // ── Typing Indicator ──────────────────────────────────────────────
 let typingEl = null;
 
