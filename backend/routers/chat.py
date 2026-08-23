@@ -8,6 +8,10 @@ from middleware.auth_guard import get_current_user
 from services.ai_engine import get_vdb_fallos, get_vdb_leyes, get_llm, super_search, generate_response, generate_chat_title
 from services.supabase_client import get_supabase
 
+from services.rate_limiter import limiter 
+
+from middleware.auth_guard import get_current_user
+
 router = APIRouter()
 
 
@@ -128,12 +132,13 @@ async def chat_endpoint(
 
 
 # ── Chat invitado (sin autenticación, con límite de 5) ───────────────────────
+# ── Chat invitado (sin autenticación, blindado por IP) ───────────────────────
 @router.post("/guest")
-async def chat_guest_endpoint(payload: ChatPayload):
+@limiter.limit("2/day") # <-- ¡Acá está el candado de hierro! 2 por día por IP.
+async def chat_guest_endpoint(payload: ChatPayload, request: Request):
     """
-    Endpoint para usuarios invitados. El control de límite (5 consultas)
-    se valida en el frontend con localStorage, pero aquí se puede agregar
-    validación adicional por IP si se desea.
+    Endpoint para usuarios invitados. Blindado a 2 consultas por día
+    basado en la dirección IP real del cliente.
     """
     historial = [m.model_dump() for m in payload.historial]
     if not historial:
@@ -142,19 +147,16 @@ async def chat_guest_endpoint(payload: ChatPayload):
     query_usuario = historial[-1]["content"]
     historial_previo = historial[:-1]
 
-    # OBTENER AMBAS BASES DE DATOS Y EL LLM PARA EL INVITADO TAMBIÉN
     vdb_fallos = get_vdb_fallos()
     vdb_leyes = get_vdb_leyes()
     llm = get_llm()
 
-    # Súper búsqueda dual y generación
     contexto_fallos, contexto_leyes, intent = await super_search(
         query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
     )
     respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial)
 
     return {"ok": True, "respuesta": respuesta}
-
 
 # ── Gestión del historial ─────────────────────────────────────────────────────
 @router.post("/nueva-sesion")
