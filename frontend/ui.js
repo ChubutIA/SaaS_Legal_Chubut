@@ -256,18 +256,29 @@ export function showAccessWall(type = null) {
         </button>
       </div>`;
   } else if (type === 'expired') {
-    // EL NUEVO MURO DE VENTAS ESTILO APPLE
     el.innerHTML = `
       <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px; max-width: 700px; margin: 0 auto; text-align: center;">
         <h2 style="font-size: 1.8rem; color: #fff; margin-bottom: 10px;">Elegí el plan ideal para tu estudio</h2>
-        <p style="color: #aaa; margin-bottom: 30px;">Redactá demandas y fundamentá tus casos en minutos, no en horas.</p>
+        <p style="color: #aaa; margin-bottom: 20px;">Redactá demandas y fundamentá tus casos en minutos, no en horas.</p>
         
+        <!-- PESTAÑAS MENSUAL / ANUAL -->
+        <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+            <div style="background: rgba(0,0,0,0.4); padding: 4px; border-radius: 8px; display: inline-flex; gap: 5px; border: 1px solid rgba(255,255,255,0.1);">
+                <button id="wall-tab-mensual" style="padding: 6px 16px; border-radius: 6px; border: none; background: #333; color: #fff; cursor: pointer; font-weight: bold;">Mensual</button>
+                <button id="wall-tab-anual" style="padding: 6px 16px; border-radius: 6px; border: none; background: transparent; color: #aaa; cursor: pointer;">Anual (Ahorrá 25%)</button>
+            </div>
+        </div>
+
         <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; text-align: left;">
             
             <!-- PLAN INICIAL -->
             <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px; display: flex; flex-direction: column;">
                 <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Plan Inicial</h3>
-                <div style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$19.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                
+                <!-- PRECIOS INICIAL -->
+                <div id="price-inicial-mensual" style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$19.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                <div id="price-inicial-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$199.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
+                
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">Para consultas rápidas y legislación oficial.</p>
                 
                 <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; font-size: 0.9rem; flex-grow: 1;">
@@ -278,8 +289,7 @@ export function showAccessWall(type = null) {
                     <li style="color: #555;">❌ Análisis de PDFs (Expedientes)</li>
                 </ul>
                 
-                <!-- Este botón por ahora llama al checkout mensual estándar, luego lo separaremos -->
-                <button data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid #555; background: #333; color: #fff; cursor: pointer; font-weight: 500;">Elegir Inicial</button>
+                <button id="btn-comprar-inicial" data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid #555; background: #333; color: #fff; cursor: pointer; font-weight: 500;">Elegir Inicial</button>
             </div>
 
             <!-- PLAN PRO (Recomendado) -->
@@ -287,7 +297,11 @@ export function showAccessWall(type = null) {
                 <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #c9a84c; color: #000; font-size: 0.75rem; font-weight: bold; padding: 4px 12px; border-radius: 20px;">RECOMENDADO</div>
                 
                 <h3 style="font-size: 1.2rem; margin-bottom: 5px; color: #c9a84c;">Plan Pro</h3>
-                <div style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$29.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                
+                <!-- PRECIOS PRO -->
+                <div id="price-pro-mensual" style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$29.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
+                <div id="price-pro-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$179.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
+
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">El arsenal completo para el abogado moderno.</p>
                 
                 <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; font-size: 0.9rem; flex-grow: 1;">
@@ -297,16 +311,48 @@ export function showAccessWall(type = null) {
                     <li style="color: #c9a84c; font-weight: 500;">✦ Acceso anticipado a Calculadora</li>
                 </ul>
                 
-                <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold" style="width: 100%; border-radius: 8px; padding: 10px; border: none;">✦ Elegir Pro</button>
+                <button id="btn-comprar-pro" data-plan="pro_mensual" class="btn-primary btn-primary--gold" style="width: 100%; border-radius: 8px; padding: 10px; border: none;">✦ Elegir Pro</button>
             </div>
         </div>
-        
-        <div style="margin-top: 25px;">
-            <p style="font-size: 0.8rem; color: #888;">¿Buscás ahorrar? <a href="#" id="link-ahorro-anual" style="color: #c9a84c; text-decoration: underline;">Conocé los planes Semestrales y Anuales</a></p>
-        </div>
       </div>`;
+
+      // Lógica para cambiar entre mensual y anual dentro del muro
+      setTimeout(() => {
+        const tabMensual = document.getElementById('wall-tab-mensual');
+        const tabAnual = document.getElementById('wall-tab-anual');
+        
+        const priceIniMensual = document.getElementById('price-inicial-mensual');
+        const priceIniAnual = document.getElementById('price-inicial-anual');
+        const priceProMensual = document.getElementById('price-pro-mensual');
+        const priceProAnual = document.getElementById('price-pro-anual');
+        
+        const btnInicial = document.getElementById('btn-comprar-inicial');
+        const btnPro = document.getElementById('btn-comprar-pro');
+
+        tabMensual?.addEventListener('click', () => {
+            tabMensual.style.background = '#333'; tabMensual.style.color = '#fff'; tabMensual.style.fontWeight = 'bold';
+            tabAnual.style.background = 'transparent'; tabAnual.style.color = '#aaa'; tabAnual.style.fontWeight = 'normal';
+            
+            priceIniMensual.style.display = 'block'; priceIniAnual.style.display = 'none';
+            priceProMensual.style.display = 'block'; priceProAnual.style.display = 'none';
+            
+            if(btnInicial) btnInicial.dataset.plan = 'inicial';
+            if(btnPro) btnPro.dataset.plan = 'pro_mensual';
+        });
+
+        tabAnual?.addEventListener('click', () => {
+            tabAnual.style.background = '#333'; tabAnual.style.color = '#fff'; tabAnual.style.fontWeight = 'bold';
+            tabMensual.style.background = 'transparent'; tabMensual.style.color = '#aaa'; tabMensual.style.fontWeight = 'normal';
+            
+            priceIniMensual.style.display = 'none'; priceIniAnual.style.display = 'block';
+            priceProMensual.style.display = 'none'; priceProAnual.style.display = 'block';
+            
+            // Si tenés un plan anual para el inicial, crealo en payments.py. Por ahora uso 'inicial_anual' de ejemplo.
+            if(btnInicial) btnInicial.dataset.plan = 'inicial_anual'; 
+            if(btnPro) btnPro.dataset.plan = 'pro_anual';
+        });
+      }, 50);
   }
-}
 // ── Typing Indicator ──────────────────────────────────────────────
 let typingEl = null;
 
