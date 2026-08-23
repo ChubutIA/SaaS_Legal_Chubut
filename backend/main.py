@@ -22,7 +22,8 @@ from fastapi.responses import FileResponse
 from services.ai_engine import initialize_ai
 # CORRECCIÓN: Eliminamos "payment" (singular) que estaba rompiendo el servidor
 from routers import auth, chat, upload, export, payments
-
+from routers import liquidaciones
+from routers import admin_scraper
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
 # ==========================================
