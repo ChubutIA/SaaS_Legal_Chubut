@@ -457,7 +457,7 @@ FORMATO PARA LEGISLACIÓN NACIONAL (InfoLEG):
 * 🏛️ **Rama:** Nacional
 * ✅ **Estado:** Vigente (salvo indicación contraria)
 * 📋 **Análisis:** [tu explicación basada en el texto]
-* 🔗 **Ver normativa (OBLIGATORIO - NUNCA LO OMITAS):** <a href="[LINK_OFICIAL del BLOQUE B]" target="_blank" rel="noopener noreferrer">Abrir Norma en InfoLEG (Nueva Pestaña)</a>
+* 🔗 **Ver normativa:** [Abrir Ley en InfoLEG](PONER_AQUÍ_EL_LINK_OFICIAL_DEL_BLOQUE_B)
 
 FORMATO PARA ORDENANZAS MUNICIPALES:
 🏛️ **[Número de Ordenanza]**
