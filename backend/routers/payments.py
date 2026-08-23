@@ -20,7 +20,12 @@ PLANES = {
     "inicial": {
         "monto": 19990.0,
         "dias": 30,
-        "titulo": "Plan Inicial - Chubut.IA"
+        "titulo": "Plan Inicial Mensual - Chubut.IA"
+    },
+    "inicial_anual": {
+        "monto": 179900.0,
+        "dias": 365,
+        "titulo": "Plan Inicial Anual - Chubut.IA (Ahorro 25%)"
     },
     "pro_mensual": {
         "monto": 29990.0,
@@ -28,7 +33,7 @@ PLANES = {
         "titulo": "Plan Pro Mensual - Chubut.IA"
     },
     "pro_anual": {
-        "monto": 179900.0,  # 3 meses gratis (aprox 25% descuento)
+        "monto": 269900.0,  # 3 meses gratis
         "dias": 365,
         "titulo": "Plan Pro Anual - Chubut.IA (Ahorro 25%)"
     }
