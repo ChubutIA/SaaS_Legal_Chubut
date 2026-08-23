@@ -17,15 +17,20 @@ MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
 
 # Configuración de Precios y Días
 PLANES = {
-    "mensual": {
-        "monto": 39990.0,
+    "inicial": {
+        "monto": 19990.0,
+        "dias": 30,
+        "titulo": "Plan Inicial - Chubut.IA"
+    },
+    "pro_mensual": {
+        "monto": 29990.0,
         "dias": 30,
         "titulo": "Plan Pro Mensual - Chubut.IA"
     },
-    "anual": {
-        "monto": 399900.0,  # 2 meses de regalo (10 cuotas en vez de 12)
+    "pro_anual": {
+        "monto": 179900.0,  # 3 meses gratis (aprox 25% descuento)
         "dias": 365,
-        "titulo": "Plan Pro Anual - Chubut.IA (Ahorro 16%)"
+        "titulo": "Plan Pro Anual - Chubut.IA (Ahorro 25%)"
     }
 }
 
