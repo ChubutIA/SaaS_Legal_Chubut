@@ -93,7 +93,7 @@ def _get_user_friendly_message(status: str, status_detail: str) -> str:
 @router.post("/create-preference")
 async def create_preference(payload: PreferenceRequest, auth: dict = Depends(get_current_user)):
     user = auth["user"]
-    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "mensual"
+    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "pro_mensual"
     config_plan = PLANES[tipo]
     
     preference_data = {
@@ -136,7 +136,7 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     user_email = user.email
     supabase = get_supabase()
 
-    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "mensual"
+    tipo = payload.tipo_plan if payload.tipo_plan in PLANES else "pro_mensual"
     config_plan = PLANES[tipo]
 
     # 1. Armar la información para MP
