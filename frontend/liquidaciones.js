@@ -99,7 +99,7 @@ export const Liquidaciones = (() => {
     const hoy = new Date();
     const opciones = [];
 
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 80; i++) {
       const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const label = `${meses[d.getMonth()]} ${d.getFullYear()}`;
