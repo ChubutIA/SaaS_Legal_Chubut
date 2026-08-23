@@ -77,7 +77,8 @@ app.include_router(upload.router,   prefix="/api/upload",   tags=["Archivos"])
 app.include_router(export.router,   prefix="/api/export",   tags=["Exportar"])
 # CORRECCIÓN: Dejamos únicamente el router correcto en plural
 app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
-
+app.include_router(liquidaciones.router)
+app.include_router(admin_scraper.router)
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
