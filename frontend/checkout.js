@@ -151,12 +151,15 @@ export function setupCheckoutListeners() {
         if (plan === 'inicial') {
           if(h2) h2.innerText = 'Plan Inicial - Chubut.IA';
           if(p) p.innerText = 'Consultas rápidas y legislación oficial ($19.990 / mes)';
+        } else if (plan === 'inicial_anual') {
+          if(h2) h2.innerText = 'Plan Inicial Anual - Chubut.IA';
+          if(p) p.innerText = 'Consultas rápidas y legislación oficial ($179.900 / año)';
         } else if (plan === 'pro_mensual') {
           if(h2) h2.innerText = 'Plan Pro - Chubut.IA';
           if(p) p.innerText = 'El arsenal completo para el abogado moderno ($29.990 / mes)';
         } else if (plan === 'pro_anual') {
           if(h2) h2.innerText = 'Plan Pro Anual - Chubut.IA';
-          if(p) p.innerText = 'Acceso completo e ilimitado ($399.900 / año)'; 
+          if(p) p.innerText = 'El arsenal completo para el abogado moderno ($269.900 / año)'; 
         }
       }
 
