@@ -323,7 +323,7 @@ export function showAccessWall(type = null) {
                 </ul>
                 
                 <!-- Este botón por ahora llama al checkout mensual estándar, luego lo separaremos -->
-                <button class="btn-secondary" data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px;">Elegir Inicial</button>
+                <button data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid #555; background: #333; color: #fff; cursor: pointer; font-weight: 500;">Elegir Inicial</button>
             </div>
 
             <!-- PLAN PRO (Recomendado) -->
