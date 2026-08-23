@@ -117,6 +117,7 @@ export function renderPlanArea(planStatus) {
     return;
   }
 
+  // Agregamos un selector extra para que puedan ver los precios del plan Inicial también
   el.innerHTML = `
     <div class="plan-upgrade-box">
       <div class="plan-selector-tabs" style="display:flex; gap:4px; margin-bottom:10px; background:rgba(0,0,0,0.3); padding:3px; border-radius:6px;">
@@ -125,17 +126,16 @@ export function renderPlanArea(planStatus) {
       </div>
 
       <div id="plan-price-display">
-        <div class="plan-upgrade-box__label">Plan Mensual Pro</div>
-        <div class="plan-upgrade-box__price">$39.990 <sub>ARS / mes</sub></div>
-        <div class="plan-upgrade-box__desc">Acceso completo e ilimitado.</div>
+        <div class="plan-upgrade-box__label">Plan Pro (Recomendado)</div>
+        <div class="plan-upgrade-box__price">$29.990 <sub>ARS / mes</sub></div>
+        <div class="plan-upgrade-box__desc">O el Plan Inicial por $19.990 / mes.</div>
       </div>
     </div>
-    <button id="btn-open-checkout" data-plan="mensual" class="btn-primary btn-primary--gold"
+    <button id="btn-open-checkout" data-plan="pro_mensual" class="btn-primary btn-primary--gold"
         style="display:block; width:100%; text-align:center; padding:9px 14px; border-radius:6px; font-size:0.83rem; font-weight:500; letter-spacing:0.04em; margin-top:6px; border:none; cursor:pointer;">
-      ✦ Activar Plan Pro
+      ✦ Ver Planes y Suscribirse
     </button>`;
 
-  // Listeners para cambiar entre mensual y anual en la barra lateral
   setTimeout(() => {
     const btnMensual = document.getElementById('tab-plan-mensual');
     const btnAnual = document.getElementById('tab-plan-anual');
@@ -153,11 +153,11 @@ export function renderPlanArea(planStatus) {
 
       if (display) {
         display.innerHTML = `
-          <div class="plan-upgrade-box__label">Plan Mensual Pro</div>
-          <div class="plan-upgrade-box__price">$39.990 <sub>ARS / mes</sub></div>
-          <div class="plan-upgrade-box__desc">Acceso completo e ilimitado.</div>`;
+          <div class="plan-upgrade-box__label">Plan Pro (Recomendado)</div>
+          <div class="plan-upgrade-box__price">$29.990 <sub>ARS / mes</sub></div>
+          <div class="plan-upgrade-box__desc">O el Plan Inicial por $19.990 / mes.</div>`;
       }
-      if (checkoutBtn) checkoutBtn.dataset.plan = 'mensual';
+      if (checkoutBtn) checkoutBtn.dataset.plan = 'pro_mensual';
     });
 
     btnAnual?.addEventListener('click', () => {
@@ -171,11 +171,11 @@ export function renderPlanArea(planStatus) {
 
       if (display) {
         display.innerHTML = `
-          <div class="plan-upgrade-box__label" style="color:#34D399;">Plan Anual (Ahorrá 16%)</div>
-          <div class="plan-upgrade-box__price">$399.900 <sub>ARS / año</sub></div>
-          <div class="plan-upgrade-box__desc" style="color:#34D399;">¡2 meses GRATIS incluidos!</div>`;
+          <div class="plan-upgrade-box__label" style="color:#34D399;">Planes Anuales (Ahorrá 25%)</div>
+          <div class="plan-upgrade-box__price">Desde $179.900 <sub>ARS / año</sub></div>
+          <div class="plan-upgrade-box__desc" style="color:#34D399;">¡3 meses GRATIS incluidos!</div>`;
       }
-      if (checkoutBtn) checkoutBtn.dataset.plan = 'anual';
+      if (checkoutBtn) checkoutBtn.dataset.plan = 'pro_anual';
     });
   }, 50);
 }
