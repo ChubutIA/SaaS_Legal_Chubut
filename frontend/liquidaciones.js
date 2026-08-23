@@ -1,28 +1,15 @@
 /**
  * liquidaciones.js
  * Módulo de la vista "Liquidaciones" (estilo SICAL) para Chubut.IA.
- *
- * Patrón: módulo ES6 con estado privado + API pública mínima (init/destroy).
- * No depende de frameworks. Se integra con el router de tu SPA llamando
- * a Liquidaciones.init() cuando la vista #view-liquidaciones se monta,
- * y opcionalmente Liquidaciones.destroy() al desmontarla.
- *
- * Uso típico en tu router:
- *   import { Liquidaciones } from './liquidaciones.js';
- *   ...
- *   case 'liquidaciones':
- *     contenedor.innerHTML = await fetch('/views/liquidaciones.html').then(r => r.text());
- *     Liquidaciones.init();
- *     break;
  */
 
 // -----------------------------------------------------------------------
-// Config — ajustá según tus endpoints reales de FastAPI
+// Config — URLs corregidas para que coincidan con FastAPI
 // -----------------------------------------------------------------------
 const API_BASE = '/api';
 const ENDPOINTS = {
-  canastaValor: `${API_BASE}/canasta-basica/valor`, // GET ?mes_anio=&tramo_edad=
-  tasaInteres: `${API_BASE}/intereses/calcular`,      // POST { monto, tasa, desde, hasta }
+  canastaValor: `${API_BASE}/liquidaciones/canasta`, // GET ?mes_anio=&tramo_edad=
+  tasaInteres: `${API_BASE}/liquidaciones/interes`,  // POST { monto, tasa, desde, hasta }
 };
 
 const CONCEPTOS_LABEL = {
@@ -33,17 +20,11 @@ const CONCEPTOS_LABEL = {
 };
 
 export const Liquidaciones = (() => {
-  // ---------------------------------------------------------------------
-  // Estado privado del módulo
-  // ---------------------------------------------------------------------
-  let items = [];        // { id, concepto, conceptoLabel, detalle, importe, meta, selected }
+  let items = [];
   let nextId = 1;
-  let els = {};           // cache de elementos del DOM
+  let els = {};
   let mounted = false;
 
-  // ---------------------------------------------------------------------
-  // Utilidades
-  // ---------------------------------------------------------------------
   function formatMoney(value) {
     const n = Number(value) || 0;
     return n.toLocaleString('es-AR', {
@@ -87,11 +68,7 @@ export const Liquidaciones = (() => {
     };
   }
 
-  // ---------------------------------------------------------------------
-  // Poblado de selects dinámicos
-  // ---------------------------------------------------------------------
   function poblarMesAnio() {
-    // Genera los últimos 36 meses (ajustá el rango a lo que necesite tu sistema)
     const meses = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -99,6 +76,7 @@ export const Liquidaciones = (() => {
     const hoy = new Date();
     const opciones = [];
 
+    // Llevamos el historial hasta 80 meses atrás (llega a Enero 2020)
     for (let i = 0; i < 80; i++) {
       const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -111,9 +89,6 @@ export const Liquidaciones = (() => {
       .join('');
   }
 
-  // ---------------------------------------------------------------------
-  // Manejo de "Concepto" -> mostrar/ocultar campos de Canasta Básica
-  // ---------------------------------------------------------------------
   function onConceptoChange() {
     const esCanasta = els.concepto.value === 'canasta_basica_crianza';
 
@@ -131,7 +106,6 @@ export const Liquidaciones = (() => {
     }
   }
 
-  // Trae el valor de la canasta básica desde el backend según Mes/Año + Tramo
   async function actualizarImporteCanasta() {
     const mesAnio = els.mesAnio.value;
     const tramoEdad = els.tramoEdad.value;
@@ -147,8 +121,8 @@ export const Liquidaciones = (() => {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
-      // Ajustá esta clave al shape real que devuelva tu endpoint
-      els.importe.value = Number(data.importe ?? 0).toFixed(2);
+      // CORRECCIÓN: El backend de FastAPI devuelve 'valor', no 'importe'
+      els.importe.value = Number(data.valor ?? 0).toFixed(2);
     } catch (err) {
       console.error('[Liquidaciones] Error al obtener valor de canasta básica:', err);
       els.importe.value = '';
@@ -156,9 +130,6 @@ export const Liquidaciones = (() => {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Alta de item
-  // ---------------------------------------------------------------------
   function onSubmitForm(e) {
     e.preventDefault();
 
@@ -208,9 +179,6 @@ export const Liquidaciones = (() => {
     els.importe.placeholder = '0.00';
   }
 
-  // ---------------------------------------------------------------------
-  // Eliminar item / selección de checkboxes (delegación de eventos)
-  // ---------------------------------------------------------------------
   function onTablaClick(e) {
     const btnEliminar = e.target.closest('[data-action="eliminar"]');
     if (btnEliminar) {
@@ -231,9 +199,6 @@ export const Liquidaciones = (() => {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Render de la tabla y totales
-  // ---------------------------------------------------------------------
   function render() {
     if (items.length === 0) {
       els.tablaBody.innerHTML = '';
@@ -277,10 +242,6 @@ export const Liquidaciones = (() => {
     return total;
   }
 
-  // ---------------------------------------------------------------------
-  // Botón "+ TOTALIZAR" — recalcula y resalta el total (misma lógica que
-  // actualizarTotal, expuesto como acción explícita para el usuario)
-  // ---------------------------------------------------------------------
   function onTotalizar() {
     const total = actualizarTotal();
     els.total.classList.add('total-flash');
@@ -288,9 +249,6 @@ export const Liquidaciones = (() => {
     return total;
   }
 
-  // ---------------------------------------------------------------------
-  // Botón "LIMPIAR LIQUIDACIÓN"
-  // ---------------------------------------------------------------------
   function onLimpiar() {
     if (items.length > 0) {
       const confirmar = window.confirm('¿Seguro que querés limpiar toda la liquidación? Esta acción no se puede deshacer.');
@@ -304,9 +262,6 @@ export const Liquidaciones = (() => {
     els.intResultado.classList.add('hidden');
   }
 
-  // ---------------------------------------------------------------------
-  // Sección de Cálculo de Intereses
-  // ---------------------------------------------------------------------
   function onToggleInteres() {
     els.calculoIntereses.classList.toggle('hidden');
     if (!els.calculoIntereses.classList.contains('hidden')) {
@@ -348,7 +303,7 @@ export const Liquidaciones = (() => {
 
     try {
       const resp = await fetch(ENDPOINTS.tasaInteres, {
-        method: 'POST',
+        method: 'POST', // Asegurate de que el backend tenga el método correcto o cambialo a GET si es necesario
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ monto, tasa, desde, hasta }),
@@ -357,7 +312,6 @@ export const Liquidaciones = (() => {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
-      // Ajustá las claves al shape real de tu respuesta FastAPI
       mostrarResultadoInteres({
         montoBase: monto,
         interes: data.interes ?? 0,
@@ -383,18 +337,10 @@ export const Liquidaciones = (() => {
     els.intResultado.classList.remove('hidden');
   }
 
-  // ---------------------------------------------------------------------
-  // Imprimir
-  // ---------------------------------------------------------------------
   function onImprimir() {
     window.print();
-    // Alternativa si necesitás un layout de impresión distinto al de pantalla:
-    // generar un HTML con los `items` y abrirlo en una nueva ventana / iframe.
   }
 
-  // ---------------------------------------------------------------------
-  // Ciclo de vida del módulo
-  // ---------------------------------------------------------------------
   function bindEvents() {
     els.concepto.addEventListener('change', onConceptoChange);
     els.mesAnio.addEventListener('change', actualizarImporteCanasta);
@@ -430,11 +376,11 @@ export const Liquidaciones = (() => {
   }
 
   function init() {
-    if (mounted) destroy(); // evita doble binding si el router re-monta la vista
+    if (mounted) destroy();
 
     cacheEls();
     if (!els.form) {
-      console.error('[Liquidaciones] No se encontró #liq-form en el DOM. ¿Se inyectó liquidaciones.html?');
+      console.error('[Liquidaciones] No se encontró #liq-form en el DOM.');
       return;
     }
 
@@ -453,11 +399,9 @@ export const Liquidaciones = (() => {
     mounted = false;
   }
 
-  // API pública del módulo
   return {
     init,
     destroy,
-    // expuestos por si el router/tests necesitan inspeccionar estado
     getItems: () => [...items],
     getTotal: () => items.reduce((acc, it) => acc + it.importe, 0),
   };
