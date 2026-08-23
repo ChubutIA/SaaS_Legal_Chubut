@@ -79,14 +79,14 @@ function renderUserArea(user, planStatus) {
 
   if (!user) {
     // Guest
-    const remaining = Math.max(0, 5 - state.guestCount);
+    const remaining = Math.max(0, 2 - state.guestCount);
     el.innerHTML = `
       <div class="guest-counter-card">
         <div class="user-card__label">Modo de acceso</div>
         <div class="user-card__name">Acceso Invitado</div>
         <span class="badge badge--guest">Sin cuenta</span>
         <div class="guest-counter-card__count">
-          Consultas restantes: <span>${remaining}</span> / 5
+          Consultas restantes: <span>${remaining}</span> / 2
         </div>
       </div>`;
     return;
