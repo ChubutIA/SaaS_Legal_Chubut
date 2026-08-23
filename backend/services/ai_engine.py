@@ -288,12 +288,11 @@ async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -
         "markdown, sin backticks, sin texto adicional) con esta forma:\n"
         '{"tipo_norma": "...", "numero": "...", "texto_libre": "..."}\n\n'
         "Reglas:\n"
-        "1) Si la consulta menciona un número de ley, decreto, resolución, "
-        "etc.: completá 'tipo_norma' con el tipo genérico tal como podría "
-        "aparecer en un selector (Ley, Decreto, Resolución, Decreto de "
-        "Necesidad y Urgencia, Disposición, Código, etc.) y 'numero' con "
-        "el número SIN puntos ni barra de año (ej: 'Ley 24.240' → "
-        'tipo_norma=\"Ley\", numero=\"24240\"). Dejá "texto_libre" en null.\n'
+        "1) Si la consulta menciona un número de norma (ley, decreto, resolución, etc.): "
+        "completá 'tipo_norma' con el tipo genérico (Ley, Decreto, Resolución, Decreto-Ley, etc.) "
+        "y 'numero' con el número COMPLETO incluyendo la barra y el año si lo tiene, pero SIN puntos "
+        "(ej: 'Ley 24.240' → numero=\"24240\". 'Decreto 274/2019' → numero=\"274/2019\"). "
+        "Dejá 'texto_libre' en null.\n"
         "2) Si NO hay número identificable (consulta conceptual, ej. "
         "'código civil y comercial' o 'contrato de trabajo' sin número): "
         'dejá "tipo_norma" y "numero" en null, y completá "texto_libre" '
