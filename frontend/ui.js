@@ -277,7 +277,7 @@ export function showAccessWall(type = null) {
                 
                 <!-- PRECIOS INICIAL -->
                 <div id="price-inicial-mensual" style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$19.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
-                <div id="price-inicial-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$199.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
+                <div id="price-inicial-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$179.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
                 
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">Para consultas rápidas y legislación oficial.</p>
                 
@@ -300,7 +300,7 @@ export function showAccessWall(type = null) {
                 
                 <!-- PRECIOS PRO -->
                 <div id="price-pro-mensual" style="font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$29.990 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/mes</span></div>
-                <div id="price-pro-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$179.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
+                <div id="price-pro-anual" style="display: none; font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 15px;">$269.900 <span style="font-size: 0.9rem; font-weight: normal; color: #aaa;">/año</span></div>
 
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px; min-height: 40px;">El arsenal completo para el abogado moderno.</p>
                 
