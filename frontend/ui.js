@@ -353,6 +353,7 @@ export function showAccessWall(type = null) {
         });
       }, 50);
   }
+}
 // ── Typing Indicator ──────────────────────────────────────────────
 let typingEl = null;
 
