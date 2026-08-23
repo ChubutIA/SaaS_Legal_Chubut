@@ -348,7 +348,13 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
 
     if historial_previo:
         hist_texto = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in historial_previo[-3:]])
-        prompt_ref = f"Basado en esta charla previa:\n{hist_texto}\n\nReescribí la siguiente pregunta para que sea una consulta de búsqueda completa e independiente en una base de datos jurídica. Si el usuario menciona 'esa ley', 'ese fallo', 'resúmelo' o algo similar, incluí obligatoriamente el tema legal del que venían hablando. Pregunta del usuario: '{query_usuario[:1500]}'. Solo devolvé la pregunta reescrita, sin comillas."
+        prompt_ref = (
+            f"Basado en esta charla previa:\n{hist_texto}\n\n"
+            f"Reescribí la siguiente pregunta del usuario para que sea una consulta de búsqueda independiente. "
+            f"REGLA VITAL: Si el usuario introduce un tema NUEVO (ej. menciona una ley, decreto o número nuevo), dejá la pregunta EXACTAMENTE como está, NO le agregues contexto viejo. "
+            f"Solo usá la charla previa si el usuario dice 'esa ley', 'ese artículo', o hace referencia directa a lo anterior.\n"
+            f"Pregunta del usuario: '{query_usuario[:1500]}'. Solo devolvé la pregunta final, sin comillas."
+        )
         query_busqueda = await loop.run_in_executor(None, lambda: llm.invoke([HumanMessage(content=prompt_ref)]).content.replace('"', "").strip())
     else:
         query_busqueda = query_usuario
@@ -375,6 +381,8 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
         
     if intent in (INTENT_LEYES, INTENT_AMBOS):
         jurisdiccion = await clasificar_jurisdiccion(query_segura, llm)
+        if jurisdiccion not in ("nacional", "provincial", "ambas"):
+            jurisdiccion = "ambas" # Fallback de seguridad extrema
 
         tareas: list = []
         etiquetas: list[str] = []
