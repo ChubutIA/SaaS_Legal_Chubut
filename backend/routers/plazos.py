@@ -1,7 +1,8 @@
 """
 plazos.py
 
-Calculadora de plazos procesales judiciales con detalle diario para calendario visual.
+Calculadora de plazos procesales judiciales.
+Soporta feriados por ciudad y suspensiones específicas por cada organismo/juzgado.
 """
 
 import urllib.parse
@@ -12,7 +13,7 @@ from typing import List
 
 router = APIRouter(prefix="/api/plazos", tags=["plazos"])
 
-# Feriados Nacionales (2026 aproximado)
+# 1. FERIADOS NACIONALES
 FERIADOS_NACIONALES = {
     date(2026, 1, 1): "Año Nuevo",
     date(2026, 3, 24): "Día de la Memoria",
@@ -28,7 +29,7 @@ FERIADOS_NACIONALES = {
     date(2026, 12, 25): "Navidad"
 }
 
-# Feriados Locales (2026)
+# 2. FERIADOS LOCALES (Afectan a TODOS los organismos de esa ciudad)
 FERIADOS_LOCALES = {
     "Comodoro Rivadavia": {date(2026, 2, 23): "Aniversario Comodoro", date(2026, 12, 13): "Día del Petróleo"},
     "Trelew": {date(2026, 10, 20): "Aniversario Trelew"},
@@ -37,23 +38,31 @@ FERIADOS_LOCALES = {
     "Rio Mayo": {date(2026, 8, 22): "Aniversario Río Mayo"}
 }
 
-# Suspensiones Judiciales
-SUSPENSIONES_JUDICIALES = {
-    date(2026, 7, 27): "Suspensión de términos",
-    date(2026, 7, 31): "Suspensión de términos",
-    date(2026, 8, 6): "Suspensión de términos",
-    date(2026, 8, 13): "Suspensión de términos",
-    date(2026, 8, 21): "Suspensión de términos"
+# 3. SUSPENSIONES GENERALES (Feria judicial en toda la provincia)
+SUSPENSIONES_GENERALES = {
+    date(2026, 7, 27): "Feria Judicial de Invierno",
+    date(2026, 7, 31): "Feria Judicial de Invierno"
+}
+
+# 4. SUSPENSIONES ESPECÍFICAS POR ORGANISMO (Lo que vos notaste)
+# Acá podés cargar los días exactos en los que un juzgado en particular no atiende plazos.
+SUSPENSIONES_POR_ORGANISMO = {
+    "Juzgado Laboral N°3 (CR)": {
+        date(2026, 8, 21): "Suspensión de términos (Resolución Interna)"
+    },
+    "Cámara de Apelaciones C.Rivadavia": {
+        date(2026, 8, 13): "Asueto de Cámara"
+    }
 }
 
 class PlazoRequest(BaseModel):
     fecha_notificacion: date
     dias_habiles: int
-    ciudad: str = "Comodoro Rivadavia"
+    ciudad: str 
 
 class DiaDetalle(BaseModel):
     fecha: date
-    tipo: str  # "inicio", "vigencia", "inhabíl", "vencimiento"
+    tipo: str  
     descripcion: str
 
 class PlazoResponse(BaseModel):
@@ -69,7 +78,15 @@ def calcular_plazo(req: PlazoRequest):
     if req.dias_habiles <= 0:
         raise HTTPException(status_code=400, detail="Los días hábiles deben ser mayores a 0.")
     
-    feriados_locales_ciudad = FERIADOS_LOCALES.get(req.ciudad, {})
+    # === TRUCO PARA SEPARAR CIUDAD Y ORGANISMO ===
+    ciudad_real = req.ciudad
+    organismo_real = req.ciudad
+    if "|" in req.ciudad:
+        ciudad_real, organismo_real = req.ciudad.split("|", 1)
+        
+    feriados_locales_ciudad = FERIADOS_LOCALES.get(ciudad_real, {})
+    suspensiones_organismo = SUSPENSIONES_POR_ORGANISMO.get(organismo_real, {})
+    # =============================================
     
     dias_contados = 0
     fecha_actual = req.fecha_notificacion
@@ -86,7 +103,7 @@ def calcular_plazo(req: PlazoRequest):
         fecha_actual += timedelta(days=1)
         weekday = fecha_actual.weekday()
         
-        # Revisamos qué tipo de día es
+        # Revisamos qué tipo de día es (el orden importa)
         if weekday == 5:
             detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion="Sábado"))
         elif weekday == 6:
@@ -94,14 +111,18 @@ def calcular_plazo(req: PlazoRequest):
         elif fecha_actual in FERIADOS_NACIONALES:
             detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion=FERIADOS_NACIONALES[fecha_actual]))
         elif fecha_actual in feriados_locales_ciudad:
+            # Revisa los feriados de LA CIUDAD entera
             detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion=feriados_locales_ciudad[fecha_actual]))
-        elif fecha_actual in SUSPENSIONES_JUDICIALES:
-            detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion=SUSPENSIONES_JUDICIALES[fecha_actual]))
+        elif fecha_actual in SUSPENSIONES_GENERALES:
+            detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion=SUSPENSIONES_GENERALES[fecha_actual]))
+        elif fecha_actual in suspensiones_organismo:
+            # Revisa las suspensiones puntuales de ESE JUZGADO en particular
+            detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="inhabíl", descripcion=suspensiones_organismo[fecha_actual]))
         else:
             # Es un día hábil
             dias_contados += 1
             if dias_contados == req.dias_habiles:
-                detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="vencimiento", descripcion="Vencimiento del Plazo (Primeras 2 hs)"))
+                detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="vencimiento", descripcion="Vencimiento (Primeras 2 hs)"))
             else:
                 detalle_calendario.append(DiaDetalle(fecha=fecha_actual, tipo="vigencia", descripcion="Plazo en vigencia"))
             
@@ -109,7 +130,7 @@ def calcular_plazo(req: PlazoRequest):
     start_time = fecha_actual.strftime("%Y%m%dT110000Z") 
     end_time = fecha_actual.strftime("%Y%m%dT130000Z") 
     titulo = urllib.parse.quote(f"⚠️ Vencimiento de Plazo ({req.dias_habiles} días)")
-    detalles = urllib.parse.quote(f"Notificado el: {req.fecha_notificacion.strftime('%d/%m/%Y')}\nJurisdicción: {req.ciudad}\n\nCalculado por Chubut.IA ⚖️")
+    detalles = urllib.parse.quote(f"Notificado el: {req.fecha_notificacion.strftime('%d/%m/%Y')}\nOrganismo: {organismo_real}\n\nCalculado por Chubut.IA ⚖️")
     gcal_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={start_time}/{end_time}&details={detalles}"
     
     return PlazoResponse(
