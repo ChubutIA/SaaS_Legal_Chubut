@@ -29,6 +29,7 @@ async function init() {
   bindModalEvents();
   bindSuggestionButtons();
   setupCheckoutListeners();
+  bindPlazosEvents();
 }
 
 // ── Sidebar Events ────────────────────────────────────────────────
@@ -192,5 +193,53 @@ function bindModalEvents() {
   });
 }
 
+// ── Calculadora de Plazos Events ──────────────────────────────────
+function bindPlazosEvents() {
+  const btnCalcularPlazo = document.getElementById('btn-calcular-plazo');
+
+  if (btnCalcularPlazo) {
+    btnCalcularPlazo.addEventListener('click', async () => {
+      const fecha = document.getElementById('plazo-fecha').value;
+      const dias = document.getElementById('plazo-dias').value;
+      const ciudad = document.getElementById('plazo-ciudad').value;
+
+      if (!fecha || !dias) {
+        alert("Por favor, completá la fecha de notificación y los días hábiles.");
+        return;
+      }
+
+      try {
+        // Le pegamos al endpoint que armaste en Python
+        const response = await fetch('/api/plazos/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fecha_notificacion: fecha,
+            dias_habiles: parseInt(dias),
+            ciudad: ciudad
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Damos vuelta la fecha para que se lea linda en Argentina (DD/MM/YYYY)
+          const partes = data.fecha_vencimiento.split("-");
+          const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+          // Mostramos el resultado
+          document.getElementById('plazo-fecha-texto').innerText = fechaFormateada;
+          document.getElementById('btn-gcal').href = data.google_calendar_url;
+          document.getElementById('plazo-resultado').style.display = 'block';
+        } else {
+          alert("Hubo un error al calcular el plazo. Revisá los datos.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Error de conexión con el servidor.");
+      }
+    });
+  }
+}
 // ── Boot ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
