@@ -11,6 +11,7 @@ import re
 from datetime import date, timedelta, datetime
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 import PyPDF2
 from fastapi import APIRouter, HTTPException, Query, status
@@ -52,7 +53,11 @@ def cargar_canasta():
     ruta = buscar_archivo("serie_canasta_crianza.xlsx")
     try:
         df = pd.read_excel(ruta, sheet_name=0, header=None)
+        
+        # EL ARREGLO MÁGICO para los años en blanco (2022, 2023, etc.)
+        df[0] = df[0].replace(r'^\s*$', np.nan, regex=True)
         df[0] = df[0].ffill()
+        
         meses_es = {
             "Enero": "01", "Febrero": "02", "Marzo": "03", "Abril": "04", "Mayo": "05", "Junio": "06",
             "Julio": "07", "Agosto": "08", "Septiembre": "09", "Octubre": "10", "Noviembre": "11", "Diciembre": "12"
@@ -64,6 +69,7 @@ def cargar_canasta():
                 month = meses_es.get(str(row[1]).strip())
                 if not month: continue
                 period = f"{year}-{month}"
+                
                 db[(period, "menor_1_anio")] = round(float(row[4]), 2)
                 db[(period, "1_a_3")] = round(float(row[7]), 2)
                 db[(period, "4_a_5")] = round(float(row[10]), 2)
