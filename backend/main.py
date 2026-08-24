@@ -24,6 +24,7 @@ from services.ai_engine import initialize_ai
 from routers import auth, chat, upload, export, payments
 from routers import liquidaciones
 from routers import admin_scraper
+from routers import plazos # <-- Agregá esto arriba
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
 # ==========================================
@@ -79,6 +80,7 @@ app.include_router(export.router,   prefix="/api/export",   tags=["Exportar"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
 app.include_router(liquidaciones.router)
 app.include_router(admin_scraper.router)
+app.include_router(plazos.router)
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
