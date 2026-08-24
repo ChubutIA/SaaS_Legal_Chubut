@@ -60,7 +60,7 @@
           <line x1="8" y1="10" x2="16" y2="10"></line>
           <line x1="8" y1="14" x2="16" y2="14"></line>
         </svg>
-        Calculadora de Liquidaciones
+        ⚙️ Herramientas y Calculadoras
       </button>
 
       <div class="divider"></div>
@@ -238,127 +238,175 @@
     <section id="view-liquidaciones" class="view" data-view="liquidaciones">
 
       <header class="view-header" style="margin-bottom: 30px;">
-        <h2 style="color: #fff; font-size: 2rem;">Calculadora de Liquidaciones</h2>
-        <p style="color: #aaa;">Generá liquidaciones judiciales e intereses actualizados.</p>
+        <h2 style="color: #fff; font-size: 2rem;">Herramientas y Calculadoras</h2>
+        <p style="color: #aaa;">Generá liquidaciones, calculá intereses y administrá plazos judiciales.</p>
       </header>
-    
-      <form id="liq-form" class="liq-form" autocomplete="off" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px;">
-        <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
-    
-          <div class="form-group" style="flex: 1; min-width: 200px;">
-            <label for="liq-concepto" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Concepto</label>
-            <select id="liq-concepto" name="concepto" required style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-              <option value="" disabled selected>Seleccione...</option>
-              <option value="capital">Capital</option>
-              <option value="canasta_basica_crianza">Canasta Básica de Crianza</option>
-              <option value="honorarios">Honorarios</option>
-              <option value="otros">Otros</option>
-            </select>
-          </div>
-    
-          <div id="liq-canasta-fields" class="form-group-inline hidden" style="display: flex; gap: 15px; flex: 2; min-width: 300px;">
-            <div class="form-group" style="flex: 1;">
-              <label for="liq-mes-anio" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Mes/Año</label>
-              <select id="liq-mes-anio" name="mes_anio" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+      
+      <!-- CALCULADORA DE LIQUIDACIONES -->
+      <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px;">
+        <h3 style="color: #fff; margin-bottom: 15px; font-weight: 500;">Calculadora de Liquidaciones</h3>
+        <form id="liq-form" class="liq-form" autocomplete="off">
+          <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+      
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="liq-concepto" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Concepto</label>
+              <select id="liq-concepto" name="concepto" required style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+                <option value="" disabled selected>Seleccione...</option>
+                <option value="capital">Capital</option>
+                <option value="canasta_basica_crianza">Canasta Básica de Crianza</option>
+                <option value="honorarios">Honorarios</option>
+                <option value="otros">Otros</option>
               </select>
             </div>
-            <div class="form-group" style="flex: 1;">
-              <label for="liq-tramo-edad" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Tramo de Edad</label>
-              <select id="liq-tramo-edad" name="tramo_edad" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-                <option value="menor_1_anio" data-label="Menor de 1 año">Menor de 1 año</option>
-                <option value="1_a_3" data-label="1 a 3 años">1 a 3 años</option>
-                <option value="4_a_5" data-label="4 a 5 años">4 a 5 años</option>
-                <option value="6_a_12" data-label="6 a 12 años">6 a 12 años</option>
+      
+            <div id="liq-canasta-fields" class="form-group-inline hidden" style="display: flex; gap: 15px; flex: 2; min-width: 300px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="liq-mes-anio" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Mes/Año</label>
+                <select id="liq-mes-anio" name="mes_anio" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="liq-tramo-edad" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Tramo de Edad</label>
+                <select id="liq-tramo-edad" name="tramo_edad" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+                  <option value="menor_1_anio" data-label="Menor de 1 año">Menor de 1 año</option>
+                  <option value="1_a_3" data-label="1 a 3 años">1 a 3 años</option>
+                  <option value="4_a_5" data-label="4 a 5 años">4 a 5 años</option>
+                  <option value="6_a_12" data-label="6 a 12 años">6 a 12 años</option>
+                </select>
+              </div>
+            </div>
+      
+            <div class="form-group" style="flex: 2; min-width: 250px;">
+              <label for="liq-detalle" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Detalle</label>
+              <input type="text" id="liq-detalle" name="detalle" placeholder="Detalle del ítem" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
+            </div>
+      
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label for="liq-importe" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Importe $</label>
+              <input type="number" id="liq-importe" name="importe" step="0.01" min="0" placeholder="0.00" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
+            </div>
+      
+            <div class="form-group form-group-action">
+              <button type="submit" id="btn-agregar-item" class="btn-primary" style="padding: 10px 20px; height: 42px;">AGREGAR</button>
+            </div>
+      
+          </div>
+        </form>
+      
+        <div class="table-wrapper" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 20px; margin-top: 20px;">
+          <table id="tabla-liquidacion" class="tabla-liquidacion" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <th style="padding: 15px; font-weight: 500; color: #aaa;">Item</th>
+                <th style="padding: 15px; font-weight: 500; color: #aaa;">Concepto</th>
+                <th style="padding: 15px; font-weight: 500; color: #aaa;">Importe</th>
+                <th style="padding: 15px; font-weight: 500; color: #aaa; text-align: center;">Sel.</th>
+                <th style="padding: 15px; font-weight: 500; color: #aaa; text-align: center;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-liquidacion-body">
+              <tr id="tabla-liquidacion-empty">
+                <td colspan="5" class="empty-row" style="padding: 30px; text-align: center; color: #666;">No hay ítems cargados todavía.</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr style="border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);">
+                <td colspan="2" class="text-right" style="padding: 15px; text-align: right; color: #aaa;"><strong>TOTAL</strong></td>
+                <td id="liq-total" style="padding: 15px; font-size: 1.1rem; color: #c9a84c;"><strong>$0,00</strong></td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      
+        <div class="tabla-actions" style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end;">
+          <button type="button" id="btn-totalizar" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">+ TOTALIZAR</button>
+          <button type="button" id="btn-interes" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">% INTERÉS</button>
+          <button type="button" id="btn-imprimir" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">IMPRIMIR</button>
+          <button type="button" id="btn-limpiar" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: rgba(220, 38, 38, 0.2); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.4);">LIMPIAR LIQUIDACIÓN</button>
+        </div>
+      
+        <section id="calculo-intereses" class="calculo-intereses hidden" style="background: rgba(201, 168, 76, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(201, 168, 76, 0.2);">
+          <h3 style="color: #c9a84c; margin-top: 0; margin-bottom: 20px;">Cálculo de Intereses</h3>
+      
+          <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label for="int-monto" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Monto sobre el que se aplica</label>
+              <input type="text" id="int-monto" readonly style="width: 100%; padding: 10px; border-radius: 6px; background: #1a1a1a; border: 1px solid #333; color: #888; box-sizing: border-box;">
+            </div>
+      
+            <div class="form-group" style="flex: 2; min-width: 250px;">
+              <label for="int-tasa" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Actualizar por</label>
+              <select id="int-tasa" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+                <option value="tasa_activa_bna">Tasa activa Banco Nación</option>
+                <option value="tasa_chubut_uss">Tasa activa Banco Chubut U$S</option>
               </select>
             </div>
+      
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label for="int-desde" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha Desde</label>
+              <input type="date" id="int-desde" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box; color-scheme: dark;">
+            </div>
+      
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+              <label for="int-hasta" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha Hasta</label>
+              <input type="date" id="int-hasta" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box; color-scheme: dark;">
+            </div>
+      
+            <div class="form-group form-group-action">
+              <button type="button" id="btn-aplicar-interes" class="btn-primary" style="padding: 10px 20px; height: 42px; background: #c9a84c; color: #000;">APLICAR</button>
+            </div>
           </div>
-    
-          <div class="form-group" style="flex: 2; min-width: 250px;">
-            <label for="liq-detalle" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Detalle</label>
-            <input type="text" id="liq-detalle" name="detalle" placeholder="Detalle del ítem" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
+      
+          <div id="int-resultado" class="int-resultado hidden" style="margin-top: 25px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 4px solid #c9a84c;">
           </div>
-    
-          <div class="form-group" style="flex: 1; min-width: 150px;">
-            <label for="liq-importe" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Importe $</label>
-            <input type="number" id="liq-importe" name="importe" step="0.01" min="0" placeholder="0.00" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
-          </div>
-    
-          <div class="form-group form-group-action">
-            <button type="submit" id="btn-agregar-item" class="btn-primary" style="padding: 10px 20px; height: 42px;">AGREGAR</button>
-          </div>
-    
-        </div>
-      </form>
-    
-      <div class="table-wrapper" style="background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 20px;">
-        <table id="tabla-liquidacion" class="tabla-liquidacion" style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <th style="padding: 15px; font-weight: 500; color: #aaa;">Item</th>
-              <th style="padding: 15px; font-weight: 500; color: #aaa;">Concepto</th>
-              <th style="padding: 15px; font-weight: 500; color: #aaa;">Importe</th>
-              <th style="padding: 15px; font-weight: 500; color: #aaa; text-align: center;">Sel.</th>
-              <th style="padding: 15px; font-weight: 500; color: #aaa; text-align: center;">Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-liquidacion-body">
-            <tr id="tabla-liquidacion-empty">
-              <td colspan="5" class="empty-row" style="padding: 30px; text-align: center; color: #666;">No hay ítems cargados todavía.</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr style="border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);">
-              <td colspan="2" class="text-right" style="padding: 15px; text-align: right; color: #aaa;"><strong>TOTAL</strong></td>
-              <td id="liq-total" style="padding: 15px; font-size: 1.1rem; color: #c9a84c;"><strong>$0,00</strong></td>
-              <td colspan="2"></td>
-            </tr>
-          </tfoot>
-        </table>
+        </section>
       </div>
-    
-      <div class="tabla-actions" style="display: flex; gap: 10px; margin-bottom: 40px; justify-content: flex-end;">
-        <button type="button" id="btn-totalizar" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">+ TOTALIZAR</button>
-        <button type="button" id="btn-interes" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">% INTERÉS</button>
-        <button type="button" id="btn-imprimir" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: #333; color: white; border: 1px solid #555;">IMPRIMIR</button>
-        <button type="button" id="btn-limpiar" class="btn-secondary" style="padding: 8px 16px; border-radius: 6px; background: rgba(220, 38, 38, 0.2); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.4);">LIMPIAR LIQUIDACIÓN</button>
-      </div>
-    
-      <section id="calculo-intereses" class="calculo-intereses hidden" style="background: rgba(201, 168, 76, 0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(201, 168, 76, 0.2);">
-        <h3 style="color: #c9a84c; margin-top: 0; margin-bottom: 20px;">Cálculo de Intereses</h3>
-    
-        <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+
+      <!-- SECCIÓN CALCULADORA DE PLAZOS -->
+      <div class="calculator-card" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px;">
+        <h3 style="color: #fff; margin-bottom: 15px; font-weight: 500;">Calculadora de Plazos Judiciales</h3>
+
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+          <!-- Fecha de Notificación -->
           <div class="form-group" style="flex: 1; min-width: 200px;">
-            <label for="int-monto" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Monto sobre el que se aplica</label>
-            <input type="text" id="int-monto" readonly style="width: 100%; padding: 10px; border-radius: 6px; background: #1a1a1a; border: 1px solid #333; color: #888; box-sizing: border-box;">
+            <label for="plazo-fecha" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha de Notificación</label>
+            <input type="date" id="plazo-fecha" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; color-scheme: dark;">
           </div>
-    
-          <div class="form-group" style="flex: 2; min-width: 250px;">
-            <label for="int-tasa" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Actualizar por</label>
-            <select id="int-tasa" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-              <option value="tasa_activa_bna">Tasa activa Banco Nación</option>
-              <option value="tasa_chubut_uss">Tasa activa Banco Chubut U$S</option>
+
+          <!-- Días Hábiles -->
+          <div class="form-group" style="flex: 1; min-width: 150px;">
+            <label for="plazo-dias" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Días Hábiles</label>
+            <input type="number" id="plazo-dias" min="1" value="5" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+          </div>
+
+          <!-- Ciudad -->
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label for="plazo-ciudad" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Organismo / Ciudad</label>
+            <select id="plazo-ciudad" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
+              <option value="Comodoro Rivadavia">Comodoro Rivadavia</option>
+              <option value="Trelew">Trelew</option>
+              <option value="Puerto Madryn">Puerto Madryn</option>
+              <option value="Gaiman">Gaiman</option>
+              <option value="Rio Mayo">Río Mayo</option>
             </select>
           </div>
-    
-          <div class="form-group" style="flex: 1; min-width: 150px;">
-            <label for="int-desde" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha Desde</label>
-            <input type="date" id="int-desde" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box; color-scheme: dark;">
-          </div>
-    
-          <div class="form-group" style="flex: 1; min-width: 150px;">
-            <label for="int-hasta" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha Hasta</label>
-            <input type="date" id="int-hasta" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box; color-scheme: dark;">
-          </div>
-    
-          <div class="form-group form-group-action">
-            <button type="button" id="btn-aplicar-interes" class="btn-primary" style="padding: 10px 20px; height: 42px; background: #c9a84c; color: #000;">APLICAR</button>
-          </div>
         </div>
-    
-        <div id="int-resultado" class="int-resultado hidden" style="margin-top: 25px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 4px solid #c9a84c;">
+
+        <button id="btn-calcular-plazo" class="btn-primary" style="margin-top: 20px; padding: 12px 24px; cursor: pointer; font-weight: bold; width: 100%;">
+          CALCULAR VENCIMIENTO
+        </button>
+
+        <!-- Resultado y Botón de Google Calendar -->
+        <div id="plazo-resultado" style="margin-top: 20px; padding: 20px; background: #1a1a1a; border-radius: 6px; border: 1px dashed #444; display: none; text-align: center;">
+          <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 5px;">El plazo vence el:</p>
+          <h2 id="plazo-fecha-texto" style="color: #fff; margin: 0 0 20px 0; font-size: 2rem;">--</h2>
+          <a id="btn-gcal" href="#" target="_blank" style="display: inline-block; padding: 12px 24px; background: #c9a84c; color: #000; text-decoration: none; font-weight: bold; border-radius: 6px; transition: 0.2s;">
+            🗓️ Agendar en Google Calendar
+          </a>
         </div>
-      </section>
-    
+      </div>
+      
     </section>
   </main>
 </div>
@@ -530,49 +578,6 @@
 <!-- SCRIPT DE LIQUIDACIONES -->
 <script type="module" src="/static/liquidaciones.js"></script>
 
-<!-- SECCIÓN CALCULADORA DE PLAZOS -->
-<div class="calculator-card" style="background: #111; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 20px; max-width: 800px;">
-  <h3 style="color: #fff; margin-bottom: 15px; font-weight: 500;">Calculadora de Plazos Judiciales</h3>
-
-  <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-    <!-- Fecha de Notificación -->
-    <div class="form-group" style="flex: 1; min-width: 200px;">
-      <label for="plazo-fecha" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha de Notificación</label>
-      <input type="date" id="plazo-fecha" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-    </div>
-
-    <!-- Días Hábiles -->
-    <div class="form-group" style="flex: 1; min-width: 150px;">
-      <label for="plazo-dias" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Días Hábiles</label>
-      <input type="number" id="plazo-dias" min="1" value="5" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-    </div>
-
-    <!-- Ciudad -->
-    <div class="form-group" style="flex: 1; min-width: 200px;">
-      <label for="plazo-ciudad" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Organismo / Ciudad</label>
-      <select id="plazo-ciudad" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
-        <option value="Comodoro Rivadavia">Comodoro Rivadavia</option>
-        <option value="Trelew">Trelew</option>
-        <option value="Puerto Madryn">Puerto Madryn</option>
-        <option value="Gaiman">Gaiman</option>
-        <option value="Rio Mayo">Río Mayo</option>
-      </select>
-    </div>
-  </div>
-
-  <button id="btn-calcular-plazo" style="margin-top: 20px; padding: 12px 24px; background: #335eea; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%;">
-    CALCULAR VENCIMIENTO
-  </button>
-
-  <!-- Resultado y Botón de Google Calendar -->
-  <div id="plazo-resultado" style="margin-top: 20px; padding: 20px; background: #1a1a1a; border-radius: 6px; border: 1px dashed #444; display: none; text-align: center;">
-    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 5px;">El plazo vence el:</p>
-    <h2 id="plazo-fecha-texto" style="color: #fff; margin: 0 0 20px 0; font-size: 2rem;">--</h2>
-    <a id="btn-gcal" href="#" target="_blank" style="display: inline-block; padding: 12px 24px; background: #c9a84c; color: #000; text-decoration: none; font-weight: bold; border-radius: 6px; transition: 0.2s;">
-      🗓️ Agendar en Google Calendar
-    </a>
-  </div>
-</div>
 <!-- SCRIPT DE NAVEGACIÓN -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -590,7 +595,7 @@
       }).catch(err => console.error("Error cargando liquidaciones.js:", err));
     }, 1000);
 
-    // Botón: Abrir Liquidaciones
+    // Botón: Abrir Liquidaciones / Herramientas
     if (btnLiquidaciones) {
       btnLiquidaciones.addEventListener('click', () => {
         chatMain.classList.add('hidden');
