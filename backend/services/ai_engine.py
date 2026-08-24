@@ -26,6 +26,137 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
+MODELO_DEMANDA_ALIMENTOS = """
+PROMUEVE DEMANDA DE ALIMENTOS. SOLICITA ALIMENTOS PROVISORIOS. RETROACTIVIDAD. OFRECE PRUEBA
+Señor/a Juez/a de Familia:
+Teresa Pérez, DNI N° __________, por derecho propio y en representación de sus hijos menores de edad [NOMBRE DEL HIJO 1], de 3 años de edad, DNI N° __________, y [NOMBRE DEL HIJO 2], de 6 años de edad, DNI N° __________, con domicilio real en __________, constituyendo domicilio procesal en __________ y domicilio electrónico en __________, con el patrocinio letrado de la Dra. __________, T° ___ F° ___, a V.S. respetuosamente me presento y digo:
+
+I. OBJETO
+Que vengo a promover demanda de alimentos contra el Sr. [NOMBRE COMPLETO DEL PROGENITOR], DNI N° __________, con domicilio real en __________ y/o laboral en , a fin de que se lo condene a abonar en favor de sus hijos menores de edad una cuota alimentaria mensual equivalente a $__________, o la suma que V.S. estime adecuada conforme las necesidades de los alimentados y las posibilidades económicas del alimentante.
+Asimismo, solicito que la cuota sea fijada en un porcentaje de los ingresos del demandado, incluyendo salario, sueldo anual complementario, premios, bonificaciones, comisiones, horas extras, adicionales, viáticos remunerativos y cualquier otro concepto que integre su remuneración, con un piso mínimo de $__________ mensuales.
+Para el supuesto de que el demandado no registre ingresos formales suficientes o resulte trabajador independiente, solicito que la cuota sea fijada prudencialmente conforme su capacidad económica real y las necesidades de los niños.
+Asimismo, solicito:
+a) se fijen alimentos provisorios desde el inicio del proceso;
+b) se reconozca la retroactividad de la obligación alimentaria desde la interpelación fehaciente efectuada al demandado, en los términos del art. 669 del Código Civil y Comercial, siempre que se encuentren cumplidos sus presupuestos;
+c) se tengan presentes y se liquiden las cuotas alimentarias devengadas e impagas;
+d) se ordenen las medidas necesarias para asegurar el efectivo cumplimiento de la cuota alimentaria;
+e) oportunamente, se haga lugar a la demanda, con costas al demandado.
+
+II. HECHOS
+La suscripta es madre de los niños [NOMBRE HIJO 1], actualmente de 3 años de edad, y [NOMBRE HIJO 2], actualmente de 6 años de edad, conforme surge de las partidas de nacimiento que se acompañan.
+Ambos niños son hijos del demandado, Sr. [NOMBRE DEL PROGENITOR], encontrándose debidamente acreditado el vínculo filial.
+Los niños conviven con su madre, quien tiene a su cargo de manera cotidiana y permanente su cuidado personal, atendiendo sus necesidades de alimentación, vivienda, vestimenta, higiene, educación, salud, recreación y demás requerimientos propios de su edad.
+La totalidad de dichas tareas implican una considerable dedicación personal y económica por parte de esta progenitora, constituyendo asimismo un aporte a la manutención de los hijos, conforme lo establecido por el art. 660 del Código Civil y Comercial.
+El progenitor demandado, pese a encontrarse obligado legalmente a contribuir a la manutención de sus hijos, ha incumplido con su obligación alimentaria durante aproximadamente seis meses, sin efectuar los aportes necesarios y suficientes para atender las necesidades de los niños.
+Esta situación ha obligado a la progenitora conviviente a afrontar prácticamente en soledad los gastos ordinarios y extraordinarios derivados de la crianza de ambos hijos.
+Debe destacarse que las necesidades de los niños son actuales, permanentes y propias de su edad, comprendiendo alimentación, vivienda, servicios, vestimenta, calzado, educación, útiles, transporte, atención médica, medicamentos, actividades recreativas y demás gastos indispensables para su desarrollo integral.
+
+III. ETAPA PREJUDICIAL
+Con carácter previo a la promoción de la presente acción se llevó adelante la correspondiente etapa prejudicial, conforme surge de las constancias que se acompañan.
+En dicha instancia se procuró alcanzar un acuerdo respecto de la contribución alimentaria que corresponde al progenitor demandado.
+Sin embargo, no fue posible arribar a un acuerdo, razón por la cual resulta necesario acudir a la vía judicial a fin de obtener la determinación de una cuota alimentaria adecuada y suficiente para los niños.
+[INDICAR AQUÍ: fecha de audiencia, organismo interviniente, número de expediente/acta y resultado de la audiencia.]
+Asimismo, para el supuesto de corresponder, se deja expresamente planteado que el demandado fue interpelado en forma fehaciente con fecha __/__/____, mediante __________, sin que haya regularizado su obligación alimentaria.
+
+IV. NECESIDADES DE LOS ALIMENTADOS
+Los niños cuentan actualmente con 3 y 6 años de edad, encontrándose en plena etapa de crecimiento y desarrollo, circunstancia que determina necesidades alimentarias, educativas, sanitarias y recreativas que deben ser atendidas de manera continua.
+A título meramente enunciativo, los gastos comprenden:
+- alimentación diaria;
+- vivienda y servicios correspondientes al hogar;
+- vestimenta y calzado;
+- gastos escolares, cuotas, materiales y útiles;
+- transporte;
+- atención médica;
+- medicamentos y tratamientos;
+- obra social/prepaga, en caso de corresponder;
+- actividades recreativas y deportivas;
+- higiene y cuidado personal;
+- gastos extraordinarios propios de la crianza.
+La enumeración precedente no resulta taxativa, toda vez que el concepto de alimentos comprende las necesidades materiales y aquellas vinculadas con el desarrollo integral de los niños.
+
+V. CAPACIDAD ECONÓMICA DEL DEMANDADO
+El demandado se desempeña como [empleado/trabajador independiente/comerciante/profesional/otro], desarrollando su actividad en __________.
+Según conocimiento de esta parte, percibiría aproximadamente la suma de $__________ mensuales, sin perjuicio de los restantes ingresos y/o beneficios económicos que pudiera obtener.
+Asimismo, [indicar, si se conoce: posee vehículo / desarrolla actividad comercial / es titular de inmueble / trabaja para determinada empresa / percibe ingresos por actividad independiente / posee otros recursos económicos].
+La información relativa a sus ingresos se denuncia de manera aproximada, toda vez que la progenitora carece de acceso a la totalidad de la información patrimonial y laboral del demandado.
+Por ello, resulta indispensable la producción de la prueba informativa ofrecida en autos, a efectos de determinar su verdadera capacidad económica.
+
+VI. DERECHO
+Fundo la presente acción en lo dispuesto por los arts. 658, 659, 660, 661, 669 y concordantes del Código Civil y Comercial de la Nación, en cuanto establecen el deber de ambos progenitores de proveer alimentos a sus hijos, determinan el contenido de la obligación alimentaria, reconocen valor económico a las tareas de cuidado y regulan la obligación respecto de los alimentos impagos.
+El art. 658 establece que ambos progenitores tienen la obligación de criar, alimentar y educar a sus hijos conforme a su condición y fortuna.
+A su vez, el art. 659 dispone que los alimentos comprenden las necesidades de manutención, educación, esparcimiento, vestimenta, habitación, asistencia, gastos por enfermedad y demás gastos necesarios, y que deben ser proporcionales a las posibilidades económicas de los obligados y a las necesidades de los alimentados.
+Por su parte, el art. 660 reconoce expresamente el valor económico de las tareas cotidianas realizadas por el progenitor que tiene a su cargo el cuidado personal de los hijos.
+Finalmente, el art. 669 establece que los alimentos se deben desde el día de la demanda o desde la interpelación fehaciente del obligado, cuando la demanda se interpone dentro de los seis meses de aquella.
+La obligación alimentaria constituye, además, una manifestación concreta de los deberes derivados de la responsabilidad parental y debe ser interpretada conforme al principio del interés superior de los niños.
+
+VII. ALIMENTOS PROVISORIOS
+Atento a la edad de los niños, la naturaleza de las necesidades involucradas y el incumplimiento denunciado, solicito que V.S. fije alimentos provisorios desde el inicio de las presentes actuaciones, sin necesidad de aguardar el dictado de la sentencia definitiva.
+La urgencia surge de la propia naturaleza de la prestación reclamada, destinada a cubrir necesidades cotidianas que no admiten demora.
+Solicito que dicha cuota provisoria sea fijada en la suma de $__________ mensuales, o en el porcentaje de los ingresos del demandado que V.S. estime corresponder.
+Para el caso de que el demandado se encuentre registrado como trabajador en relación de dependencia, solicito se ordene a su empleador la retención directa de la cuota fijada y su depósito en la cuenta judicial que se habilite al efecto.
+
+VIII. RETROACTIVIDAD. ALIMENTOS DEVENGADOS
+Solicito que la sentencia determine la retroactividad de la obligación alimentaria conforme al art. 669 del Código Civil y Comercial.
+En particular, habiendo mediado interpelación fehaciente con fecha __/__/____, solicito que la obligación sea establecida desde dicha fecha, en tanto la presente acción se interpone dentro del plazo legal.
+Asimismo, dejo planteado el derecho de esta parte a reclamar los gastos afrontados por la progenitora conviviente correspondientes al período anterior, en la medida y con el alcance que legalmente corresponda.
+
+IX. PRUEBA
+A. DOCUMENTAL
+Se acompaña:
+- Partida de nacimiento de [NOMBRE HIJO 1].
+- Partida de nacimiento de [NOMBRE HIJO 2].
+- Constancia de DNI de los niños.
+- Constancia de DNI de la progenitora.
+- Constancia de la etapa prejudicial realizada.
+- Acta de cierre/falta de acuerdo.
+- Intimación/interpelación fehaciente al demandado, en caso de corresponder.
+- Comprobantes de gastos de los niños.
+- Constancias escolares.
+- Comprobantes de gastos médicos, medicamentos y/o cobertura de salud.
+- Toda otra documentación que acredite las necesidades de los alimentados.
+
+B. INFORMATIVA
+Solicito se libren oficios a:
+1. AFIP/ARCA: a fin de que informe si el demandado se encuentra inscripto, actividad declarada, categoría, empleadores registrados, remuneraciones declaradas y demás información que resulte pertinente.
+2. ANSES: a fin de que informe si el demandado registra beneficios, prestaciones, jubilaciones, pensiones, asignaciones o cualquier otro ingreso registrado.
+3. [EMPLEADOR]: para que informe remuneración mensual, conceptos que integran la misma, adicionales, premios, horas extras, bonificaciones, antigüedad, SAC y demás conceptos percibidos por el demandado.
+4. Entidades bancarias correspondientes: para que informen, en caso de resultar procedente y conforme las facultades judiciales, la información patrimonial que corresponda.
+5. Registro de la Propiedad Inmueble: a fin de que informe bienes inmuebles registrados a nombre del demandado.
+6. Registro de la Propiedad Automotor: a fin de que informe vehículos registrados a nombre del demandado.
+Todo ello a fin de determinar la real capacidad económica del alimentante.
+
+C. TESTIMONIAL
+Se ofrece la declaración testimonial de:
+- ____________________, DNI __________, domicilio __________.
+- ____________________, DNI __________, domicilio __________.
+- ____________________, DNI __________, domicilio __________.
+Los testigos declararán acerca de la convivencia de los niños con su madre, las tareas de cuidado asumidas por ésta, las necesidades de los alimentados, los gastos afrontados y las circunstancias económicas conocidas del demandado.
+
+X. INFORME SOCIOAMBIENTAL
+Para el supuesto de estimarlo necesario, solicito se disponga la realización de informe socioambiental en el domicilio donde viven los niños, a fin de acreditar sus condiciones de vida, necesidades y circunstancias familiares.
+
+XI. INTERÉS SUPERIOR DE LOS NIÑOS
+La pretensión debe ser analizada teniendo especialmente en consideración el interés superior de los niños involucrados, quienes cuentan con 3 y 6 años de edad y requieren una tutela judicial efectiva y oportuna.
+La falta de cumplimiento de la obligación alimentaria no puede traducirse en que la totalidad de las cargas derivadas de la crianza recaigan sobre la progenitora conviviente.
+La obligación corresponde a ambos progenitores y debe distribuirse de acuerdo con las necesidades de los niños y las posibilidades económicas de cada obligado.
+
+XII. PETITORIO
+Por todo lo expuesto, a V.S. solicito:
+1. Me tenga por presentada, parte y con el domicilio constituido.
+2. Tenga por promovida demanda de alimentos contra el Sr. [NOMBRE COMPLETO DEL PROGENITOR], DNI N° __________.
+3. Tenga por acreditada la legitimación de la progenitora para reclamar alimentos en representación de sus hijos menores.
+4. Se tengan por acompañadas las constancias de la etapa prejudicial y se tenga por cumplida dicha instancia.
+5. Se fijen alimentos provisorios en favor de los niños por la suma de $__________ mensuales o el porcentaje de los ingresos que V.S. estime corresponder.
+6. Se ordene, de corresponder, la retención directa de la cuota alimentaria sobre los haberes del demandado.
+7. Se tenga presente la interpelación fehaciente efectuada con fecha __/__/____ y se establezca la retroactividad de la obligación conforme el art. 669 del Código Civil y Comercial.
+8. Se ordene la producción de la prueba ofrecida.
+9. Oportunamente, se haga lugar a la demanda y se fije una cuota alimentaria definitiva de $__________ mensuales, o el porcentaje de los ingresos del demandado que resulte adecuado, con los ajustes que correspondan.
+10. Se establezca la forma y fecha de pago de las cuotas.
+11. Se condene al demandado al pago de las cuotas alimentarias devengadas e impagas que correspondan.
+12. Se impongan las costas al demandado.
+Proveer de conformidad,
+SERÁ JUSTICIA.
+"""
 # ══════════════════════════════════════════════════════════════════
 # 1. SINGLETONS Y CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════
