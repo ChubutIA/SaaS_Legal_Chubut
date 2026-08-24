@@ -209,7 +209,6 @@ function bindPlazosEvents() {
       }
 
       try {
-        // Le pegamos al endpoint que armaste en Python
         const response = await fetch('/api/plazos/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -223,14 +222,63 @@ function bindPlazosEvents() {
         if (response.ok) {
           const data = await response.json();
           
-          // Damos vuelta la fecha para que se lea linda en Argentina (DD/MM/YYYY)
+          // 1. Mostrar Resultado Final y botón Google Calendar
           const partes = data.fecha_vencimiento.split("-");
           const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-
-          // Mostramos el resultado
           document.getElementById('plazo-fecha-texto').innerText = fechaFormateada;
           document.getElementById('btn-gcal').href = data.google_calendar_url;
           document.getElementById('plazo-resultado').style.display = 'block';
+
+          // 2. Dibujar Calendario Visual
+          const calContainer = document.getElementById('calendario-plazos-container');
+          const calGrid = document.getElementById('calendario-plazos-grid');
+          calGrid.innerHTML = ''; // Limpiar grilla anterior
+
+          if (data.detalle_calendario && data.detalle_calendario.length > 0) {
+            // Parseamos la primera fecha para saber en qué día de la semana cae
+            const parseDate = (d) => new Date(d + 'T00:00:00');
+            const firstDay = parseDate(data.detalle_calendario[0].fecha);
+            
+            // JS: 0 es Domingo, 1 es Lunes. Lo ajustamos para que 0 sea Lunes.
+            let startDayOfWeek = firstDay.getDay();
+            startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+            // Rellenar espacios en blanco antes del primer día
+            for (let i = 0; i < startDayOfWeek; i++) {
+              const emptyCell = document.createElement('div');
+              emptyCell.className = 'cal-day empty';
+              calGrid.appendChild(emptyCell);
+            }
+
+            // Dibujar los días
+            data.detalle_calendario.forEach(dia => {
+              const cell = document.createElement('div');
+              const dDate = parseDate(dia.fecha);
+              const diaMes = dDate.getDate();
+              const mesStr = dDate.toLocaleDateString('es-AR', { month: 'short' });
+
+              // Asignar clases base
+              cell.className = `cal-day ${dia.tipo}`;
+
+              // Sub-clasificación para colores estilo Chronos
+              if (dia.tipo === 'inhabíl') {
+                const desc = dia.descripcion.toLowerCase();
+                if (desc.includes('suspensión')) cell.classList.add('suspension');
+                else if (desc.includes('sábado') || desc.includes('domingo')) cell.classList.add('finde');
+                else cell.classList.add('feriado'); // Feriados
+              }
+
+              // Inyectar HTML de la tarjeta del día
+              cell.innerHTML = `
+                <div class="cal-date">${diaMes} ${mesStr}</div>
+                <div class="cal-desc">${dia.descripcion}</div>
+              `;
+              calGrid.appendChild(cell);
+            });
+
+            calContainer.classList.remove('hidden');
+          }
+
         } else {
           alert("Hubo un error al calcular el plazo. Revisá los datos.");
         }
