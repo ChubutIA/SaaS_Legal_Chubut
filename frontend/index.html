@@ -53,14 +53,25 @@
       <button id="btn-new-chat" class="btn-primary hidden">+ Nueva Consulta</button>
       <button id="btn-open-auth" class="btn-primary">Iniciar Sesión / Registrarse</button>
       
-      <!-- NUEVO BOTÓN: LIQUIDACIONES -->
+      <!-- BOTÓN: LIQUIDACIONES -->
       <button id="btn-open-liquidaciones" class="btn-secondary" style="width: 100%; margin-top: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
           <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
           <line x1="8" y1="10" x2="16" y2="10"></line>
           <line x1="8" y1="14" x2="16" y2="14"></line>
         </svg>
-        ⚙️ Herramientas y Calculadoras
+        Calculadora de Liquidaciones
+      </button>
+
+      <!-- BOTÓN: PLAZOS (NUEVO) -->
+      <button id="btn-open-plazos" class="btn-secondary" style="width: 100%; margin-top: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Calculadora de Plazos
       </button>
 
       <div class="divider"></div>
@@ -238,13 +249,11 @@
     <section id="view-liquidaciones" class="view" data-view="liquidaciones">
 
       <header class="view-header" style="margin-bottom: 30px;">
-        <h2 style="color: #fff; font-size: 2rem;">Herramientas y Calculadoras</h2>
-        <p style="color: #aaa;">Generá liquidaciones, calculá intereses y administrá plazos judiciales.</p>
+        <h2 style="color: #fff; font-size: 2rem;">Calculadora de Liquidaciones</h2>
+        <p style="color: #aaa;">Generá liquidaciones e intereses actualizados al día de hoy.</p>
       </header>
       
-      <!-- CALCULADORA DE LIQUIDACIONES -->
       <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px;">
-        <h3 style="color: #fff; margin-bottom: 15px; font-weight: 500;">Calculadora de Liquidaciones</h3>
         <form id="liq-form" class="liq-form" autocomplete="off">
           <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
       
@@ -362,25 +371,31 @@
           </div>
         </section>
       </div>
+    </section>
+  </main>
 
-      <!-- SECCIÓN CALCULADORA DE PLAZOS -->
+  <!-- CONTENEDOR DE PLAZOS (NUEVO) -->
+  <main id="plazos-main" class="hidden" style="width: 100%; height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <section class="view">
+      
+      <header class="view-header" style="margin-bottom: 30px;">
+        <h2 style="color: #fff; font-size: 2rem;">Calculadora de Plazos</h2>
+        <p style="color: #aaa;">Generá vencimientos judiciales y agendalos en tu Google Calendar.</p>
+      </header>
+
       <div class="calculator-card" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px;">
-        <h3 style="color: #fff; margin-bottom: 15px; font-weight: 500;">Calculadora de Plazos Judiciales</h3>
-
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-          <!-- Fecha de Notificación -->
+          
           <div class="form-group" style="flex: 1; min-width: 200px;">
             <label for="plazo-fecha" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Fecha de Notificación</label>
             <input type="date" id="plazo-fecha" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; color-scheme: dark;">
           </div>
 
-          <!-- Días Hábiles -->
           <div class="form-group" style="flex: 1; min-width: 150px;">
             <label for="plazo-dias" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Días Hábiles</label>
             <input type="number" id="plazo-dias" min="1" value="5" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
           </div>
 
-          <!-- Ciudad -->
           <div class="form-group" style="flex: 1; min-width: 200px;">
             <label for="plazo-ciudad" style="display: block; color: #aaa; margin-bottom: 5px; font-size: 0.85rem;">Organismo / Ciudad</label>
             <select id="plazo-ciudad" style="width: 100%; padding: 10px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff;">
@@ -583,8 +598,10 @@
   document.addEventListener('DOMContentLoaded', () => {
     const btnChat = document.getElementById('btn-new-chat');
     const btnLiquidaciones = document.getElementById('btn-open-liquidaciones');
+    const btnPlazos = document.getElementById('btn-open-plazos');
     const chatMain = document.getElementById('chat-main');
     const liquidacionesMain = document.getElementById('liquidaciones-main');
+    const plazosMain = document.getElementById('plazos-main');
 
     // Inicializar Liquidaciones al cargar la página
     setTimeout(() => {
@@ -595,31 +612,59 @@
       }).catch(err => console.error("Error cargando liquidaciones.js:", err));
     }, 1000);
 
-    // Botón: Abrir Liquidaciones / Herramientas
+    // Función para ocultar todos los paneles y resetear botones
+    function resetViews() {
+      chatMain.classList.add('hidden');
+      liquidacionesMain.classList.add('hidden');
+      plazosMain.classList.add('hidden');
+      
+      if (btnLiquidaciones) {
+        btnLiquidaciones.style.background = '#333';
+        btnLiquidaciones.style.color = '#fff';
+      }
+      if (btnPlazos) {
+        btnPlazos.style.background = '#333';
+        btnPlazos.style.color = '#fff';
+      }
+    }
+
+    // Botón: Abrir Liquidaciones
     if (btnLiquidaciones) {
       btnLiquidaciones.addEventListener('click', () => {
-        chatMain.classList.add('hidden');
+        resetViews();
         liquidacionesMain.classList.remove('hidden');
-        
         btnLiquidaciones.style.background = '#c9a84c';
         btnLiquidaciones.style.color = '#000';
-        
-        if (window.innerWidth <= 768) {
-          document.getElementById('sidebar').classList.remove('open');
-          document.getElementById('sidebar-backdrop').classList.add('hidden');
-        }
+        closeSidebarOnMobile();
+      });
+    }
+
+    // Botón: Abrir Plazos
+    if (btnPlazos) {
+      btnPlazos.addEventListener('click', () => {
+        resetViews();
+        plazosMain.classList.remove('hidden');
+        btnPlazos.style.background = '#c9a84c';
+        btnPlazos.style.color = '#000';
+        closeSidebarOnMobile();
       });
     }
 
     // Botón: Volver al Chat
     if (btnChat) {
       btnChat.addEventListener('click', () => {
-        liquidacionesMain.classList.add('hidden');
+        resetViews();
         chatMain.classList.remove('hidden');
-        
-        btnLiquidaciones.style.background = '#333';
-        btnLiquidaciones.style.color = '#fff';
+        closeSidebarOnMobile();
       });
+    }
+
+    // Helper: Cerrar menú en celulares al hacer clic
+    function closeSidebarOnMobile() {
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-backdrop').classList.add('hidden');
+      }
     }
   });
 </script>
