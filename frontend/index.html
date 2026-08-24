@@ -420,6 +420,41 @@
             🗓️ Agendar en Google Calendar
           </a>
         </div>
+
+        <!-- CALENDARIO VISUAL (NUEVO) -->
+        <style>
+          .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
+          .cal-header { text-align: center; font-size: 0.8rem; color: #aaa; padding: 5px 0; font-weight: bold; border-bottom: 1px solid #333; margin-bottom: 5px; }
+          .cal-day { border-radius: 6px; padding: 8px; min-height: 80px; display: flex; flex-direction: column; text-align: center; border: 1px solid #333; font-size: 0.8rem; }
+          .cal-day.empty { background: transparent; border: none; }
+          .cal-date { font-weight: bold; margin-bottom: 4px; font-size: 0.9rem; }
+          .cal-desc { font-size: 0.75rem; line-height: 1.2; }
+          
+          /* Colores dinámicos al estilo Chronos pero en modo oscuro */
+          .cal-day.inicio { background: #005f73; border-color: #0a9396; color: #fff; } /* Azul inicio */
+          .cal-day.vencimiento { background: #ae2012; border-color: #9b2226; color: #fff; } /* Rojo Vencimiento */
+          .cal-day.vigencia { background: rgba(201, 168, 76, 0.1); border-color: rgba(201, 168, 76, 0.3); color: #c9a84c; } /* Dorado suave */
+          .cal-day.finde { background: #111; border-color: #222; color: #555; } /* Gris apagado */
+          .cal-day.feriado { background: #2d6a4f; border-color: #40916c; color: #fff; } /* Verde Feriados locales/nacionales */
+          .cal-day.suspension { background: #5a189a; border-color: #7b2cbf; color: #fff; } /* Violeta Suspensiones */
+        </style>
+
+        <div id="calendario-plazos-container" class="hidden" style="margin-top: 30px; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+          <h4 style="color: #fff; margin-top: 0; margin-bottom: 15px; text-align: center;">Detalle del Plazo</h4>
+          <div class="cal-grid">
+            <div class="cal-header">Lun</div>
+            <div class="cal-header">Mar</div>
+            <div class="cal-header">Mié</div>
+            <div class="cal-header">Jue</div>
+            <div class="cal-header">Vie</div>
+            <div class="cal-header">Sáb</div>
+            <div class="cal-header">Dom</div>
+          </div>
+          <div id="calendario-plazos-grid" class="cal-grid">
+            <!-- Los días se inyectan acá con JS -->
+          </div>
+        </div>
+
       </div>
       
     </section>
