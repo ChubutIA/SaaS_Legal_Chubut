@@ -812,9 +812,22 @@
       }
     }
 
+    // EL NUEVO PATOVICA: Revisa si el botón tiene el candadito
+    function checkLocked(btn) {
+      if (btn.innerText.includes('🔒')) {
+        // Si está bloqueado, abrimos el muro de pago
+        import('/static/ui.js').then(m => m.showAccessWall('expired'));
+        closeSidebarOnMobile();
+        return true;
+      }
+      return false;
+    }
+
     // Botón: Abrir Liquidaciones
     if (btnLiquidaciones) {
       btnLiquidaciones.addEventListener('click', () => {
+        if (checkLocked(btnLiquidaciones)) return; // Frena acá si no tiene Pro
+        
         resetViews();
         liquidacionesMain.classList.remove('hidden');
         btnLiquidaciones.style.background = '#c9a84c';
@@ -826,6 +839,8 @@
     // Botón: Abrir Plazos
     if (btnPlazos) {
       btnPlazos.addEventListener('click', () => {
+        if (checkLocked(btnPlazos)) return; // Frena acá si no tiene Pro
+        
         resetViews();
         plazosMain.classList.remove('hidden');
         btnPlazos.style.background = '#c9a84c';
