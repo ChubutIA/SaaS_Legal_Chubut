@@ -7,50 +7,43 @@ from middleware.auth_guard import get_current_user
 # IMPORTACIONES ACTUALIZADAS PARA EL CEREBRO DUAL (v3.0)
 from services.ai_engine import get_vdb_fallos, get_vdb_leyes, get_llm, super_search, generate_response, generate_chat_title
 from services.supabase_client import get_supabase
-
 from services.rate_limiter import limiter 
 
-from middleware.auth_guard import get_current_user
-
 router = APIRouter()
-
 
 # ── Modelos ───────────────────────────────────────────────────────────────────
 class ChatMessage(BaseModel):
     role: str
     content: str
 
-
 class ChatPayload(BaseModel):
     historial: list[ChatMessage]
     sesion_id: str
 
-
 class HistorialUpdatePayload(BaseModel):
     historial: dict
-
 
 class NuevaSesionPayload(BaseModel):
     pass
 
-
 # ── Helper de validación de plan ──────────────────────────────────────────────
 def _validar_acceso(datos: dict) -> bool:
-    """Retorna True si el usuario tiene acceso activo (Pro o Trial)."""
+    """Retorna True si el usuario tiene acceso activo (Pro, Inicial o Trial)."""
     hoy = (datetime.now() - timedelta(hours=3)).date()
 
-    if datos.get("plan") == "pro" and datos.get("vencimiento_pro"):
+    # Ahora dejamos pasar tanto a los PRO como a los INICIALES
+    if datos.get("plan") in ["pro", "inicial"] and datos.get("vencimiento_pro"):
         venc = datetime.strptime(datos["vencimiento_pro"], "%Y-%m-%d").date()
         if hoy <= venc:
             return True
 
+    # Si tiene el trial (los 7 días de prueba)
     if datos.get("vencimiento_trial"):
         venc = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").date()
         if hoy <= venc:
             return True
 
     return False
-
 
 # ── Endpoint principal de chat ────────────────────────────────────────────────
 @router.post("/")
@@ -77,7 +70,7 @@ async def chat_endpoint(
     if not _validar_acceso(datos):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Tu período de acceso ha finalizado. Activá el Plan Pro para continuar.",
+            detail="Tu período de acceso ha finalizado. Activá un Plan para continuar.",
         )
 
     historial = [m.model_dump() for m in payload.historial]
@@ -97,10 +90,35 @@ async def chat_endpoint(
         query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
     )
 
-    # Generar respuesta con los tres parámetros nuevos
-    respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial)
+    # =========================================================================
+    # EL CEREBRO PATOVICA: Control de acceso a Jurisprudencia
+    # =========================================================================
+    plan_usuario = datos.get("plan", "gratis")
+    hoy = (datetime.now() - timedelta(hours=3)).date()
+    
+    # Si la prueba gratis sigue vigente, lo tratamos como VIP (Plan Pro)
+    if datos.get("vencimiento_trial"):
+        venc_trial = datetime.strptime(datos["vencimiento_trial"], "%Y-%m-%d").date()
+        if hoy <= venc_trial:
+            plan_usuario = "pro"
 
-    # Actualizar historial en Supabase
+    # Clonamos el historial para inyectarle órdenes a la IA sin guardarlas en la base de datos
+    historial_para_ia = [dict(m) for m in historial]
+
+    if plan_usuario == "inicial":
+        # 1. Hachazo al contexto: Le dejamos solo 600 caracteres para que la IA no sepa los detalles
+        if contexto_fallos:
+            contexto_fallos = contexto_fallos[:600] + "\n... [CONTENIDO RESTANTE BLOQUEADO POR TIPO DE PLAN]"
+        
+        # 2. Inyección mental: Le damos una orden directa y estricta a la IA en el último mensaje
+        instruccion_secreta = "\n\n[REGLA ESTRICTA DEL SISTEMA: El usuario tiene el 'Plan Inicial'. Si su consulta pide jurisprudencia o fallos, armá un resumen MUY breve (1 párrafo máximo). Al final del mensaje agregá exactamente esto: '\n\n🔒 *Para acceder a fallos completos, citas exactas y análisis profundo, actualizá tu cuenta al Plan Pro.*']"
+        historial_para_ia[-1]["content"] += instruccion_secreta
+    # =========================================================================
+
+    # Generar respuesta mandando el historial modificado (con la trampa)
+    respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial_para_ia)
+
+    # Actualizar historial en Supabase (guardamos el original, sin la orden secreta)
     historial_db = datos.get("historial", {})
     sesion = payload.sesion_id
 
@@ -130,8 +148,6 @@ async def chat_endpoint(
         "historial": historial_db,
     }
 
-
-# ── Chat invitado (sin autenticación, con límite de 5) ───────────────────────
 # ── Chat invitado (sin autenticación, blindado por IP) ───────────────────────
 @router.post("/guest")
 @limiter.limit("2/day") # <-- ¡Acá está el candado de hierro! 2 por día por IP.
@@ -174,7 +190,6 @@ async def nueva_sesion(auth: dict = Depends(get_current_user)):
     supabase.table("usuarios").update({"historial": historial}).eq("email", user.email).execute()
 
     return {"ok": True, "sesion_id": nueva_id, "historial": historial}
-
 
 @router.delete("/sesion/{sesion_id:path}")
 async def eliminar_sesion(sesion_id: str, auth: dict = Depends(get_current_user)):
