@@ -1505,3 +1505,74 @@ a:hover { color: var(--gold-main); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+@media (max-width: 768px) {
+  /* --- SIDEBAR --- */
+  #sidebar { height: 100dvh; }
+  #sidebar-toggle {
+    top: calc(12px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+  }
+
+  /* --- MURO DE PAGO --- */
+  .plans-wall-grid {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .plans-wall-grid > .plan-card {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  /* --- CALCULADORAS --- */
+  .form-group {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+  }
+  .form-group-inline {
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .form-group-inline > .form-group {
+    min-width: 100% !important;
+  }
+  #btn-agregar-item, #btn-aplicar-interes, #btn-calcular-plazo {
+    width: 100% !important;
+  }
+
+  /* --- TABLA CON SCROLL HORIZONTAL --- */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabla-liquidacion {
+    width: 100% !important;
+    min-width: 560px; /* Fuerza el scroll en vez de aplastar columnas */
+  }
+
+  /* --- BOTONES BAJO LA TABLA --- */
+  .tabla-actions {
+    flex-wrap: wrap !important;
+    justify-content: stretch !important;
+  }
+  .tabla-actions button {
+    flex: 1 1 calc(50% - 5px) !important;
+  }
+
+  /* --- CONTENEDORES PRINCIPALES --- */
+  #liquidaciones-main, #plazos-main {
+    height: 100dvh !important;
+    padding: 16px !important;
+  }
+
+  /* --- EVITAR AUTO-ZOOM EN IOS SAFARI --- */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* --- CHAT INPUT --- */
+  #input-area {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+}
