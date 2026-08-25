@@ -269,10 +269,10 @@ export function showAccessWall(type = null) {
             </div>
         </div>
 
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; text-align: left;">
+        <div class="plans-wall-grid" style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; text-align: left;">
             
             <!-- PLAN INICIAL -->
-            <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px; display: flex; flex-direction: column;">
+            <div class="plan-card" style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px; display: flex; flex-direction: column;">
                 <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Plan Inicial</h3>
                 
                 <!-- PRECIOS INICIAL -->
@@ -295,7 +295,7 @@ export function showAccessWall(type = null) {
             </div>
 
             <!-- PLAN PRO (Recomendado) -->
-            <div style="flex: 1; min-width: 250px; background: rgba(201, 168, 76, 0.1); border: 1px solid #c9a84c; border-radius: 12px; padding: 25px; position: relative; display: flex; flex-direction: column;">
+            <div class="plan-card" style="flex: 1; min-width: 250px; background: rgba(201, 168, 76, 0.1); border: 1px solid #c9a84c; border-radius: 12px; padding: 25px; position: relative; display: flex; flex-direction: column;">
                 <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #c9a84c; color: #000; font-size: 0.75rem; font-weight: bold; padding: 4px 12px; border-radius: 20px;">RECOMENDADO</div>
                 
                 <h3 style="font-size: 1.2rem; margin-bottom: 5px; color: #c9a84c;">Plan Pro</h3>
