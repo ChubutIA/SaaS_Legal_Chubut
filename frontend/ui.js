@@ -255,7 +255,7 @@ export function showAccessWall(type = null) {
           Crear cuenta gratis
         </button>
       </div>`;
-  } else if (type === 'expired') {
+ } else if (type === 'expired') {
     el.innerHTML = `
       <div class="upgrade-wall upgrade-wall--expired" style="margin:12px 20px; max-width: 700px; margin: 0 auto; text-align: center;">
         <h2 style="font-size: 1.8rem; color: #fff; margin-bottom: 10px;">Elegí el plan ideal para tu estudio</h2>
@@ -285,8 +285,10 @@ export function showAccessWall(type = null) {
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Leyes Nacionales (InfoLEG)</li>
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Leyes Provinciales (Chubut)</li>
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Ordenanzas Municipales</li>
-                    <li style="margin-bottom: 12px; color: #555;">❌ Jurisprudencia completa</li>
-                    <li style="color: #555;">❌ Análisis de PDFs (Expedientes)</li>
+                    <li style="margin-bottom: 12px; color: #eab308;">⚠️ Jurisprudencia (Solo resúmenes)</li>
+                    <li style="margin-bottom: 12px; color: #555;">❌ Análisis de PDFs (Expedientes)</li>
+                    <li style="margin-bottom: 12px; color: #555;">❌ Calculadora de Liquidaciones</li>
+                    <li style="color: #555;">❌ Calculadora de Plazos</li>
                 </ul>
                 
                 <button id="btn-comprar-inicial" data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid #555; background: #333; color: #fff; cursor: pointer; font-weight: 500;">Elegir Inicial</button>
@@ -306,16 +308,16 @@ export function showAccessWall(type = null) {
                 
                 <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; font-size: 0.9rem; flex-grow: 1;">
                     <li style="margin-bottom: 12px; color: #fff; font-weight: 500;">✅ Todo lo del Plan Inicial</li>
-                    <li style="margin-bottom: 12px; color: #ddd;">✅ Búsqueda de Jurisprudencia</li>
+                    <li style="margin-bottom: 12px; color: #ddd;">✅ Jurisprudencia Completa y Profunda</li>
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Subida y análisis de PDFs</li>
-                    <li style="color: #c9a84c; font-weight: 500;">✦ Acceso anticipado a Calculadora</li>
+                    <li style="margin-bottom: 12px; color: #c9a84c; font-weight: 500;">✦ Calculadora de Liquidaciones</li>
+                    <li style="color: #c9a84c; font-weight: 500;">✦ Calculadora de Plazos</li>
                 </ul>
                 
                 <button id="btn-comprar-pro" data-plan="pro_mensual" class="btn-primary btn-primary--gold" style="width: 100%; border-radius: 8px; padding: 10px; border: none;">✦ Elegir Pro</button>
             </div>
         </div>
       </div>`;
-
       // Lógica para cambiar entre mensual y anual dentro del muro
       setTimeout(() => {
         const tabMensual = document.getElementById('wall-tab-mensual');
