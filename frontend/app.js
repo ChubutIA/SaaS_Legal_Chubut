@@ -3,7 +3,7 @@
 // Main orchestrator: init, event binding, routing
 // ================================================================
 
-import { state, loadGuestCount } from './state.js';
+import { state, loadGuestCount, getUserPlanStatus } from './state.js';
 import { checkSession, doLogin, doRegister, doLogout, doResetRequest, doResetConfirm, doGoogleLogin } from './auth.js';
 import { sendMessage, handleFileSelect, clearPendingFile, toggleRecording, exportToPDF, switchSession, renderAllMessages } from './chat.js';
 import { apiNewSession, apiDeleteSession } from './api.js';
@@ -13,6 +13,7 @@ import {
   openSidebar, closeSidebar
 } from './ui.js';
 import { setupCheckoutListeners } from './checkout.js';
+
 // ── App Init ──────────────────────────────────────────────────────
 async function init() {
   loadGuestCount();
@@ -24,12 +25,61 @@ async function init() {
 
   checkPaymentRedirect();
 
+  // Aplicamos los bloqueos visuales según el plan del usuario
+  applyPlanRestrictions();
+
   bindSidebarEvents();
   bindInputEvents();
   bindModalEvents();
   bindSuggestionButtons();
   setupCheckoutListeners();
   bindPlazosEvents();
+}
+
+// ── Restricciones de Plan (El "Patovica") ─────────────────────────
+function applyPlanRestrictions() {
+  const user = state.user;
+  // Si no hay usuario es invitado. Si lo hay, vemos su estado
+  const status = user ? getUserPlanStatus(user) : 'guest'; 
+  
+  // Consideramos que tiene acceso total si es PRO o si está en la semana de prueba (TRIAL)
+  const hasFullAccess = status === 'pro' || status === 'trial';
+
+  const btnAttach = document.getElementById('btn-attach');
+  const btnLiq = document.getElementById('btn-open-liquidaciones'); 
+  const btnPlazos = document.getElementById('btn-open-plazos');     
+
+  if (!hasFullAccess) {
+    // 1. Bloquear subida de PDFs (Expedientes)
+    if (btnAttach) {
+      btnAttach.style.display = 'none';
+    }
+
+    // 2. Bloquear Calculadora de Liquidaciones (Le dejamos el candado visual nomás)
+    if (btnLiq) {
+      btnLiq.innerHTML = "🔒 Liquidaciones (Solo Pro)";
+      btnLiq.style.opacity = "0.6";
+    }
+
+    // 3. Bloquear Calculadora de Plazos
+    if (btnPlazos) {
+      btnPlazos.innerHTML = "🔒 Plazos (Solo Pro)";
+      btnPlazos.style.opacity = "0.6";
+    }
+  } else {
+    // Si tiene acceso, nos aseguramos de que todo esté visible normal
+    if (btnAttach) btnAttach.style.display = 'flex';
+    
+    if (btnLiq) {
+      btnLiq.innerHTML = "Calculadora de Liquidaciones";
+      btnLiq.style.opacity = "1";
+    }
+
+    if (btnPlazos) {
+      btnPlazos.innerHTML = "Calculadora de Plazos";
+      btnPlazos.style.opacity = "1";
+    }
+  }
 }
 
 // ── Sidebar Events ────────────────────────────────────────────────
@@ -170,7 +220,6 @@ function bindModalEvents() {
     if (e.key === 'Enter') doLogin();
   });
 
-  // ACÁ CONECTAMOS EL BOTÓN DE GOOGLE
   document.getElementById('btn-google-login')?.addEventListener('click', doGoogleLogin);
 
   document.getElementById('btn-do-register')?.addEventListener('click', doRegister);
