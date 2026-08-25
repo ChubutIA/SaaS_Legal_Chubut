@@ -856,8 +856,11 @@
 <div id="checkout-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: #1e1e1e; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto;">
       <button id="btn-close-checkout" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; z-index: 10; line-height: 1;">&times;</button>
-      <h2 style="color: #fff; text-align: center; margin-bottom: 5px; margin-top: 10px;">Plan Pro - Chubut.IA</h2>
-      <p style="color: #aaa; text-align: center; margin-bottom: 20px;">El arsenal completo para el abogado moderno ($29.990 / mes)</p>
+      
+      <!-- Textos dinámicos para el checkout -->
+      <h2 id="checkout-title" style="color: #fff; text-align: center; margin-bottom: 5px; margin-top: 10px;">Procesando plan...</h2>
+      <p id="checkout-subtitle" style="color: #aaa; text-align: center; margin-bottom: 20px;"></p>
+      
       <div id="payment-brick-container"></div>
       <div id="payment-result" class="hidden" style="text-align: center; padding: 20px; color: white;"></div>
   </div>
