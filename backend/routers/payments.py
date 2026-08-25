@@ -76,7 +76,7 @@ class PaymentResponse(BaseModel):
 # ── Funciones de ayuda ────────────────────────────────────────────────────────
 def _get_user_friendly_message(status: str, status_detail: str) -> str:
     messages = {
-        "accredited": "¡Pago acreditado! Tu plan Pro ya está activo.",
+        "accredited": "¡Pago acreditado! Tu plan ya está activo.",
         "pending_contingency": "Tu pago está en proceso. Te avisaremos por email.",
         "pending_review_manual": "Tu pago está siendo revisado. Puede demorar hasta 2 días hábiles.",
         "cc_rejected_bad_filled_card_number": "Número de tarjeta incorrecto. Verificá los datos.",
@@ -104,7 +104,7 @@ async def create_preference(payload: PreferenceRequest, auth: dict = Depends(get
     preference_data = {
         "items": [
             {
-                "id": f"plan_pro_{tipo}",
+                "id": f"plan_{tipo}",
                 "title": config_plan["titulo"],
                 "quantity": 1,
                 "unit_price": config_plan["monto"],
@@ -184,13 +184,17 @@ async def process_payment(payload: ProcessPaymentRequest, auth: dict = Depends(g
     mp_status_detail = payment.get("status_detail", "")
     payment_id = payment.get("id")
 
-    # 4. Actualizamos a "Pro" en Supabase
+    # 4. Actualizamos el Plan correspondiente en Supabase
     if mp_status == "approved":
         dias_a_sumar = config_plan["dias"]
         venc_pro = (datetime.now() - timedelta(hours=3)).date() + timedelta(days=dias_a_sumar)
+        
+        # Determinar si guardar "inicial" o "pro"
+        plan_a_guardar = "inicial" if "inicial" in tipo else "pro"
+
         try:
             supabase.table("usuarios").update({
-                "plan": "pro",
+                "plan": plan_a_guardar,
                 "vencimiento_pro": str(venc_pro)
             }).eq("email", user_email).execute()
         except Exception as e:
