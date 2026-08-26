@@ -205,3 +205,11 @@ export async function processPayment(formData) {
   
   return handleResponse(res);
 }
+// ── IPC (Inflación) ───────────────────────────────────────────────
+export async function apiGetIpc() {
+  const res = await fetch(`${BASE}/ipc`, {
+    ...DEFAULT_OPTS,
+    method: 'GET',
+  });
+  return handleResponse(res);
+}
