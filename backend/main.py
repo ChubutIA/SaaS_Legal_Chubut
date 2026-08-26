@@ -13,7 +13,7 @@ load_dotenv()
 import os
 import uvicorn
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -81,6 +81,14 @@ app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
 app.include_router(liquidaciones.router)
 app.include_router(admin_scraper.router)
 app.include_router(plazos.router)
+
+@app.get("/api/ipc", tags=["Calculadora IPC"])
+async def get_ipc():
+    try:
+        response = supabase.table("indices_ipc").select("anio, mes, indice").order("anio").order("mes").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 # ==========================================
 # SERVIR EL FRONTEND
 # ==========================================
