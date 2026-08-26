@@ -71,6 +71,8 @@ export function renderSidebar() {
   renderSessionButtons(user);
   renderHistoryList();
   renderFooterButtons(user);
+  // El bloqueador revisa las puertas cada vez que cambia el menú
+  applyPlanRestrictions(planStatus);
 }
 
 function renderUserArea(user, planStatus) {
@@ -509,6 +511,40 @@ export function showPaymentResult(status, message) {
         container.style.display = 'block';
         document.dispatchEvent(new CustomEvent('chubut:retry-payment'));
       });
+    }
+  }
+}
+// ── Restricciones de Plan (Patovica Automático) ─────────────────────────
+export function applyPlanRestrictions(status) {
+  const hasFullAccess = status === 'pro' || status === 'trial';
+
+  const btnAttach = document.getElementById('btn-attach');
+  const btnLiq = document.getElementById('btn-open-liquidaciones');
+  const btnPlazos = document.getElementById('btn-open-plazos');
+
+  // Íconos SVG originales para no perderlos
+  const svgLiq = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line></svg>`;
+  const svgPlazos = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+
+  if (!hasFullAccess) {
+    if (btnAttach) btnAttach.style.display = 'none';
+    if (btnLiq) {
+      btnLiq.innerHTML = `🔒 Liquidaciones (Solo Pro)`;
+      btnLiq.style.opacity = "0.6";
+    }
+    if (btnPlazos) {
+      btnPlazos.innerHTML = `🔒 Plazos (Solo Pro)`;
+      btnPlazos.style.opacity = "0.6";
+    }
+  } else {
+    if (btnAttach) btnAttach.style.display = 'flex';
+    if (btnLiq) {
+      btnLiq.innerHTML = `${svgLiq} Calculadora de Liquidaciones`;
+      btnLiq.style.opacity = "1";
+    }
+    if (btnPlazos) {
+      btnPlazos.innerHTML = `${svgPlazos} Calculadora de Plazos`;
+      btnPlazos.style.opacity = "1";
     }
   }
 }
