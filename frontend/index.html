@@ -887,7 +887,14 @@
         }
       }).catch(err => console.error("Error cargando liquidaciones.js:", err));
     }, 1000);
-
+    
+    setTimeout(() => {
+      import('/static/ipc.js').then(module => {
+        if (module.IpcCalculator) {
+          module.IpcCalculator.init();
+        }
+      }).catch(err => console.error("Error cargando ipc.js:", err));
+    }, 1000);
     // Función para ocultar todos los paneles y resetear botones
     function resetViews() {
       chatMain.classList.add('hidden');
