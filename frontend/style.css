@@ -1583,8 +1583,24 @@ a:hover { color: var(--gold-main); }
     padding-bottom: 40px !important;
   }
 
+  /* --- FIX WELCOME-HERO (vh vs dvh) --- */
+  #welcome-hero {
+    min-height: 0 !important; 
+  }
+
   /* --- FIX ESPACIO FINAL DEL CHAT --- */
   #scroll-container {
-    padding-bottom: 110px !important; /* Evita que la barra tape el final de las sugerencias */
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* --- FIX CALENDARIO DE PLAZOS --- */
+  #calendario-plazos-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  #calendario-plazos-container .cal-grid {
+    min-width: 560px !important;
   }
 }
