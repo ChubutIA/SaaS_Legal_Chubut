@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-
+from services.supabase_client import get_supabase
 # IMPORTACIONES AJUSTADAS
 from services.ai_engine import initialize_ai
 # CORRECCIÓN: Eliminamos "payment" (singular) que estaba rompiendo el servidor
@@ -82,9 +82,16 @@ app.include_router(liquidaciones.router)
 app.include_router(admin_scraper.router)
 app.include_router(plazos.router)
 
+# ==========================================
+# RUTAS EXTRA
+# ==========================================
 @app.get("/api/ipc", tags=["Calculadora IPC"])
 async def get_ipc():
     try:
+        # Llamamos a la función que trae la conexión a tu base de datos
+        supabase = get_supabase()
+        
+        # Buscamos los índices y los ordenamos por año y mes
         response = supabase.table("indices_ipc").select("anio, mes, indice").order("anio").order("mes").execute()
         return response.data
     except Exception as e:
