@@ -1575,4 +1575,16 @@ a:hover { color: var(--gold-main); }
   #input-area {
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
   }
+
+/* --- FIX SCROLL MURO DE PAGO --- */
+  #access-wall {
+    overflow-y: auto !important;
+    max-height: calc(100dvh - 85px) !important; /* Le resta el espacio exacto de la barra de chat */
+    padding-bottom: 40px !important;
+  }
+
+  /* --- FIX ESPACIO FINAL DEL CHAT --- */
+  #scroll-container {
+    padding-bottom: 110px !important; /* Evita que la barra tape el final de las sugerencias */
+  }
 }
