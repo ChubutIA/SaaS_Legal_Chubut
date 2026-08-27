@@ -290,7 +290,7 @@ export function showAccessWall(type = null) {
                     <li style="margin-bottom: 12px; color: #eab308;">⚠️ Jurisprudencia (Solo resúmenes)</li>
                     <li style="margin-bottom: 12px; color: #555;">❌ Análisis de PDFs (Expedientes)</li>
                     <li style="margin-bottom: 12px; color: #555;">❌ Calculadora de Liquidaciones</li>
-                    <li style="color: #555;">❌ Calculadora de Plazos</li>
+                    <li style="margin-bottom: 12px; color: #555;">❌ Calculadora de Plazos</li>
                     <li style="color: #555;">❌ Calculadora IPC</li>
                 </ul>
                 
@@ -314,7 +314,7 @@ export function showAccessWall(type = null) {
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Jurisprudencia Completa y Profunda</li>
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Subida y análisis de PDFs</li>
                     <li style="margin-bottom: 12px; color: #c9a84c; font-weight: 500;">✦ Calculadora de Liquidaciones</li>
-                    <li style="color: #c9a84c; font-weight: 500;">✦ Calculadora de Plazos</li>
+                    <li style="margin-bottom: 12px; color: #c9a84c; font-weight: 500;">✦ Calculadora de Plazos</li>
                     <li style="color: #c9a84c; font-weight: 500;">✦ Calculadora IPC</li>
                 </ul>
                 
