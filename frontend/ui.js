@@ -523,10 +523,12 @@ export function applyPlanRestrictions(status) {
   const btnAttach = document.getElementById('btn-attach');
   const btnLiq = document.getElementById('btn-open-liquidaciones');
   const btnPlazos = document.getElementById('btn-open-plazos');
+  const btnIpc = document.getElementById('btn-open-ipc'); // Agregamos IPC
 
   // Íconos SVG originales para no perderlos
   const svgLiq = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line></svg>`;
   const svgPlazos = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+  const svgIpc = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`; // SVG de IPC
 
   if (!hasFullAccess) {
     if (btnAttach) btnAttach.style.display = 'none';
@@ -538,6 +540,10 @@ export function applyPlanRestrictions(status) {
       btnPlazos.innerHTML = `🔒 Plazos (Solo Pro)`;
       btnPlazos.style.opacity = "0.6";
     }
+    if (btnIpc) {
+      btnIpc.innerHTML = `🔒 IPC (Solo Pro)`;
+      btnIpc.style.opacity = "0.6";
+    }
   } else {
     if (btnAttach) btnAttach.style.display = 'flex';
     if (btnLiq) {
@@ -547,6 +553,10 @@ export function applyPlanRestrictions(status) {
     if (btnPlazos) {
       btnPlazos.innerHTML = `${svgPlazos} Calculadora de Plazos`;
       btnPlazos.style.opacity = "1";
+    }
+    if (btnIpc) {
+      btnIpc.innerHTML = `${svgIpc} Calculadora IPC (Inflación)`;
+      btnIpc.style.opacity = "1";
     }
   }
 }
