@@ -872,35 +872,19 @@
     const btnChat = document.getElementById('btn-new-chat');
     const btnLiquidaciones = document.getElementById('btn-open-liquidaciones');
     const btnPlazos = document.getElementById('btn-open-plazos');
-    const btnIpc = document.getElementById('btn-open-ipc'); // NUEVO
+    const btnIpc = document.getElementById('btn-open-ipc'); 
     
     const chatMain = document.getElementById('chat-main');
     const liquidacionesMain = document.getElementById('liquidaciones-main');
     const plazosMain = document.getElementById('plazos-main');
-    const ipcMain = document.getElementById('ipc-main'); // NUEVO
+    const ipcMain = document.getElementById('ipc-main'); 
 
-    // Inicializar Liquidaciones al cargar la página
-    setTimeout(() => {
-      import('/static/liquidaciones.js').then(module => {
-        if (module.Liquidaciones) {
-          module.Liquidaciones.init();
-        }
-      }).catch(err => console.error("Error cargando liquidaciones.js:", err));
-    }, 1000);
-    
-    setTimeout(() => {
-      import('/static/ipc.js').then(module => {
-        if (module.IpcCalculator) {
-          module.IpcCalculator.init();
-        }
-      }).catch(err => console.error("Error cargando ipc.js:", err));
-    }, 1000);
     // Función para ocultar todos los paneles y resetear botones
     function resetViews() {
       chatMain.classList.add('hidden');
       liquidacionesMain.classList.add('hidden');
       plazosMain.classList.add('hidden');
-      if (ipcMain) ipcMain.classList.add('hidden'); // NUEVO
+      if (ipcMain) ipcMain.classList.add('hidden'); 
       
       if (btnLiquidaciones) {
         btnLiquidaciones.style.background = '#333';
@@ -910,16 +894,15 @@
         btnPlazos.style.background = '#333';
         btnPlazos.style.color = '#fff';
       }
-      if (btnIpc) { // NUEVO
+      if (btnIpc) { 
         btnIpc.style.background = '#333';
         btnIpc.style.color = '#fff';
       }
     }
 
-    // EL NUEVO PATOVICA: Revisa si el botón tiene el candadito
+    // PATOVICA: Revisa si el botón tiene el candadito
     function checkLocked(btn) {
       if (btn.innerText.includes('🔒')) {
-        // Si está bloqueado, abrimos el muro de pago
         import('/static/ui.js').then(m => m.showAccessWall('expired'));
         closeSidebarOnMobile();
         return true;
@@ -927,46 +910,39 @@
       return false;
     }
 
-    // Botón: Abrir Liquidaciones
+    // NUEVO EFECTO INTERRUPTOR (Toggle)
+    function toggleView(btn, mainView) {
+      if (checkLocked(btn)) return; 
+      
+      const isAlreadyOpen = !mainView.classList.contains('hidden');
+      resetViews(); // Ocultamos todo primero
+      
+      if (isAlreadyOpen) {
+        // Si la herramienta ya estaba abierta, mostramos el chat
+        chatMain.classList.remove('hidden');
+      } else {
+        // Si estaba cerrada, la abrimos y pintamos el botón de dorado
+        mainView.classList.remove('hidden');
+        btn.style.background = '#c9a84c';
+        btn.style.color = '#000';
+      }
+      closeSidebarOnMobile();
+    }
+
+    // Asignar el interruptor a las herramientas
     if (btnLiquidaciones) {
-      btnLiquidaciones.addEventListener('click', () => {
-        if (checkLocked(btnLiquidaciones)) return; 
-        
-        resetViews();
-        liquidacionesMain.classList.remove('hidden');
-        btnLiquidaciones.style.background = '#c9a84c';
-        btnLiquidaciones.style.color = '#000';
-        closeSidebarOnMobile();
-      });
+      btnLiquidaciones.addEventListener('click', () => toggleView(btnLiquidaciones, liquidacionesMain));
     }
 
-    // Botón: Abrir Plazos
     if (btnPlazos) {
-      btnPlazos.addEventListener('click', () => {
-        if (checkLocked(btnPlazos)) return; 
-        
-        resetViews();
-        plazosMain.classList.remove('hidden');
-        btnPlazos.style.background = '#c9a84c';
-        btnPlazos.style.color = '#000';
-        closeSidebarOnMobile();
-      });
+      btnPlazos.addEventListener('click', () => toggleView(btnPlazos, plazosMain));
     }
 
-    // Botón: Abrir IPC (NUEVO)
     if (btnIpc) {
-      btnIpc.addEventListener('click', () => {
-        if (checkLocked(btnIpc)) return; 
-        
-        resetViews();
-        if (ipcMain) ipcMain.classList.remove('hidden');
-        btnIpc.style.background = '#c9a84c';
-        btnIpc.style.color = '#000';
-        closeSidebarOnMobile();
-      });
+      btnIpc.addEventListener('click', () => toggleView(btnIpc, ipcMain));
     }
 
-    // Botón: Volver al Chat
+    // Botón: Volver al Chat (Nueva Consulta)
     if (btnChat) {
       btnChat.addEventListener('click', () => {
         resetViews();
@@ -974,6 +950,19 @@
         closeSidebarOnMobile();
       });
     }
+
+    // NUEVO: Escuchar clics en el historial para volver al chat automáticamente
+    document.addEventListener('click', (e) => {
+      // Si el usuario hace clic en un ítem del historial o en el logo principal de la marca
+      const isHistoryBtn = e.target.closest('.chat-history-item__btn');
+      const isBrandLogo = e.target.closest('.brand-container'); 
+      
+      if (isHistoryBtn || isBrandLogo) {
+        resetViews();
+        chatMain.classList.remove('hidden');
+        closeSidebarOnMobile();
+      }
+    });
 
     // Helper: Cerrar menú en celulares al hacer clic
     function closeSidebarOnMobile() {
