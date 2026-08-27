@@ -879,6 +879,22 @@
     const plazosMain = document.getElementById('plazos-main');
     const ipcMain = document.getElementById('ipc-main'); 
 
+    // === ESTO ES LO QUE ME HABÍA FALTADO ===
+    // Inicializar Liquidaciones
+    setTimeout(() => {
+      import('/static/liquidaciones.js').then(module => {
+        if (module.Liquidaciones) module.Liquidaciones.init();
+      }).catch(err => console.error("Error cargando liquidaciones.js:", err));
+    }, 1000);
+
+    // Inicializar IPC
+    setTimeout(() => {
+      import('/static/ipc.js').then(module => {
+        if (module.IpcCalculator) module.IpcCalculator.init();
+      }).catch(err => console.error("Error cargando ipc.js:", err));
+    }, 1000);
+    // ========================================
+
     // Función para ocultar todos los paneles y resetear botones
     function resetViews() {
       chatMain.classList.add('hidden');
@@ -910,18 +926,16 @@
       return false;
     }
 
-    // NUEVO EFECTO INTERRUPTOR (Toggle)
+    // EFECTO INTERRUPTOR (Toggle)
     function toggleView(btn, mainView) {
       if (checkLocked(btn)) return; 
       
       const isAlreadyOpen = !mainView.classList.contains('hidden');
-      resetViews(); // Ocultamos todo primero
+      resetViews(); 
       
       if (isAlreadyOpen) {
-        // Si la herramienta ya estaba abierta, mostramos el chat
         chatMain.classList.remove('hidden');
       } else {
-        // Si estaba cerrada, la abrimos y pintamos el botón de dorado
         mainView.classList.remove('hidden');
         btn.style.background = '#c9a84c';
         btn.style.color = '#000';
@@ -951,9 +965,8 @@
       });
     }
 
-    // NUEVO: Escuchar clics en el historial para volver al chat automáticamente
+    // Escuchar clics en el historial para volver al chat automáticamente
     document.addEventListener('click', (e) => {
-      // Si el usuario hace clic en un ítem del historial o en el logo principal de la marca
       const isHistoryBtn = e.target.closest('.chat-history-item__btn');
       const isBrandLogo = e.target.closest('.brand-container'); 
       
