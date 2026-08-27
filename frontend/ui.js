@@ -291,6 +291,7 @@ export function showAccessWall(type = null) {
                     <li style="margin-bottom: 12px; color: #555;">❌ Análisis de PDFs (Expedientes)</li>
                     <li style="margin-bottom: 12px; color: #555;">❌ Calculadora de Liquidaciones</li>
                     <li style="color: #555;">❌ Calculadora de Plazos</li>
+                    <li style="color: #555;">❌ Calculadora IPC</li>
                 </ul>
                 
                 <button id="btn-comprar-inicial" data-plan="inicial" style="width: 100%; border-radius: 8px; padding: 10px; border: 1px solid #555; background: #333; color: #fff; cursor: pointer; font-weight: 500;">Elegir Inicial</button>
@@ -314,6 +315,7 @@ export function showAccessWall(type = null) {
                     <li style="margin-bottom: 12px; color: #ddd;">✅ Subida y análisis de PDFs</li>
                     <li style="margin-bottom: 12px; color: #c9a84c; font-weight: 500;">✦ Calculadora de Liquidaciones</li>
                     <li style="color: #c9a84c; font-weight: 500;">✦ Calculadora de Plazos</li>
+                    <li style="color: #c9a84c; font-weight: 500;">✦ Calculadora IPC</li>
                 </ul>
                 
                 <button id="btn-comprar-pro" data-plan="pro_mensual" class="btn-primary btn-primary--gold" style="width: 100%; border-radius: 8px; padding: 10px; border: none;">✦ Elegir Pro</button>
