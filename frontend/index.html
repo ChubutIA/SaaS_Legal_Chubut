@@ -91,18 +91,13 @@
     <div class="sidebar-footer">
       <button id="btn-logout" class="btn-ghost hidden">Cerrar Sesión</button>
 
-      <div style="margin-top:8px">
-        <button class="sidebar-terms-toggle" id="terms-toggle">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
+      <div style="margin-top:8px; text-align: center;">
+        <button id="btn-open-terms" style="cursor:pointer; background:none; border:none; color:#aaa; display:inline-flex; align-items:center; gap:5px; font-size:0.85rem; padding: 5px 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           </svg>
-          Términos y Privacidad
+          Leer Términos y Condiciones
         </button>
-        <div class="sidebar-terms-content" id="terms-content">
-          <strong>Propiedad Intelectual:</strong> El software y la marca Chubut.IA son propiedad exclusiva del desarrollador. Queda prohibida la reproducción total o parcial.<br><br>
-          <strong>Responsabilidad:</strong> Herramienta de asistencia basada en IA. La verificación en fuentes oficiales es responsabilidad del profesional.<br><br>
-          <strong>Privacidad:</strong> Cumplimos con la Ley 25.326. Sus consultas son confidenciales.
-        </div>
       </div>
 
       <div class="disclaimer">
@@ -990,6 +985,26 @@
         document.getElementById('sidebar-backdrop').classList.add('hidden');
       }
     }
+    // Lógica del Modal de Términos y Condiciones
+    const btnOpenTerms = document.getElementById('btn-open-terms');
+    const termsModal = document.getElementById('terms-modal');
+    const btnCloseTerms = document.getElementById('btn-close-terms');
+    const btnAcceptTerms = document.getElementById('btn-accept-terms');
+
+    if (btnOpenTerms && termsModal) {
+      btnOpenTerms.addEventListener('click', () => {
+        termsModal.classList.remove('hidden');
+      });
+      
+      const closeTerms = () => termsModal.classList.add('hidden');
+      if (btnCloseTerms) btnCloseTerms.addEventListener('click', closeTerms);
+      if (btnAcceptTerms) btnAcceptTerms.addEventListener('click', closeTerms);
+      
+      // Cerrar si hacen clic afuera del cuadro
+      termsModal.addEventListener('click', (e) => {
+        if (e.target === termsModal) closeTerms();
+      });
+    }
   });
 </script>
 <div id="checkout-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
@@ -1002,6 +1017,70 @@
       
       <div id="payment-brick-container"></div>
       <div id="payment-result" class="hidden" style="text-align: center; padding: 20px; color: white;"></div>
+  </div>
+</div>
+
+  <!-- MODAL DE TÉRMINOS Y CONDICIONES -->
+<div id="terms-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(4px);">
+  <div style="background: #1a1a1a; padding: 30px; border-radius: 12px; width: 100%; max-width: 800px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+    <button id="btn-close-terms" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;">&times;</button>
+    
+    <h2 style="color: #c9a84c; margin-top: 0; margin-bottom: 5px; font-size: 1.5rem;">Términos y Condiciones de Uso</h2>
+    <p style="color: #888; font-size: 0.85rem; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">Última actualización: 31 de agosto de 2026</p>
+    
+    <div style="color: #ddd; font-size: 0.9rem; line-height: 1.6;">
+      <p>Bienvenido a Chubut.IA. Al acceder y utilizar nuestra plataforma, usted acepta estar sujeto a los siguientes Términos y Condiciones. Le rogamos que los lea detenidamente antes de utilizar nuestros servicios.</p>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">1. Naturaleza del Servicio e Inteligencia Artificial</h3>
+      <p>Chubut.IA es una plataforma de software como servicio (SaaS) diseñada para asistir a profesionales del derecho mediante herramientas impulsadas por Inteligencia Artificial (IA). El usuario comprende y acepta explícitamente que:</p>
+      <ul style="margin-bottom: 15px; padding-left: 20px; color: #bbb;">
+        <li style="margin-bottom: 8px;"><strong>Asistencia, no asesoramiento:</strong> La plataforma proporciona información, resúmenes, redacción preliminar y cálculos basados en algoritmos. En ningún caso el contenido generado constituye asesoramiento legal, financiero o profesional definitivo.</li>
+        <li style="margin-bottom: 8px;"><strong>Verificación obligatoria:</strong> La IA puede cometer errores, omitir jurisprudencia reciente o generar contenido inexacto ("alucinaciones"). Es responsabilidad exclusiva del usuario profesional verificar toda la información, leyes, plazos y cálculos en las fuentes y boletines oficiales correspondientes.</li>
+        <li style="margin-bottom: 8px;"><strong>Calculadoras y Herramientas:</strong> Los resultados obtenidos de las calculadoras (Liquidaciones, Plazos Procesales, IPC) son estimaciones matemáticas automatizadas. No reemplazan el control pericial, judicial ni el criterio del profesional.</li>
+      </ul>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">2. Registro, Cuentas y Suscripciones</h3>
+      <p>Para acceder a las funcionalidades, el usuario debe registrarse y/o suscribirse a un plan de pago (Plan Inicial o Plan Pro).</p>
+      <ul style="margin-bottom: 15px; padding-left: 20px; color: #bbb;">
+        <li style="margin-bottom: 8px;"><strong>Precisión de datos:</strong> El usuario debe proporcionar información veraz durante el registro.</li>
+        <li style="margin-bottom: 8px;"><strong>Pagos:</strong> Las suscripciones se procesan mediante pasarelas de pago de terceros (Mercado Pago). El usuario acepta las condiciones de procesamiento de dicha entidad.</li>
+      </ul>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">3. Uso Permitido y Conducta del Usuario</h3>
+      <p>El usuario se compromete a utilizar Chubut.IA conforme a la ley y la buena fe. Queda estrictamente prohibido:</p>
+      <ul style="margin-bottom: 15px; padding-left: 20px; color: #bbb;">
+        <li>Realizar ingeniería inversa, extraer o vulnerar los algoritmos subyacentes de la IA.</li>
+        <li>Compartir cuentas de acceso entre múltiples profesionales sin la licencia corporativa adecuada.</li>
+        <li>Utilizar la plataforma para automatizar la generación de spam legal o contenido fraudulento.</li>
+      </ul>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">4. Confidencialidad y Manejo de Expedientes (PDFs)</h3>
+      <p>Al utilizar funciones avanzadas como la subida y análisis de PDFs, el usuario reconoce que:</p>
+      <ul style="margin-bottom: 15px; padding-left: 20px; color: #bbb;">
+        <li>Posee la autorización legal o el mandato necesario para procesar dichos documentos.</li>
+        <li>Se compromete a anonimizar o testar datos altamente sensibles o personales de terceros antes de someterlos al análisis, eximiendo a Chubut.IA de responsabilidad por filtraciones derivadas de la carga negligente de archivos.</li>
+      </ul>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">5. Privacidad y Protección de Datos Personales</h3>
+      <p style="color: #bbb;">El tratamiento de los datos personales de los usuarios registrados se realiza en estricto cumplimiento de la Ley 25.326 de Protección de Datos Personales de la República Argentina. Los datos se utilizan para el funcionamiento de la plataforma y no son comercializados a terceros.</p>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">6. Propiedad Intelectual</h3>
+      <p style="color: #bbb;">La marca Chubut.IA, su interfaz, logotipos y código son propiedad exclusiva de sus creadores. El usuario conserva los derechos sobre los datos ingresados (prompts) y recibe una licencia de uso sobre los textos y redacciones finales generados para su aplicación en el ámbito profesional.</p>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">7. Limitación de Responsabilidad</h3>
+      <p>En la máxima medida permitida por la ley, la plataforma no será responsable por:</p>
+      <ul style="margin-bottom: 15px; padding-left: 20px; color: #bbb;">
+        <li>Pérdida de juicios, vencimiento de plazos procesales, prescripciones, o errores en montos indemnizatorios ocasionados por la omisión de verificación del profesional sobre los resultados generados por la IA.</li>
+        <li>Caídas del servicio o interrupciones de las bases de datos de jurisprudencia provinciales o nacionales (InfoLEG).</li>
+      </ul>
+
+      <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px; font-size: 1.1rem;">8. Jurisdicción y Ley Aplicable</h3>
+      <p style="color: #bbb; margin-bottom: 30px;">Cualquier disputa legal relacionada con la plataforma se regirá por las leyes de la República Argentina y será sometida a la jurisdicción exclusiva de los tribunales ordinarios de la ciudad de Comodoro Rivadavia, Provincia del Chubut, renunciando expresamente el usuario a cualquier otro fuero.</p>
+    </div>
+    
+    <div style="text-align: right; border-top: 1px solid #333; padding-top: 15px;">
+        <button id="btn-accept-terms" style="padding: 10px 24px; background: #c9a84c; color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Entendido</button>
+    </div>
   </div>
 </div>
 </body>
