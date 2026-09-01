@@ -972,11 +972,29 @@
 
     if (btnRedactar) {
       btnRedactar.addEventListener('click', () => {
-        resetViews();
-        chatMain.classList.remove('hidden');
-        btnRedactar.style.background = '#c9a84c';
-        btnRedactar.style.color = '#000';
+        const input = document.getElementById('chat-textarea');
+        const textoBase = 'Quiero redactar un escrito legal para: ';
+
+        // Si ya está activo (tiene exactamente el texto base), lo "apagamos"
+        if (input && input.value === textoBase) {
+          input.value = ''; // Borra el texto
+          resetViews(); // Resetea el color de todos los botones a gris
+          chatMain.classList.remove('hidden'); // Se asegura de mantener el chat visible
+        } else {
+          // Si no estaba activo, lo encendemos (comportamiento normal)
+          resetViews();
+          chatMain.classList.remove('hidden');
+          btnRedactar.style.background = '#c9a84c';
+          btnRedactar.style.color = '#000';
+          
+          if (input) {
+            input.value = textoBase;
+            input.focus();
+          }
+        }
         closeSidebarOnMobile();
+      });
+    }
         
         // Escribe el texto en la barra
         const input = document.getElementById('chat-textarea');
