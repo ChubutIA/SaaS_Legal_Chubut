@@ -924,6 +924,10 @@
         btnIpc.style.background = '#333';
         btnIpc.style.color = '#fff';
       }
+      if (btnRedactar) {
+        btnRedactar.style.background = '#333';
+        btnRedactar.style.color = '#fff';
+      }
     }
 
     // PATOVICA: Revisa si el botón tiene el candadito
@@ -964,6 +968,23 @@
 
     if (btnIpc) {
       btnIpc.addEventListener('click', () => toggleView(btnIpc, ipcMain));
+    }
+
+    if (btnRedactar) {
+      btnRedactar.addEventListener('click', () => {
+        resetViews();
+        chatMain.classList.remove('hidden');
+        btnRedactar.style.background = '#c9a84c';
+        btnRedactar.style.color = '#000';
+        closeSidebarOnMobile();
+        
+        // Escribe el texto en la barra
+        const input = document.getElementById('chat-textarea');
+        if(input) {
+          input.value = 'Quiero redactar un escrito legal para: ';
+          input.focus();
+        }
+      });
     }
 
     // Botón: Volver al Chat (Nueva Consulta)
