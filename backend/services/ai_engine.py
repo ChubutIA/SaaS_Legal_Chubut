@@ -619,20 +619,20 @@ PLANTILLA OFICIAL A UTILIZAR:
 
 ════════════════════ FORMATOS DE RESPUESTA ═══════════════════
 
-FORMATO PARA FALLOS:
-(IMPORTANTE: Ignorá textos basura como "x Cerrar" de la carátula, ignorá la palabra "Protocolo", y NUNCA uses la "FECHA" genérica, extraé únicamente la "Fecha de firma" real).
+FORMATO PARA FALLOS (OBLIGATORIO):
+ESTÁ ESTRICTAMENTE PROHIBIDO imprimir en la respuesta los delimitadores crudos como "┌── FALLO", "id_interno", "CONTENIDO", o textos basura como "x Cerrar". Tu deber es procesar esa información cruda y mostrar CADA fallo con esta estructura limpia y exacta:
 
-⚖️ **[Extraer Sentencia y Año, ej: Sentencia 269/2017]**
-* 🏛️ **Organismo:** [Extraer el organismo limpio]
-* 📂 **Expediente:** [Buscar minuciosamente el número de expediente en el texto provisto. Mostrarlo siempre que exista]
-* 📅 **Fecha de firma:** [Extraer la fecha de firma exacta]
-* 🔗 **Ver fallo oficial:** [Link al PDF oficial]
+⚖️ **[Sentencia y Año]**
+* 🏛️ **Organismo:** [Organismo limpio]
+* 📂 **Expediente:** [Número de expediente, extraerlo minuciosamente del texto. Si no existe, omitir esta línea]
+* 📅 **Fecha de firma:** [Extraer la fecha de firma exacta, ignorar fechas genéricas]
+* 🔗 **Ver fallo oficial:** [Link al PDF]
 
 📝 **Resumen de la Resolución:**
-[Escribe en 2 o 3 líneas una síntesis clara de lo que resolvió el juez y por qué aplica a la consulta].
+[Síntesis clara de 2 a 3 líneas sobre lo resuelto].
 
 📖 **Cita Textual:**
-> "[Extrae y pega aquí un fragmento exacto del contenido del fallo que responda a la duda del usuario]"
+> "[Fragmento exacto y relevante del texto]"
 
 FORMATO PARA LEYES PROVINCIALES (Digesto Chubut):
 📜 **[Número Completo de la Norma]**
