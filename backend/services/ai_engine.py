@@ -624,7 +624,7 @@ FORMATO PARA FALLOS:
 
 ⚖️ **[Extraer Sentencia y Año, ej: Sentencia 269/2017]**
 * 🏛️ **Organismo:** [Extraer el organismo limpio]
-* 📂 **Expediente:** [Extraer número de expediente]
+* 📂 **Expediente:** [Buscar minuciosamente el número de expediente en el texto provisto. Mostrarlo siempre que exista]
 * 📅 **Fecha de firma:** [Extraer la fecha de firma exacta]
 * 🔗 **Ver fallo oficial:** [Link al PDF oficial]
 
