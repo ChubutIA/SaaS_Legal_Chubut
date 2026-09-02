@@ -9,8 +9,6 @@ python-multipart>=0.0.9
 # ── AI & LangChain ─────────────────────
 langchain>=0.2.0
 langchain-openai>=0.1.8
-langchain-chroma>=0.1.2
-chromadb>=0.5.3
 openai>=1.35.0
 
 # ── Database ────────────────────────────
@@ -19,7 +17,6 @@ supabase>=2.4.6
 # ── File processing ─────────────────────
 PyPDF2>=3.0.1
 fpdf2>=2.7.9
-gdown>=5.2.0
 pymupdf
 # ── Utilities ───────────────────────────
 python-dotenv>=1.0.1
