@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from middleware.auth_guard import get_current_user
 # IMPORTACIONES ACTUALIZADAS PARA EL CEREBRO DUAL (v3.0)
-from services.ai_engine import get_vdb_fallos, get_vdb_leyes, get_llm, super_search, generate_response, generate_chat_title
+from services.ai_engine import get_llm, super_search, generate_response, generate_chat_title
 from services.supabase_client import get_supabase
 from services.rate_limiter import limiter 
 
@@ -80,14 +80,11 @@ async def chat_endpoint(
     query_usuario = historial[-1]["content"]
     historial_previo = historial[:-1]
 
-    # OBTENER AMBAS BASES DE DATOS Y EL LLM
-    vdb_fallos = get_vdb_fallos()
-    vdb_leyes = get_vdb_leyes()
     llm = get_llm()
 
     # Súper búsqueda dual (Extrae fallos, leyes e intención)
     contexto_fallos, contexto_leyes, intent = await super_search(
-        query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
+        query_usuario, historial_previo, llm
     )
 
     # =========================================================================
@@ -163,12 +160,10 @@ async def chat_guest_endpoint(payload: ChatPayload, request: Request):
     query_usuario = historial[-1]["content"]
     historial_previo = historial[:-1]
 
-    vdb_fallos = get_vdb_fallos()
-    vdb_leyes = get_vdb_leyes()
     llm = get_llm()
 
     contexto_fallos, contexto_leyes, intent = await super_search(
-        query_usuario, historial_previo, llm, vdb_fallos, vdb_leyes
+        query_usuario, historial_previo, llm
     )
     respuesta = await generate_response(contexto_fallos, contexto_leyes, intent, historial)
 
