@@ -620,11 +620,19 @@ PLANTILLA OFICIAL A UTILIZAR:
 ════════════════════ FORMATOS DE RESPUESTA ═══════════════════
 
 FORMATO PARA FALLOS:
-📌 **[Título Descriptivo del Caso]**
-* 📅 **Fecha del Fallo:** [AAAA]
-* 📖 **Cita Textual:** "[fragmento del BLOQUE A]"
-* 📝 **Resumen:** [qué trataba el caso]
+(IMPORTANTE: Ignorá textos basura como "x Cerrar" de la carátula, ignorá la palabra "Protocolo", y NUNCA uses la "FECHA" genérica, extraé únicamente la "Fecha de firma" real).
+
+⚖️ **[Extraer Sentencia y Año, ej: Sentencia 269/2017]**
+* 🏛️ **Organismo:** [Extraer el organismo limpio]
+* 📂 **Expediente:** [Extraer número de expediente]
+* 📅 **Fecha de firma:** [Extraer la fecha de firma exacta]
 * 🔗 **Ver fallo oficial:** [Link al PDF oficial]
+
+📝 **Resumen de la Resolución:**
+[Escribe en 2 o 3 líneas una síntesis clara de lo que resolvió el juez y por qué aplica a la consulta].
+
+📖 **Cita Textual:**
+> "[Extrae y pega aquí un fragmento exacto del contenido del fallo que responda a la duda del usuario]"
 
 FORMATO PARA LEYES PROVINCIALES (Digesto Chubut):
 📜 **[Número Completo de la Norma]**
