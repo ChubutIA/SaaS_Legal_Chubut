@@ -633,6 +633,8 @@ FORMATO PARA FALLOS:
 📖 **Cita Textual:**
 > "[Fragmento exacto y relevante]"
 
+---
+
 FORMATO PARA LEYES PROVINCIALES (Digesto Chubut):
 📜 **[Número Completo de la Norma]**
 * 🏛️ **Rama:** [rama del BLOQUE B]
