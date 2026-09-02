@@ -1,28 +1,18 @@
 """
 ================================================================
-CHUBUT.IA — MOTOR DE IA v4.0 — API EN VIVO + BASE VECTORIAL
+CHUBUT.IA — MOTOR DE IA v5.0 — API EN VIVO + BÚSQUEDA HÍBRIDA (SUPABASE/PGVECTOR)
 ================================================================
 """
-try:
-    __import__('pysqlite3')
-    import sys
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-except ImportError:
-    pass
-
 import os
 import re
-import zipfile
 import asyncio
-import gdown
 import httpx
-import urllib.parse
 import urllib.parse
 import json
 
 from services.infoleg_scraper import buscar_normas_infoleg
 from services.comodoro_scraper import buscar_ordenanzas_comodoro
-from langchain_chroma import Chroma
+from services.supabase_client import get_supabase
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
@@ -160,13 +150,10 @@ SERÁ JUSTICIA.
 # ══════════════════════════════════════════════════════════════════
 # 1. SINGLETONS Y CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════
-_vdb_fallos: Chroma | None = None
-_vdb_leyes:  Chroma | None = None # Lo mantenemos por compatibilidad con chat.py
-_llm:        ChatOpenAI | None = None
-_emb:        OpenAIEmbeddings | None = None
+_llm: ChatOpenAI | None = None
+_emb: OpenAIEmbeddings | None = None
 
-FALLOS_PATH      = "MI_BASE_VECTORIAL"
-GDRIVE_FALLOS_URL = "https://drive.google.com/uc?id=1J0O52QmGKZnx_gazbuZ7-Mq6R48pxz9E"
+EMBEDDING_MODEL = "text-embedding-3-small"  # debe coincidir con ingest_fallos.py
 
 INTENT_FALLOS        = "fallos"
 INTENT_LEYES         = "leyes"
@@ -178,43 +165,23 @@ INTENTS_VALIDOS      = {INTENT_FALLOS, INTENT_LEYES, INTENT_AMBOS, INTENT_CONVER
 # 2. INICIALIZACIÓN
 # ══════════════════════════════════════════════════════════════════
 async def initialize_ai():
-    global _vdb_fallos, _llm, _emb
+    global _llm, _emb
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _load_ai_sync)
 
 def _load_ai_sync():
-    global _vdb_fallos, _llm, _emb
-    _emb = OpenAIEmbeddings(model="text-embedding-3-small")
-    _vdb_fallos = _cargar_o_descargar(FALLOS_PATH, GDRIVE_FALLOS_URL, "Base de Jurisprudencia", None)
+    global _llm, _emb
+    _emb = OpenAIEmbeddings(model=EMBEDDING_MODEL)
     _llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
-    print("✅ Motor de IA v4.0 inicializado. (Jurisprudencia local + Leyes API en vivo)")
-
-def _cargar_o_descargar(path: str, gdrive_url: str, nombre: str, collection: str | None) -> Chroma:
-    if not os.path.exists(path):
-        print(f"📥 Descargando {nombre} desde Google Drive...")
-        zip_name = f"{path.replace('/', '_')}.zip"
-        gdown.download(gdrive_url, zip_name, quiet=False)
-        with zipfile.ZipFile(zip_name, "r") as zr:
-            zr.extractall()
-        os.remove(zip_name)
-        print(f"✅ {nombre} descomprimida en '{path}/'")
-
-    kwargs = dict(persist_directory=path, embedding_function=_emb)
-    if collection:
-        kwargs["collection_name"] = collection
-    vdb = Chroma(**kwargs)
-    return vdb
-
-def get_vdb_fallos() -> Chroma:
-    if _vdb_fallos is None: raise RuntimeError("Motor IA no inicializado.")
-    return _vdb_fallos
-
-def get_vdb_leyes() -> Chroma | None:
-    return None # Ya no usamos base local de leyes, usamos API
+    print("✅ Motor de IA v5.0 inicializado. (Jurisprudencia: búsqueda híbrida en Supabase + Leyes API en vivo)")
 
 def get_llm() -> ChatOpenAI:
     if _llm is None: raise RuntimeError("LLM no inicializado.")
     return _llm
+
+def get_emb() -> OpenAIEmbeddings:
+    if _emb is None: raise RuntimeError("Embeddings no inicializados.")
+    return _emb
 
 # ══════════════════════════════════════════════════════════════════
 # 3. CLASIFICADOR DE INTENCIÓN
@@ -299,25 +266,94 @@ async def clasificar_jurisdiccion(query: str, llm: ChatOpenAI) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════
-# 4. BÚSQUEDA VECTORIAL (FALLOS) Y API (LEYES)
+# 4. BÚSQUEDA HÍBRIDA DE FALLOS (SUPABASE/PGVECTOR) Y API (LEYES)
 # ══════════════════════════════════════════════════════════════════
-async def _busqueda_dual_en_vdb(query_original: str, query_tecnica: str, vdb: Chroma, k: int = 6, max_docs: int = 10) -> list:
-    loop = asyncio.get_event_loop()
-    docs_a, docs_b = await asyncio.gather(
-        loop.run_in_executor(None, lambda: vdb.similarity_search(query_original, k=k)),
-        loop.run_in_executor(None, lambda: vdb.similarity_search(query_tecnica, k=k)),
-    )
-    vistos: set[str] = set()
-    resultado: list = []
-    for doc in docs_a + docs_b:
-        if doc.page_content not in vistos:
-            vistos.add(doc.page_content)
-            resultado.append(doc)
-    return resultado[:max_docs]
+UMBRAL_RELEVANCIA_BAJA = 0.028  # rrf_score debajo de esto = resultados dudosos (ajustar con pruebas reales)
 
-def _formatear_docs_fallos(docs: list) -> str:
-    if not docs: return "(Sin resultados de jurisprudencia para esta consulta)"
-    return "\n\n".join([f"📅 FECHA: {d.metadata.get('fecha_completa', 'N/D')}\n🔗 URL: {d.metadata.get('link_pdf', 'N/D')}\n📄 CONTENIDO:\n{d.page_content}" for d in docs])
+async def _embed_query(texto: str) -> list[float]:
+    loop = asyncio.get_event_loop()
+    emb = get_emb()
+    return await loop.run_in_executor(None, lambda: emb.embed_query(texto))
+
+async def _hybrid_rpc(query_texto: str, query_embedding: list[float], match_count: int = 8) -> list[dict]:
+    supabase = get_supabase()
+    loop = asyncio.get_event_loop()
+    try:
+        resp = await loop.run_in_executor(
+            None,
+            lambda: supabase.rpc(
+                "hybrid_search_fallos",
+                {
+                    "query_text": query_texto,
+                    "query_embedding": query_embedding,
+                    "match_count": match_count,
+                },
+            ).execute(),
+        )
+        return resp.data or []
+    except Exception as e:
+        print(f"⚠️ Error en hybrid_search_fallos: {e}")
+        return []
+
+async def buscar_fallos_hibrido(query_original: str, query_tecnica: str, k: int = 8, max_docs: int = 10) -> list[dict]:
+    """
+    Reemplaza la vieja búsqueda dual en Chroma. Corre la función híbrida
+    (vector + full-text) de Supabase dos veces —una con la pregunta tal
+    cual la escribió el usuario (buena para nº de expediente/ley exactos)
+    y otra con la reformulación técnica (buena para similitud semántica)—
+    y combina resultados quedándose con el mejor rrf_score por chunk.
+    """
+    emb_original, emb_tecnica = await asyncio.gather(
+        _embed_query(query_original),
+        _embed_query(query_tecnica),
+    )
+    resultados_a, resultados_b = await asyncio.gather(
+        _hybrid_rpc(query_original, emb_original, match_count=k),
+        _hybrid_rpc(query_tecnica, emb_tecnica, match_count=k),
+    )
+
+    mejores: dict[int, dict] = {}
+    for fila in resultados_a + resultados_b:
+        fid = fila["id"]
+        if fid not in mejores or fila["rrf_score"] > mejores[fid]["rrf_score"]:
+            mejores[fid] = fila
+
+    ordenados = sorted(mejores.values(), key=lambda f: f["rrf_score"], reverse=True)
+    return ordenados[:max_docs]
+
+def _formatear_docs_fallos(fallos: list[dict]) -> str:
+    """
+    Cada fallo va en un bloque numerado y delimitado, con TODOS sus
+    metadatos (carátula, materia, fecha, link) repetidos dentro del mismo
+    bloque. Esto es lo que evita que la IA combine el resumen de un fallo
+    con el link o la fecha de otro: nunca ve metadata separada de su
+    contenido, y el prompt (REGLA 1B) le prohíbe cruzar números de bloque.
+    """
+    if not fallos:
+        return "(Sin resultados de jurisprudencia para esta consulta)"
+
+    mejor_score = fallos[0]["rrf_score"]
+    aviso_baja_relevancia = ""
+    if mejor_score < UMBRAL_RELEVANCIA_BAJA:
+        aviso_baja_relevancia = (
+            "\n⚠️ ADVERTENCIA DEL SISTEMA: los resultados de esta búsqueda tienen relevancia BAJA "
+            "(es posible que no haya jurisprudencia sobre este tema exacto en la base). "
+            "Si los usás, aclaraselo al usuario en vez de presentarlos como una coincidencia segura.\n"
+        )
+
+    bloques = []
+    for i, f in enumerate(fallos, start=1):
+        bloques.append(
+            f"┌── FALLO #{i} (id_interno: {f['id']}) ─────────────────────\n"
+            f"📌 CARÁTULA: {f.get('caratula') or 'N/D'}\n"
+            f"⚖️ MATERIA: {f.get('materia') or 'N/D'}\n"
+            f"📅 FECHA: {f.get('fecha') or 'N/D'}\n"
+            f"🔗 URL: {f.get('link_pdf') or 'N/D'}\n"
+            f"📄 CONTENIDO (fragmento {f.get('chunk_index', 0) + 1} de {f.get('total_chunks', 1)}):\n"
+            f"{f.get('content', '')}\n"
+            f"└── FIN FALLO #{i} ─────────────────────────────────────────"
+        )
+    return aviso_baja_relevancia + "\n\n".join(bloques)
 
 async def buscar_leyes_api_chubut(query_usuario: str, llm: ChatOpenAI) -> str:
     """Extrae palabras clave y busca directo en la API secreta de la Legislatura."""
@@ -473,7 +509,7 @@ async def buscar_leyes_nacionales_infoleg(query_usuario: str, llm: ChatOpenAI) -
 # ══════════════════════════════════════════════════════════════════
 # 5. SÚPER BÚSQUEDA DUAL
 # ══════════════════════════════════════════════════════════════════
-async def super_search(query_usuario: str, historial_previo: list[dict], llm: ChatOpenAI, vdb_fallos: Chroma, vdb_leyes: Chroma | None) -> tuple[str, str, str]:
+async def super_search(query_usuario: str, historial_previo: list[dict], llm: ChatOpenAI) -> tuple[str, str, str]:
     loop = asyncio.get_event_loop()
 
     if historial_previo:
@@ -506,7 +542,7 @@ async def super_search(query_usuario: str, historial_previo: list[dict], llm: Ch
         return contexto_fallos, contexto_leyes, intent
 
     if intent in (INTENT_FALLOS, INTENT_AMBOS):
-        docs_f = await _busqueda_dual_en_vdb(query_segura, query_tecnica, vdb_fallos)
+        docs_f = await buscar_fallos_hibrido(query_segura, query_tecnica)
         contexto_fallos = _formatear_docs_fallos(docs_f)
         
     if intent in (INTENT_LEYES, INTENT_AMBOS):
@@ -558,6 +594,12 @@ def build_system_prompt(contexto_fallos: str, contexto_leyes: str, intent: str) 
 REGLA 1 — CORTAFUEGOS DE CONTEXTO (crítica):
 Las fuentes de Jurisprudencia (BLOQUE A) y Legislación (BLOQUE B) son totalmente independientes.
 - NUNCA mezcles links entre bloques. Usa el link provisto en cada sección.
+
+REGLA 1B — NO MEZCLAR METADATOS ENTRE FALLOS (crítica):
+Cada fallo del BLOQUE A viene en su propio bloque numerado, delimitado con "┌── FALLO #N" y "└── FIN FALLO #N", con su carátula, materia, fecha y link pegados a su contenido.
+- El link, la fecha y la carátula que uses al citar un fallo DEBEN pertenecer al MISMO número de bloque que el contenido que estás resumiendo. Nunca combines el resumen del FALLO #1 con el link o la fecha del FALLO #2 (ni de ningún otro número).
+- Si un bloque no tiene relación real con lo que pide el usuario (ej. es de otra materia), no lo uses solo porque apareció en el contexto.
+- Si el BLOQUE A trae la advertencia "⚠️ ADVERTENCIA DEL SISTEMA: ... relevancia BAJA", decíselo explícitamente al usuario (ej. "no encontré jurisprudencia específica sobre esto en la base; te muestro lo más cercano que hay") en vez de presentar esos fallos como una coincidencia exacta.
 
 REGLA 2 — USO DE INFORMACIÓN Y ADVERTENCIAS:
 - Si el BLOQUE B contiene el texto de una ley, DEBES usar esa información para responder. Usa tu capacidad analítica para interpretar el texto legal provisto y responder la duda del usuario (ej: interpretar el Artículo 34 para compras por internet). No agregues advertencias si estás interpretando el texto provisto.
