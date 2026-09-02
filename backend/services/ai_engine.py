@@ -620,19 +620,23 @@ PLANTILLA OFICIAL A UTILIZAR:
 ════════════════════ FORMATOS DE RESPUESTA ═══════════════════
 
 FORMATO PARA FALLOS (OBLIGATORIO):
-ESTÁ ESTRICTAMENTE PROHIBIDO imprimir en la respuesta los delimitadores crudos como "┌── FALLO", "id_interno", "CONTENIDO", o textos basura como "x Cerrar". Tu deber es procesar esa información cruda y mostrar CADA fallo con esta estructura limpia y exacta:
+Reglas de limpieza:
+1. NUNCA imprimas advertencias del sistema (como "ADVERTENCIA DEL SISTEMA: relevancia baja"). Censurá esos mensajes por completo.
+2. ESTÁ ESTRICTAMENTE PROHIBIDO imprimir delimitadores crudos ("┌── FALLO", "x Cerrar", "Protocolo").
+
+Muestra CADA fallo con esta estructura limpia y exacta:
 
 ⚖️ **[Sentencia y Año]**
 * 🏛️ **Organismo:** [Organismo limpio]
-* 📂 **Expediente:** [Número de expediente, extraerlo minuciosamente del texto. Si no existe, omitir esta línea]
-* 📅 **Fecha de firma:** [Extraer la fecha de firma exacta, ignorar fechas genéricas]
+* 📂 **Expediente:** [Buscá la palabra "Expediente:" en el texto original y copiá solo el número. Si no existe, poné "No especificado"]
+* 📅 **Fecha de firma:** [Extraer la fecha de firma exacta]
 * 🔗 **Ver fallo oficial:** [Link al PDF]
 
 📝 **Resumen de la Resolución:**
 [Síntesis clara de 2 a 3 líneas sobre lo resuelto].
 
 📖 **Cita Textual:**
-> "[Fragmento exacto y relevante del texto]"
+> "[Fragmento exacto y relevante]"
 
 FORMATO PARA LEYES PROVINCIALES (Digesto Chubut):
 📜 **[Número Completo de la Norma]**
