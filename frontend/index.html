@@ -753,6 +753,12 @@
 
       <div id="lista-documentos" style="margin-top: 20px;"></div>
 
+      <div id="visor-documento" class="hidden" style="margin-top: 20px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 25px;">
+        <button id="btn-cerrar-visor" style="background: none; border: none; color: #c9a84c; cursor: pointer; font-size: 0.9rem; padding: 0; margin-bottom: 20px;">← Volver a la lista de archivos</button>
+        <h3 id="visor-titulo" style="color: #fff; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;"></h3>
+        <div id="visor-contenido" class="chat-history-content" style="color: #ddd; line-height: 1.6; font-size: 0.95rem;"></div>
+      </div>
+
     </section>
   </main>
 </div>
@@ -936,6 +942,7 @@
     const modalCarpeta = document.getElementById('modal-crear-carpeta');
     const btnCloseCarpeta = document.getElementById('btn-close-carpeta');
     const btnGuardarCarpeta = document.getElementById('btn-guardar-carpeta');
+    const btnGuardarChatExpediente = document.getElementById('btn-guardar-chat-expediente');
 
     // Botón "+ Nuevo Expediente" dentro del dashboard de carpetas
     const btnNuevoExpedienteDash = document.getElementById('btn-nuevo-expediente-dash');
@@ -1167,8 +1174,18 @@
       resetViews();
       if (detalleCarpetaMain) detalleCarpetaMain.classList.remove('hidden');
 
+      const visorDocumento = document.getElementById('visor-documento');
+      if (visorDocumento) visorDocumento.classList.add('hidden');
+      const listaDocumentosEl = document.getElementById('lista-documentos');
+      if (listaDocumentosEl) listaDocumentosEl.classList.remove('hidden');
+      if (btnGuardarChatExpediente) btnGuardarChatExpediente.classList.remove('hidden');
+
       const titulo = document.getElementById('detalle-carpeta-titulo');
       if (titulo) titulo.innerText = nombreCarpeta;
+
+      document.getElementById('btn-guardar-chat-expediente').dataset.carpetaId = carpetaId;
+
+      document.getElementById('btn-guardar-chat-expediente').dataset.carpetaId = carpetaId;
 
       const listaDocumentos = document.getElementById('lista-documentos');
       if (listaDocumentos) {
@@ -1199,8 +1216,11 @@
         documentos.forEach(doc => {
           const titulo = doc.titulo || doc.nombre || 'Documento sin título';
           const caja = document.createElement('div');
-          caja.style.cssText = 'background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px 18px; margin-bottom:12px; color:#fff;';
+          caja.style.cssText = 'background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px 18px; margin-bottom:12px; color:#fff; cursor: pointer;';
           caja.textContent = titulo;
+          caja.onmouseenter = () => { caja.style.borderColor = '#c9a84c'; };
+          caja.onmouseleave = () => { caja.style.borderColor = '#333'; };
+          caja.onclick = () => verDocumento(doc);
           listaDocumentos.appendChild(caja);
         });
       } catch (error) {
@@ -1211,12 +1231,87 @@
       }
     }
 
+    // Muestra el contenido completo de un documento/chat guardado
+    function verDocumento(doc) {
+      const listaDocumentosEl = document.getElementById('lista-documentos');
+      if (listaDocumentosEl) listaDocumentosEl.classList.add('hidden');
+      if (btnGuardarChatExpediente) btnGuardarChatExpediente.classList.add('hidden');
+
+      const visorDocumento = document.getElementById('visor-documento');
+      if (visorDocumento) visorDocumento.classList.remove('hidden');
+
+      const visorTitulo = document.getElementById('visor-titulo');
+      if (visorTitulo) visorTitulo.innerText = doc.titulo;
+
+      const visorContenido = document.getElementById('visor-contenido');
+      if (visorContenido) visorContenido.innerHTML = doc.contenido.html;
+    }
+
+    // Botón: Cerrar el visor y volver a la lista de documentos
+    const btnCerrarVisor = document.getElementById('btn-cerrar-visor');
+    if (btnCerrarVisor) {
+      btnCerrarVisor.addEventListener('click', () => {
+        const visorDocumento = document.getElementById('visor-documento');
+        if (visorDocumento) visorDocumento.classList.add('hidden');
+
+        const visorContenido = document.getElementById('visor-contenido');
+        if (visorContenido) visorContenido.innerHTML = '';
+
+        const listaDocumentosEl = document.getElementById('lista-documentos');
+        if (listaDocumentosEl) listaDocumentosEl.classList.remove('hidden');
+        if (btnGuardarChatExpediente) btnGuardarChatExpediente.classList.remove('hidden');
+      });
+    }
+
     // Botón: Volver de la vista de detalle al dashboard de expedientes
     const btnVolverCarpetas = document.getElementById('btn-volver-carpetas');
     if (btnVolverCarpetas) {
       btnVolverCarpetas.addEventListener('click', () => {
         toggleView(btnCarpetas, carpetasMain);
         cargarCarpetas();
+      });
+    }
+
+    // Botón: Guardar el chat actual dentro del expediente abierto
+    if (btnGuardarChatExpediente) {
+      btnGuardarChatExpediente.addEventListener('click', async (e) => {
+        const carpetaId = e.target.dataset.carpetaId;
+        const contenidoChat = document.getElementById('messages-container').innerHTML;
+
+        if (!contenidoChat || !contenidoChat.trim()) {
+          alert("No hay ningún chat para guardar.");
+          return;
+        }
+
+        const textoOriginal = btnGuardarChatExpediente.innerText;
+        btnGuardarChatExpediente.innerText = "Guardando...";
+        btnGuardarChatExpediente.disabled = true;
+
+        try {
+          const respuesta = await fetch('/api/carpetas/' + carpetaId + '/documentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tipo: 'chat',
+              titulo: 'Chat guardado - ' + new Date().toLocaleDateString('es-AR'),
+              contenido: { html: contenidoChat }
+            })
+          });
+
+          if (respuesta.ok) {
+            alert("✅ Chat guardado en el expediente");
+            abrirCarpeta(carpetaId, document.getElementById('detalle-carpeta-titulo').innerText);
+          } else {
+            const data = await respuesta.json();
+            alert("❌ Hubo un problema: " + (data.detail || "No se pudo guardar"));
+          }
+        } catch (error) {
+          console.error("Error al guardar el chat en el expediente:", error);
+          alert("Error al comunicarse con el servidor.");
+        } finally {
+          btnGuardarChatExpediente.innerText = textoOriginal;
+          btnGuardarChatExpediente.disabled = false;
+        }
       });
     }
 
