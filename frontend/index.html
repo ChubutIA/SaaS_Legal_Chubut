@@ -735,6 +735,26 @@
 
     </section>
   </main>
+
+  <!-- CONTENEDOR DE DETALLE DE EXPEDIENTE (NUEVO) -->
+  <main id="detalle-carpeta-main" class="hidden" style="width: 100%; height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <section class="view">
+
+      <button id="btn-volver-carpetas" style="background: none; border: none; color: #c9a84c; cursor: pointer; font-size: 0.95rem; padding: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 6px;">
+        ← Volver a Mis Expedientes
+      </button>
+
+      <header class="view-header" style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+        <h2 id="detalle-carpeta-titulo" style="color: #fff; font-size: 2rem; margin: 0;">--</h2>
+        <button id="btn-guardar-chat-expediente" class="btn-primary" style="padding: 12px 22px; background: #c9a84c; color: #000; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+          + Guardar chat actual en expediente
+        </button>
+      </header>
+
+      <div id="lista-documentos" style="margin-top: 20px;"></div>
+
+    </section>
+  </main>
 </div>
 
 <div id="auth-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Acceso al sistema">
@@ -963,7 +983,6 @@
             
             if (respuesta.ok) {
                 alert("✅ Expediente creado exitosamente");
-                cargarCarpetas();
                 modalCarpeta.classList.add('hidden');
                 document.getElementById('input-nombre-carpeta').value = '';
                 document.getElementById('input-desc-carpeta').value = '';
@@ -986,6 +1005,7 @@
     const plazosMain = document.getElementById('plazos-main');
     const ipcMain = document.getElementById('ipc-main'); 
     const carpetasMain = document.getElementById('carpetas-main');
+    const detalleCarpetaMain = document.getElementById('detalle-carpeta-main');
 
     // === ESTO ES LO QUE ME HABÍA FALTADO ===
     // Inicializar Liquidaciones
@@ -1010,6 +1030,7 @@
       plazosMain.classList.add('hidden');
       if (ipcMain) ipcMain.classList.add('hidden'); 
       if (carpetasMain) carpetasMain.classList.add('hidden');
+      if (detalleCarpetaMain) detalleCarpetaMain.classList.add('hidden');
       
       if (btnCarpetas) {
         btnCarpetas.style.background = '#333';
@@ -1124,6 +1145,7 @@
           card.style.cssText = 'background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; cursor:pointer; transition: border-color 0.2s, transform 0.2s;';
           card.onmouseenter = () => { card.style.borderColor = '#c9a84c'; card.style.transform = 'translateY(-2px)'; };
           card.onmouseleave = () => { card.style.borderColor = '#333'; card.style.transform = 'translateY(0)'; };
+          card.onclick = () => abrirCarpeta(carpeta.id, nombre);
 
           card.innerHTML = `
             <div style="font-size: 1.8rem; margin-bottom: 12px;">📁</div>
@@ -1138,6 +1160,64 @@
         console.error("Error al cargar expedientes:", error);
         grid.innerHTML = '<p style="color:#ef4444; grid-column: 1/-1; text-align:center;">Error al comunicarse con el servidor.</p>';
       }
+    }
+
+    // Abre la vista de detalle de un expediente puntual
+    async function abrirCarpeta(carpetaId, nombreCarpeta) {
+      resetViews();
+      if (detalleCarpetaMain) detalleCarpetaMain.classList.remove('hidden');
+
+      const titulo = document.getElementById('detalle-carpeta-titulo');
+      if (titulo) titulo.innerText = nombreCarpeta;
+
+      const listaDocumentos = document.getElementById('lista-documentos');
+      if (listaDocumentos) {
+        listaDocumentos.innerHTML = '<p style="color:#888; text-align:center;">Cargando...</p>';
+      }
+
+      try {
+        const respuesta = await fetch('/api/carpetas/' + carpetaId + '/documentos');
+        const data = await respuesta.json();
+
+        if (!respuesta.ok) {
+          if (listaDocumentos) {
+            listaDocumentos.innerHTML = '<p style="color:#ef4444; text-align:center;">No se pudieron cargar los documentos.</p>';
+          }
+          return;
+        }
+
+        const documentos = Array.isArray(data) ? data : (data.documentos || []);
+
+        if (!listaDocumentos) return;
+
+        if (!documentos.length) {
+          listaDocumentos.innerHTML = '<p style="color:#888; text-align:center;">Aún no hay chats ni documentos guardados en este expediente</p>';
+          return;
+        }
+
+        listaDocumentos.innerHTML = '';
+        documentos.forEach(doc => {
+          const titulo = doc.titulo || doc.nombre || 'Documento sin título';
+          const caja = document.createElement('div');
+          caja.style.cssText = 'background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px 18px; margin-bottom:12px; color:#fff;';
+          caja.textContent = titulo;
+          listaDocumentos.appendChild(caja);
+        });
+      } catch (error) {
+        console.error("Error al cargar documentos del expediente:", error);
+        if (listaDocumentos) {
+          listaDocumentos.innerHTML = '<p style="color:#ef4444; text-align:center;">Error al comunicarse con el servidor.</p>';
+        }
+      }
+    }
+
+    // Botón: Volver de la vista de detalle al dashboard de expedientes
+    const btnVolverCarpetas = document.getElementById('btn-volver-carpetas');
+    if (btnVolverCarpetas) {
+      btnVolverCarpetas.addEventListener('click', () => {
+        toggleView(btnCarpetas, carpetasMain);
+        cargarCarpetas();
+      });
     }
 
     if (btnRedactar) {
