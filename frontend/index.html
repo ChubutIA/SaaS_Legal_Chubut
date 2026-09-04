@@ -89,6 +89,14 @@
         Calculadora IPC (Inflación)
       </button>
 
+      <!-- BOTÓN: MIS EXPEDIENTES (NUEVO) -->
+      <button id="btn-open-carpetas" class="btn-secondary" style="width: 100%; margin-top: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Mis Expedientes
+      </button>
+      
       <div class="divider"></div>
 
       <p class="sidebar-section-label" id="history-label" style="display:none">Historial</p>
@@ -882,6 +890,48 @@
     const btnLiquidaciones = document.getElementById('btn-open-liquidaciones');
     const btnPlazos = document.getElementById('btn-open-plazos');
     const btnIpc = document.getElementById('btn-open-ipc'); 
+    // Variables de Carpetas
+    const btnCarpetas = document.getElementById('btn-open-carpetas');
+    const modalCarpeta = document.getElementById('modal-crear-carpeta');
+    const btnCloseCarpeta = document.getElementById('btn-close-carpeta');
+    const btnGuardarCarpeta = document.getElementById('btn-guardar-carpeta');
+
+    // Lógica para abrir/cerrar el modal
+    if (btnCarpetas) {
+      btnCarpetas.addEventListener('click', () => {
+        if (checkLocked(btnCarpetas)) return;
+        modalCarpeta.classList.remove('hidden');
+        closeSidebarOnMobile();
+      });
+    }
+
+    if (btnCloseCarpeta) {
+      btnCloseCarpeta.addEventListener('click', () => {
+        modalCarpeta.classList.add('hidden');
+      });
+    }
+
+    // Lógica para el botón "Crear Expediente" (Llama a tu backend)
+    if (btnGuardarCarpeta) {
+      btnGuardarCarpeta.addEventListener('click', () => {
+        const nombre = document.getElementById('input-nombre-carpeta').value;
+        const desc = document.getElementById('input-desc-carpeta').value;
+        
+        if (!nombre) {
+            alert("Por favor, ingresá la carátula del expediente.");
+            return;
+        }
+
+        if(typeof crearNuevaCarpeta === "function") {
+            crearNuevaCarpeta(nombre, desc);
+            modalCarpeta.classList.add('hidden');
+            document.getElementById('input-nombre-carpeta').value = '';
+            document.getElementById('input-desc-carpeta').value = '';
+        } else {
+            console.error("Falta conectar la función crearNuevaCarpeta en el JS principal.");
+        }
+      });
+    }
     const btnRedactar = document.getElementById('btn-open-redactar');
     
     const chatMain = document.getElementById('chat-main');
@@ -1120,6 +1170,26 @@
     <div style="text-align: right; border-top: 1px solid #333; padding-top: 15px;">
         <button id="btn-accept-terms" style="padding: 10px 24px; background: #c9a84c; color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Entendido</button>
     </div>
+  </div>
+</div>
+  <!-- MODAL: CREAR EXPEDIENTE -->
+<div id="modal-crear-carpeta" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(4px);">
+  <div style="background: #1a1a1a; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; position: relative; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+    <button id="btn-close-carpeta" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;">&times;</button>
+    
+    <h2 style="color: #c9a84c; margin-top: 0; margin-bottom: 20px; font-size: 1.5rem;">Nuevo Expediente</h2>
+    
+    <div class="form-group" style="margin-bottom: 15px;">
+      <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">Carátula del caso</label>
+      <input type="text" id="input-nombre-carpeta" placeholder="Ej: Pérez c/ López s/ Despido" style="width: 100%; padding: 12px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
+    </div>
+
+    <div class="form-group" style="margin-bottom: 25px;">
+      <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">Descripción (Opcional)</label>
+      <input type="text" id="input-desc-carpeta" placeholder="Juzgado Laboral N°2" style="width: 100%; padding: 12px; border-radius: 6px; background: #222; border: 1px solid #444; color: #fff; box-sizing: border-box;">
+    </div>
+    
+    <button id="btn-guardar-carpeta" class="btn-primary" style="width: 100%; padding: 12px; background: #c9a84c; color: #000; font-weight: bold; border: none; border-radius: 6px; cursor: pointer;">Crear Expediente</button>
   </div>
 </div>
 </body>
