@@ -15,6 +15,7 @@ from routers import auth, chat, upload, export, payments
 from routers import liquidaciones
 from routers import admin_scraper
 from routers import plazos # <-- Agregá esto arriba
+from routers import carpetas
 # ==========================================
 # LIFESPAN: INICIALIZACIÓN DEL CEREBRO IA
 # ==========================================
@@ -71,7 +72,7 @@ app.include_router(payments.router, prefix="/api/payments", tags=["Pagos"])
 app.include_router(liquidaciones.router)
 app.include_router(admin_scraper.router)
 app.include_router(plazos.router)
-
+app.include_router(carpetas.router)
 # ==========================================
 # RUTAS EXTRA
 # ==========================================
