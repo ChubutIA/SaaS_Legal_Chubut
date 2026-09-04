@@ -913,7 +913,7 @@
 
     // Lógica para el botón "Crear Expediente" (Llama a tu backend)
     if (btnGuardarCarpeta) {
-      btnGuardarCarpeta.addEventListener('click', () => {
+      btnGuardarCarpeta.addEventListener('click', async () => {
         const nombre = document.getElementById('input-nombre-carpeta').value;
         const desc = document.getElementById('input-desc-carpeta').value;
         
@@ -922,13 +922,39 @@
             return;
         }
 
-        if(typeof crearNuevaCarpeta === "function") {
-            crearNuevaCarpeta(nombre, desc);
-            modalCarpeta.classList.add('hidden');
-            document.getElementById('input-nombre-carpeta').value = '';
-            document.getElementById('input-desc-carpeta').value = '';
-        } else {
-            console.error("Falta conectar la función crearNuevaCarpeta en el JS principal.");
+        const textoOriginal = btnGuardarCarpeta.innerText;
+        btnGuardarCarpeta.innerText = "Guardando...";
+        btnGuardarCarpeta.disabled = true;
+
+        let usuarioId = localStorage.getItem("user_id") || localStorage.getItem("usuario_id") || 1; 
+
+        try {
+            const respuesta = await fetch('/api/carpetas/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario_id: parseInt(usuarioId),
+                    nombre: nombre,
+                    descripcion: desc
+                })
+            });
+
+            const data = await respuesta.json();
+            
+            if (respuesta.ok) {
+                alert("✅ Expediente creado exitosamente");
+                modalCarpeta.classList.add('hidden');
+                document.getElementById('input-nombre-carpeta').value = '';
+                document.getElementById('input-desc-carpeta').value = '';
+            } else {
+                alert("❌ Hubo un problema: " + (data.detail || "No se pudo crear"));
+            }
+        } catch (error) {
+            console.error("Error de conexión:", error);
+            alert("Error al comunicarse con el servidor.");
+        } finally {
+            btnGuardarCarpeta.innerText = textoOriginal;
+            btnGuardarCarpeta.disabled = false;
         }
       });
     }
