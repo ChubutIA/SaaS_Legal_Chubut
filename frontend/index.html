@@ -714,6 +714,27 @@
       </div>
     </section>
   </main>
+
+  <!-- CONTENEDOR DE EXPEDIENTES (NUEVO) -->
+  <main id="carpetas-main" class="hidden" style="width: 100%; height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+    <section class="view">
+
+      <header class="view-header" style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+        <div>
+          <h2 style="color: #fff; font-size: 2rem; margin: 0 0 8px 0;">Mis Expedientes</h2>
+          <p style="color: #aaa; margin: 0;">Organizá tus casos y accedé a ellos rápidamente desde acá.</p>
+        </div>
+        <button id="btn-nuevo-expediente-dash" class="btn-primary" style="padding: 12px 22px; background: #c9a84c; color: #000; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+          + Nuevo Expediente
+        </button>
+      </header>
+
+      <div id="grid-carpetas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+        <!-- Las tarjetas de expedientes se inyectan acá con JS -->
+      </div>
+
+    </section>
+  </main>
 </div>
 
 <div id="auth-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Acceso al sistema">
@@ -896,12 +917,11 @@
     const btnCloseCarpeta = document.getElementById('btn-close-carpeta');
     const btnGuardarCarpeta = document.getElementById('btn-guardar-carpeta');
 
-    // Lógica para abrir/cerrar el modal
-    if (btnCarpetas) {
-      btnCarpetas.addEventListener('click', () => {
-        if (checkLocked(btnCarpetas)) return;
+    // Botón "+ Nuevo Expediente" dentro del dashboard de carpetas
+    const btnNuevoExpedienteDash = document.getElementById('btn-nuevo-expediente-dash');
+    if (btnNuevoExpedienteDash) {
+      btnNuevoExpedienteDash.addEventListener('click', () => {
         modalCarpeta.classList.remove('hidden');
-        closeSidebarOnMobile();
       });
     }
 
@@ -943,6 +963,7 @@
             
             if (respuesta.ok) {
                 alert("✅ Expediente creado exitosamente");
+                cargarCarpetas();
                 modalCarpeta.classList.add('hidden');
                 document.getElementById('input-nombre-carpeta').value = '';
                 document.getElementById('input-desc-carpeta').value = '';
@@ -964,6 +985,7 @@
     const liquidacionesMain = document.getElementById('liquidaciones-main');
     const plazosMain = document.getElementById('plazos-main');
     const ipcMain = document.getElementById('ipc-main'); 
+    const carpetasMain = document.getElementById('carpetas-main');
 
     // === ESTO ES LO QUE ME HABÍA FALTADO ===
     // Inicializar Liquidaciones
@@ -987,7 +1009,12 @@
       liquidacionesMain.classList.add('hidden');
       plazosMain.classList.add('hidden');
       if (ipcMain) ipcMain.classList.add('hidden'); 
+      if (carpetasMain) carpetasMain.classList.add('hidden');
       
+      if (btnCarpetas) {
+        btnCarpetas.style.background = '#333';
+        btnCarpetas.style.color = '#fff';
+      }
       if (btnLiquidaciones) {
         btnLiquidaciones.style.background = '#333';
         btnLiquidaciones.style.color = '#fff';
@@ -1044,6 +1071,73 @@
 
     if (btnIpc) {
       btnIpc.addEventListener('click', () => toggleView(btnIpc, ipcMain));
+    }
+
+    if (btnCarpetas) {
+      btnCarpetas.addEventListener('click', () => {
+        toggleView(btnCarpetas, carpetasMain);
+        cargarCarpetas();
+      });
+    }
+
+    // Renderiza las tarjetas de expedientes del usuario en el dashboard
+    async function cargarCarpetas() {
+      const grid = document.getElementById('grid-carpetas');
+      if (!grid) return;
+
+      const usuarioId = localStorage.getItem("user_id") || localStorage.getItem("usuario_id") || 11;
+
+      grid.innerHTML = '<p style="color:#888; grid-column: 1/-1; text-align:center;">Cargando expedientes...</p>';
+
+      try {
+        const respuesta = await fetch('/api/carpetas/' + usuarioId);
+        const data = await respuesta.json();
+
+        if (!respuesta.ok) {
+          grid.innerHTML = '<p style="color:#ef4444; grid-column: 1/-1; text-align:center;">No se pudieron cargar los expedientes.</p>';
+          return;
+        }
+
+        const carpetas = Array.isArray(data) ? data : (data.carpetas || []);
+
+        if (!carpetas.length) {
+          grid.innerHTML = '<p style="color:#888; grid-column: 1/-1; text-align:center;">Todavía no creaste ningún expediente.</p>';
+          return;
+        }
+
+        grid.innerHTML = '';
+
+        carpetas.forEach(carpeta => {
+          const nombre = carpeta.nombre || 'Sin nombre';
+          const desc = carpeta.descripcion || '';
+          let fechaTexto = '';
+          const fechaRaw = carpeta.fecha_creacion || carpeta.created_at || carpeta.fecha;
+          if (fechaRaw) {
+            const fecha = new Date(fechaRaw);
+            if (!isNaN(fecha)) {
+              fechaTexto = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+          }
+
+          const card = document.createElement('div');
+          card.className = 'expediente-card';
+          card.style.cssText = 'background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; cursor:pointer; transition: border-color 0.2s, transform 0.2s;';
+          card.onmouseenter = () => { card.style.borderColor = '#c9a84c'; card.style.transform = 'translateY(-2px)'; };
+          card.onmouseleave = () => { card.style.borderColor = '#333'; card.style.transform = 'translateY(0)'; };
+
+          card.innerHTML = `
+            <div style="font-size: 1.8rem; margin-bottom: 12px;">📁</div>
+            <h3 style="color:#fff; font-size:1.05rem; margin:0 0 8px 0; word-break: break-word;">${nombre}</h3>
+            <p style="color:#aaa; font-size:0.85rem; margin:0 0 15px 0; min-height: 1.2em; word-break: break-word;">${desc}</p>
+            <p style="color:#666; font-size:0.75rem; margin:0; border-top:1px solid #2a2a2a; padding-top:10px;">${fechaTexto ? 'Creado el ' + fechaTexto : ''}</p>
+          `;
+
+          grid.appendChild(card);
+        });
+      } catch (error) {
+        console.error("Error al cargar expedientes:", error);
+        grid.innerHTML = '<p style="color:#ef4444; grid-column: 1/-1; text-align:center;">Error al comunicarse con el servidor.</p>';
+      }
     }
 
     if (btnRedactar) {
