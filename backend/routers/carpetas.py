@@ -37,3 +37,13 @@ async def listar_carpetas(usuario_id: int):
         return {"carpetas": data.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener carpetas: {str(e)}")
+
+@router.get("/{carpeta_id}/documentos")
+async def listar_documentos(carpeta_id: str):
+    supabase = get_supabase()
+    try:
+        # Traemos todos los archivos guardados adentro de esta carpeta
+        data = supabase.table("documentos_carpeta").select("*").eq("carpeta_id", carpeta_id).order("created_at", desc=False).execute()
+        return {"documentos": data.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener documentos: {str(e)}")
