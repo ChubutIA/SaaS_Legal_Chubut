@@ -47,3 +47,19 @@ async def listar_documentos(carpeta_id: str):
         return {"documentos": data.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener documentos: {str(e)}")
+
+@router.post("/{carpeta_id}/documentos")
+async def guardar_documento(carpeta_id: str, documento: dict):
+    supabase = get_supabase()
+    try:
+        # Guardamos el chat o documento adentro de la carpeta en Supabase
+        data = supabase.table("documentos_carpeta").insert({
+            "carpeta_id": carpeta_id,
+            "tipo": documento.get("tipo", "chat"),
+            "titulo": documento.get("titulo", "Chat guardado"),
+            "contenido": documento.get("contenido", "")
+        }).execute()
+        
+        return {"mensaje": "Guardado exitosamente", "documento": data.data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar en la carpeta: {str(e)}")
