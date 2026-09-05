@@ -63,3 +63,23 @@ async def guardar_documento(carpeta_id: str, documento: dict):
         return {"mensaje": "Guardado exitosamente", "documento": data.data[0]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al guardar en la carpeta: {str(e)}")
+
+@router.delete("/{carpeta_id}")
+async def eliminar_carpeta(carpeta_id: str):
+    supabase = get_supabase()
+    try:
+        # Borramos la carpeta. Por el CASCADE de la base de datos, se borran sus documentos automáticamente.
+        data = supabase.table("carpetas").delete().eq("id", carpeta_id).execute()
+        return {"mensaje": "Expediente eliminado correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar carpeta: {str(e)}")
+
+@router.delete("/documentos/{documento_id}")
+async def eliminar_documento(documento_id: str):
+    supabase = get_supabase()
+    try:
+        # Borramos solo un chat/documento puntual
+        data = supabase.table("documentos_carpeta").delete().eq("id", documento_id).execute()
+        return {"mensaje": "Documento eliminado correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar documento: {str(e)}")
